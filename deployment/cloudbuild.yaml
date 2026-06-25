@@ -1,0 +1,36 @@
+# Cloud Build pipeline for deploying to Cloud Run.
+# Trigger this from the repo root:
+#   gcloud builds submit --config deployment/cloudbuild.yaml .
+#
+# Secrets: the API key is read from Secret Manager at deploy time, never baked
+# into the image or printed in build logs. Create it once:
+#   echo -n "YOUR_KEY" | gcloud secrets create GOOGLE_API_KEY --data-file=-
+#   gcloud secrets add-iam-policy-binding GOOGLE_API_KEY \
+#     --member="serviceAccount:<cloud-run-runtime-sa>" --role="roles/secretmanager.secretAccessor"
+
+steps:
+  # Build the Docker image.
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/clinical-ai-command-center', '-f', 'deployment/Dockerfile', '.']
+
+  # Push to Container Registry.
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/clinical-ai-command-center']
+
+  # Deploy to Cloud Run. --update-secrets injects GOOGLE_API_KEY from Secret
+  # Manager into the running container's environment (not the build).
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'clinical-ai-command-center'
+      - '--image=gcr.io/$PROJECT_ID/clinical-ai-command-center'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest'
+
+images:
+  - 'gcr.io/$PROJECT_ID/clinical-ai-command-center'

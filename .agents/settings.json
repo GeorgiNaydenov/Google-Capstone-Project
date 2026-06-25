@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'check_harness.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'check_harness.py').is_file()), None); assert script is not None, 'Unable to locate project harness'; runpy.run_path(str(script), run_name='__main__')\"",
+            "timeout": 10000,
+            "statusMessage": "Verifying harness integrity..."
+          }
+        ]
+      }
+    ]
+  }
+}

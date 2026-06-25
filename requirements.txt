@@ -1,0 +1,60 @@
+# =============================================================================
+# Google Capstone Project — dependencies
+# Covers every tool used across the 10 course notebooks (Days 1a–5b).
+# =============================================================================
+
+# --- Core framework (Day 1–5). [a2a] pulls the Agent2Agent stack (Day 5a). ---
+google-adk[a2a,db]>=2.3.0
+
+# --- Google Generative AI SDK (types, Gemini) ---
+google-genai
+
+# --- Vertex AI / Agent Engine deploy + Memory Bank (Day 5b / 3b) ---
+google-cloud-aiplatform
+
+# --- Environment management ---
+python-dotenv
+
+# --- MCP server + client (Day 2a/2b) ---
+mcp[cli]
+
+# --- Tool I/O validation ---
+pydantic
+
+# --- HTTP (external tools + A2A client used in Day 5a) ---
+httpx
+requests
+
+# --- A2A serving (Day 5a): to_a2a returns an ASGI app served by uvicorn ---
+uvicorn
+
+# --- Clinical product API + multipart session-image uploads ---
+fastapi
+python-multipart
+PyMuPDF
+Pillow
+
+# --- Clinical visualization exports and analysis notebooks ---
+matplotlib
+
+# --- Persistent sessions (Day 3a DatabaseSessionService) ---
+# (sqlalchemy also arrives via google-adk[db]; pinned here for clarity)
+sqlalchemy
+
+# --- Observability — OpenTelemetry (Day 4a) ---
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp-proto-grpc
+opentelemetry-exporter-gcp-trace          # Cloud Trace exporter (production target)
+opentelemetry-instrumentation-google-genai
+
+# --- Evaluation (Day 4b). ADK eval is built in; deepeval adds LLM-judge metrics ---
+deepeval
+
+# --- Testing ---
+pytest
+pytest-asyncio
+
+# --- Kaggle notebooks only (UserSecretsClient). Not imported by the harness;
+#     uncomment if running the source notebooks inside Kaggle. ---
+# kaggle-secrets

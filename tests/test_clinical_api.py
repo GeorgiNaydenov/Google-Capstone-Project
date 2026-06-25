@@ -1,0 +1,250 @@
+"""Frontend contract tests for deterministic clinician product API."""
+
+from fastapi.testclient import TestClient
+
+from clinical_app.app import create_app
+
+
+def client() -> TestClient:
+    """Create API client with isolated repository registry."""
+
+    return TestClient(create_app())
+
+
+def clinician(session: str = "clinical-test") -> dict[str, str]:
+    """Build clinician browser headers."""
+
+    return {"X-Demo-Session": session, "X-Clinical-Role": "clinician", "X-User": "Dr. Test"}
+
+
+def admin(session: str = "clinical-test") -> dict[str, str]:
+    """Build admin browser headers."""
+
+    return {"X-Demo-Session": session, "X-Clinical-Role": "admin", "X-User": "Admin Test"}
+
+
+def upload_asset(api: TestClient, headers: dict[str, str], patient_id: str = "PT-8829") -> str:
+    """Upload real multipart bytes and return browser asset identifier."""
+
+    contents = b"\x89PNG\r\n\x1a\nsynthetic"
+    response = api.post(
+        "/api/assets", headers=headers, data={"patient_id": patient_id},
+        files={"file": ("scan.png", contents, "image/png")},
+    )
+    assert response.status_code == 201
+    assert response.json()["previewUrl"].startswith("/api/assets/")
+    return response.json()["assetId"]
+
+
+def test_health_demo_and_camel_case_read_contracts() -> None:
+    """Health, demo, dashboard, patient, and session shapes match frontend."""
+
+    api = client()
+    assert api.get("/healthz").json() == {"status": "ok", "mode": "local"}
+    assert api.get("/readyz").json() == {"status": "ready"}
+    created = api.post("/api/demo/session")
+    assert created.status_code == 201
+    headers = clinician(created.json()["sessionId"])
+    dashboard = api.get("/api/dashboard", headers=headers, params={"role": "clinician"}).json()
+    assert dashboard["metrics"]["patients"] == 24
+    assert dashboard["patients"][0]["id"] == "PT-8829"
+    matches = api.get("/api/patients", headers=headers, params={"query": "lung"}).json()
+    assert [patient["id"] for patient in matches] == ["PT-8829"]
+    profile = api.get("/api/patients/PT-8829", headers=headers).json()
+    assert profile["mrn"] == "MRN-8829"
+    sessions = api.get("/api/sessions", headers=headers, params={"patient_id": "PT-8829"}).json()
+    assert sessions[0]["patientId"] == "PT-8829"
+    assert api.get(f"/api/sessions/{sessions[0]['id']}", headers=headers).json()["occurredAt"] == "2026-06-15"
+
+
+def test_extraction_is_review_gated_and_approval_persists() -> None:
+    """Storage stays pending until clinician approval then becomes synced."""
+
+    api = client()
+    headers = clinician("approval")
+    asset_id = upload_asset(api, headers)
+    assert api.get(f"/api/assets/{asset_id}", headers=headers).content == b"\x89PNG\r\n\x1a\nsynthetic"
+    response = api.post("/api/runs/extraction", headers=headers, json={"assetId": asset_id, "patientId": "PT-8829"})
+    assert response.status_code == 201
+    run = response.json()
+    assert run["workflow"] == "extraction" and run["status"] == "review"
+    assert run["steps"] and run["evidence"] and run["result"]
+    assert {receipt["status"] for receipt in run["result"]["storageReceipts"]} == {"pending"}
+    assert run["result"]["persisted"] is False
+    assert api.get("/api/storage", headers=headers).json()["persistedCount"] == 0
+    assert api.get("/api/reviews", headers=headers).json()[0]["id"] == run["id"]
+    approved = api.post(
+        f"/api/runs/{run['id']}/review", headers=headers,
+        json={"decision": "approved", "fields": {"documentType": "Verified CT", "patientMatch": "PT-8829"}},
+    ).json()
+    assert approved["status"] == "completed"
+    assert approved["result"]["persisted"] is True
+    assert {receipt["status"] for receipt in approved["result"]["storageReceipts"]} == {"synced"}
+    assert api.get("/api/storage", headers=headers).json()["persistedCount"] == 1
+    assert api.get("/api/reviews", headers=headers).json() == []
+    patient = api.get("/api/patients/PT-8829", headers=headers).json()
+    assert patient["aiStatus"] == "verified"
+    sessions = api.get("/api/sessions", headers=headers, params={"patient_id": "PT-8829"}).json()
+    assert sessions[-1]["id"] == approved["result"]["sessionId"]
+    image_qa = api.post(
+        "/api/runs/qa", headers=headers,
+        json={"patientId": "PT-8829", "question": "Show approved imaging", "filters": {"source": "image", "dateRange": "30d"}},
+    ).json()
+    assert image_qa["evidence"][0]["sourceUrl"].startswith("/api/assets/")
+    assert api.get(image_qa["evidence"][0]["sourceUrl"]).status_code == 200
+    assert api.get(image_qa["evidence"][0]["sourceUrl"].replace("approval", "expired")).status_code == 403
+
+
+def test_rejection_never_persists_extraction() -> None:
+    """Rejected extraction remains absent from persisted storage."""
+
+    api = client()
+    headers = clinician("rejection")
+    asset_id = upload_asset(api, headers, "PT-1044")
+    run = api.post("/api/runs/extraction", headers=headers, json={"assetId": asset_id, "patientId": "PT-1044"}).json()
+    rejected = api.post(f"/api/runs/{run['id']}/review", headers=headers, json={"decision": "rejected"}).json()
+    assert rejected["result"]["persisted"] is False
+    assert {receipt["status"] for receipt in rejected["result"]["storageReceipts"]} == {"pending"}
+    assert api.get("/api/storage", headers=headers).json()["persistedCount"] == 0
+
+
+def test_qa_database_admin_and_configuration_contracts() -> None:
+    """Q&A, database aliases, audit, users, and config match browser API."""
+
+    api = client()
+    clinical_headers = clinician("workflows")
+    qa = api.post(
+        "/api/runs/qa", headers=clinical_headers,
+        json={"patientId": "PT-9921", "question": "What changed?", "filters": {"source": "text"}},
+    )
+    assert qa.status_code == 201
+    qa_run = qa.json()
+    assert qa_run["workflow"] == "qa" and qa_run["evidence"][0]["kind"] == "text"
+    assert api.get(f"/api/runs/{qa_run['id']}", headers=clinical_headers).json()["result"]["answer"]
+    clinician_preview = api.post("/api/runs/database/preview", headers=clinical_headers, json={"question": "Count risk groups"})
+    assert clinician_preview.status_code == 201
+    assert api.post(f"/api/runs/database/{clinician_preview.json()['id']}/execute", headers=clinical_headers).status_code == 200
+    admin_headers = admin("workflows")
+    preview = api.post("/api/runs/database/preview", headers=admin_headers, json={"question": "Count risk groups"}).json()
+    assert preview["status"] == "review" and preview["result"]["safe"] is True
+    executed = api.post(f"/api/runs/database/{preview['id']}/execute", headers=admin_headers).json()
+    assert executed["status"] == "completed" and executed["result"]["chart"]["type"] == "bar"
+    assert sum(row["patient_count"] for row in executed["result"]["rows"]) == 24
+    assert len(api.get("/api/users", headers=admin_headers).json()) == 2
+    config = api.get("/api/agent-config", headers=admin_headers).json()
+    saved = api.put("/api/agent-config", headers=admin_headers, json={"autoApprovalThreshold": 94, "reviewThreshold": 70, "maxConcurrentRuns": 12, "databaseEnabled": False}).json()
+    assert saved["version"] == config["version"] + 1 and saved["autoApprovalThreshold"] == 94
+    users = api.get("/api/users", headers=admin_headers).json()
+    assert users[1]["roles"] == ["admin", "clinician"] and users[1]["scope"]
+    metrics = api.get("/api/dashboard", headers=admin_headers, params={"role": "admin"}).json()["metrics"]
+    assert {"activeUsers", "agentRuns", "syncRate", "reviewSla", "highRisk", "pendingReview", "completeness"} <= set(metrics)
+    audit = api.get("/api/audit", headers=admin_headers).json()
+    assert {"id", "timestamp", "event", "actor", "entity", "result"} <= set(audit[0])
+
+
+def test_agent_catalog_and_notifications_are_actionable() -> None:
+    """The shell discovers ADK pipelines and persists notification reads."""
+
+    api = client()
+    request_headers = clinician("shell-contracts")
+    catalog = api.get("/api/agents", headers=request_headers).json()
+    assert catalog["framework"] == "Google ADK"
+    assert catalog["orchestrator"] == "clinical_orchestrator"
+    assert {pipeline["id"] for pipeline in catalog["pipelines"]} == {"extraction", "qa", "database"}
+    assert all(pipeline["agents"] for pipeline in catalog["pipelines"])
+    notices = api.get("/api/notifications", headers=request_headers).json()
+    assert len(notices) == 3 and all(not notice["read"] for notice in notices)
+    updated = api.post(f"/api/notifications/{notices[0]['id']}/read", headers=request_headers)
+    assert updated.status_code == 200 and updated.json()["read"] is True
+    assert api.get("/api/notifications", headers=request_headers).json()[0]["read"] is True
+
+
+def test_demo_session_state_isolation_and_reset() -> None:
+    """Uploads and mutable config never cross demo sessions."""
+
+    api = client()
+    upload_asset(api, clinician("one"))
+    assert api.get("/api/storage", headers=clinician("one")).json()["assetCount"] == 1
+    assert api.get("/api/storage", headers=clinician("two")).json()["assetCount"] == 0
+    assert api.post("/api/demo/reset", headers=clinician("one")).status_code == 204
+    assert api.get("/api/storage", headers=clinician("one")).json()["assetCount"] == 0
+
+
+def test_orchestration_classifies_context_and_audits_plan() -> None:
+    """Planner routes three workflows only with required context and permission."""
+
+    api = client()
+    headers = clinician("orchestration")
+    extraction = api.post(
+        "/api/orchestrate", headers=headers,
+        json={"query": "Extract findings from this uploaded CT scan", "patientId": "PT-8829"},
+    )
+    assert extraction.status_code == 201
+    assert extraction.json()["workflow"] == "extraction"
+    assert extraction.json()["route"] == "/app/extraction"
+    assert extraction.json()["agents"] and extraction.json()["dataSources"]
+    qa = api.post(
+        "/api/orchestrate", headers=headers,
+        json={"query": "What changed in recent evidence?", "patientId": "PT-9921"},
+    ).json()
+    assert qa["intent"] == "answer_patient_question" and qa["workflow"] == "qa"
+    assert api.post("/api/orchestrate", headers=headers, json={"query": "Summarize recent evidence"}).status_code == 422
+    database = api.post("/api/orchestrate", headers=headers, json={"query": "Count population risk cohorts"}).json()
+    assert database["workflow"] == "database" and database["route"] == "/app/database"
+    audit = api.get("/api/audit", headers=admin("orchestration")).json()
+    plans = [event for event in audit if event["event"] == "orchestration_plan_created"]
+    assert len(plans) == 3
+
+
+def test_upload_limit_and_repository_eviction() -> None:
+    """Uploads cap at 10 MB and registry evicts least-recent session."""
+
+    from clinical_app.repository import RepositoryRegistry
+
+    api = client()
+    oversized = api.post(
+        "/api/assets", headers=clinician("upload-limit"), data={"patient_id": "PT-8829"},
+        files={"file": ("large.pdf", b"x" * 10_000_001, "application/pdf")},
+    )
+    assert oversized.status_code == 413
+    registry = RepositoryRegistry(max_count=2, ttl_seconds=3600)
+    first = registry.get("first")
+    first.uploads["sentinel"] = {"assetId": "sentinel"}
+    registry.get("second")
+    registry.get("third")
+    assert "sentinel" not in registry.get("first").uploads
+
+
+def test_live_mode_uses_lazy_bridge_and_persists_metadata() -> None:
+    """Live selection invokes bridge while demo remains model independent."""
+
+    import importlib
+    import os
+
+    app_module = importlib.import_module("clinical_app.app")
+
+    original_mode = os.environ.get("AGENT_EXECUTION_MODE")
+    original_bridge = app_module.execute_live
+
+    async def fake_live(query: str, user_id: str, **_: object) -> dict[str, object]:
+        assert query and user_id
+        return {"finalResponse": "Safe live response", "authorSteps": [{"author": "root_agent", "eventId": "EV-1"}]}
+
+    try:
+        os.environ["AGENT_EXECUTION_MODE"] = "live"
+        app_module.execute_live = fake_live
+        api = TestClient(app_module.create_app())
+        assert api.get("/healthz").json()["mode"] == "live"
+        run = api.post(
+            "/api/runs/qa", headers=clinician("live"),
+            json={"patientId": "PT-9921", "question": "Summarize recent status"},
+        ).json()
+        assert run["result"]["liveResponse"] == "Safe live response"
+        assert run["result"]["authorSteps"][0]["author"] == "root_agent"
+        assert any(step["name"] == "Root Agent" for step in run["steps"])
+    finally:
+        app_module.execute_live = original_bridge
+        if original_mode is None:
+            os.environ.pop("AGENT_EXECUTION_MODE", None)
+        else:
+            os.environ["AGENT_EXECUTION_MODE"] = original_mode
