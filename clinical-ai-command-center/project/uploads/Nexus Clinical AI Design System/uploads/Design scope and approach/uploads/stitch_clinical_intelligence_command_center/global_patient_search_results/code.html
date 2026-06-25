@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Clinical AI - Global Patient Search Results</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-error": "#ffffff",
+                      "surface": "#faf8ff",
+                      "inverse-on-surface": "#f0f0fb",
+                      "primary-fixed": "#dbe1ff",
+                      "surface-container-low": "#f3f3fe",
+                      "on-tertiary-fixed-variant": "#7d2d00",
+                      "primary": "#004ac6",
+                      "outline-variant": "#c3c6d7",
+                      "tertiary": "#943700",
+                      "on-secondary-fixed-variant": "#3a485b",
+                      "surface-container-highest": "#e1e2ed",
+                      "error-container": "#ffdad6",
+                      "inverse-primary": "#b4c5ff",
+                      "on-surface": "#191b23",
+                      "surface-container-high": "#e7e7f3",
+                      "background": "#faf8ff",
+                      "secondary-fixed-dim": "#b9c7df",
+                      "on-surface-variant": "#434655",
+                      "tertiary-fixed": "#ffdbcd",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#2563eb",
+                      "on-tertiary-fixed": "#360f00",
+                      "on-tertiary-container": "#ffede6",
+                      "on-primary-container": "#eeefff",
+                      "secondary-container": "#d5e3fc",
+                      "error": "#ba1a1a",
+                      "on-error-container": "#93000a",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#faf8ff",
+                      "on-secondary-fixed": "#0d1c2e",
+                      "on-tertiary": "#ffffff",
+                      "outline": "#737686",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-dim": "#d9d9e5",
+                      "secondary": "#515f74",
+                      "on-primary": "#ffffff",
+                      "surface-tint": "#0053db",
+                      "on-primary-fixed": "#00174b",
+                      "inverse-surface": "#2e3039",
+                      "tertiary-container": "#bc4800",
+                      "tertiary-fixed-dim": "#ffb596",
+                      "on-background": "#191b23",
+                      "surface-variant": "#e1e2ed",
+                      "surface-container": "#ededf9",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-secondary-container": "#57657a",
+                      "secondary-fixed": "#d5e3fc"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "row-height-md": "44px",
+                      "xs": "4px",
+                      "xl": "24px",
+                      "lg": "16px",
+                      "row-height-sm": "36px",
+                      "sm": "8px",
+                      "md": "12px",
+                      "xxl": "32px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "mono-code": [
+                              "JetBrains Mono"
+                      ],
+                      "table-text": [
+                              "Inter"
+                      ],
+                      "section-title": [
+                              "Inter"
+                      ],
+                      "panel-title": [
+                              "Inter"
+                      ],
+                      "page-title": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mono-code": [
+                              "12px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "table-text": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "section-title": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "panel-title": [
+                              "15px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "page-title": [
+                              "26px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen overflow-hidden flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface border-b border-outline-variant flex justify-between items-center h-row-height-md px-lg w-full z-50">
+<div class="flex items-center gap-xl h-full">
+<h1 class="font-page-title text-page-title text-primary tracking-tight">Nexus Clinical AI</h1>
+<nav class="hidden md:flex h-full items-center gap-lg">
+<a class="h-full flex items-center px-sm text-primary border-b-2 border-primary font-bold transition-colors duration-150 ease-in-out hover:bg-surface-container-high" href="#">Clinician</a>
+<a class="h-full flex items-center px-sm text-on-surface-variant transition-colors duration-150 ease-in-out hover:bg-surface-container-high" href="#">Admin</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<!-- Search Bar on Right -->
+<div class="relative w-64 hidden md:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input class="w-full h-8 pl-[32px] pr-sm bg-surface-container-low border border-outline-variant rounded text-table-text font-table-text text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Search patients, conditions..." type="text"/>
+</div>
+<div class="flex items-center gap-sm">
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-high text-on-surface-variant transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-high text-on-surface-variant transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-high text-on-surface-variant transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col bg-surface-container-low border-r border-outline-variant h-full w-[240px] py-md z-40">
+<div class="px-lg pb-lg mb-sm border-b border-outline-variant flex items-center gap-md">
+<img class="w-10 h-10 rounded-full border border-outline-variant object-cover" data-alt="A generic user profile avatar placeholder, minimal corporate style, professional lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZLST5gmmPANox0JA7NOy9tpAr3EHDBZ55TLTvxsux5OyDmuLjdkxPY8LMO7J2jd7S_Tp3VHtzYhK2D2uRK6MUmA8pIbm7hMJQbbw38Mm7IW9yCRsYmLt-V6ssXLgZj8al1Z3EZan5BPAajt4ofIr748blqBGiktzf4GRqJKc7CURkBA7RQLMrBtEiUT0iRz7jTkmvNPewlDLlCHTdECaV2ccAX_UAv1CjYQxmIVkoiVGnu2pKOnXhWjO5WKMOA_2hDBB57JpeiHNC"/>
+<div>
+<h2 class="font-panel-title text-panel-title font-bold text-on-surface">Clinical Command</h2>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Nexus AI v2.4</p>
+</div>
+</div>
+<div class="px-md pb-md">
+<button class="w-full h-row-height-md bg-primary text-on-primary rounded font-panel-title text-panel-title flex items-center justify-center gap-sm hover:bg-surface-tint transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    New Session
+                </button>
+</div>
+<nav class="flex-1 flex flex-col gap-xs px-sm overflow-y-auto">
+<!-- Determining Active: "Dashboard" intent based on search results view -->
+<a class="flex items-center gap-md px-md h-row-height-md rounded-r bg-secondary-container text-on-secondary-container border-l-4 border-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md h-row-height-md rounded-r text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">biotech</span>
+<span class="font-label-caps text-label-caps">Image Extraction</span>
+</a>
+<a class="flex items-center gap-md px-md h-row-height-md rounded-r text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">psychology</span>
+<span class="font-label-caps text-label-caps">Multimodal Q&amp;A</span>
+</a>
+<a class="flex items-center gap-md px-md h-row-height-md rounded-r text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">database</span>
+<span class="font-label-caps text-label-caps">DB Intelligence</span>
+</a>
+<a class="flex items-center gap-md px-md h-row-height-md rounded-r text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">policy</span>
+<span class="font-label-caps text-label-caps">Audit Logs</span>
+</a>
+</nav>
+<div class="mt-auto px-sm pt-md border-t border-outline-variant flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-r text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-r text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span class="font-label-caps text-label-caps">System Status</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-hidden flex flex-col md:flex-row bg-background">
+<!-- Left Column: Filters (Fixed Width) -->
+<div class="w-full md:w-[280px] flex-shrink-0 border-r border-outline-variant bg-surface-bright overflow-y-auto h-full flex flex-col">
+<div class="p-lg border-b border-outline-variant flex items-center justify-between">
+<h3 class="font-section-title text-section-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                        Filters
+                    </h3>
+<button class="font-label-caps text-label-caps text-primary hover:underline">Clear All</button>
+</div>
+<div class="p-lg flex flex-col gap-xl">
+<!-- Filter Group: Risk Level -->
+<div>
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-md uppercase tracking-wider">Risk Level</h4>
+<div class="flex flex-col gap-sm">
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="w-4 h-4 rounded text-primary border-outline focus:ring-primary" type="checkbox"/>
+<span class="font-table-text text-table-text text-on-surface flex-1">Critical</span>
+<span class="bg-error/10 text-error px-sm py-[2px] rounded font-mono-code text-mono-code">12</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-primary border-outline focus:ring-primary" type="checkbox"/>
+<span class="font-table-text text-table-text text-on-surface flex-1">High</span>
+<span class="bg-tertiary/10 text-tertiary px-sm py-[2px] rounded font-mono-code text-mono-code">45</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="w-4 h-4 rounded text-primary border-outline focus:ring-primary" type="checkbox"/>
+<span class="font-table-text text-table-text text-on-surface flex-1">Moderate</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-sm py-[2px] rounded font-mono-code text-mono-code">128</span>
+</label>
+</div>
+</div>
+<!-- Filter Group: Diagnosis -->
+<div>
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-md uppercase tracking-wider">Diagnosis Category</h4>
+<div class="relative mb-sm">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-[16px]">search</span>
+<input class="w-full h-8 pl-[28px] pr-sm bg-surface-container-low border border-outline-variant rounded font-table-text text-table-text text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Filter diagnosis..." type="text"/>
+</div>
+<div class="flex flex-col gap-sm max-h-[150px] overflow-y-auto pr-sm">
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="w-4 h-4 rounded text-primary border-outline focus:ring-primary" type="checkbox"/>
+<span class="font-table-text text-table-text text-on-surface truncate">Cardiovascular</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-primary border-outline focus:ring-primary" type="checkbox"/>
+<span class="font-table-text text-table-text text-on-surface truncate">Oncology</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="w-4 h-4 rounded text-primary border-outline focus:ring-primary" type="checkbox"/>
+<span class="font-table-text text-table-text text-on-surface truncate">Neurology</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="w-4 h-4 rounded text-primary border-outline focus:ring-primary" type="checkbox"/>
+<span class="font-table-text text-table-text text-on-surface truncate">Endocrinology</span>
+</label>
+</div>
+</div>
+<!-- Filter Group: Agent Status -->
+<div>
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-md uppercase tracking-wider">AI Review Status</h4>
+<div class="flex flex-col gap-sm">
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="w-4 h-4 text-primary border-outline focus:ring-primary" name="ai_status" type="radio"/>
+<span class="font-table-text text-table-text text-on-surface">Needs Review</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input checked="" class="w-4 h-4 text-primary border-outline focus:ring-primary" name="ai_status" type="radio"/>
+<span class="font-table-text text-table-text text-on-surface">AI Analyzed</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input class="w-4 h-4 text-primary border-outline focus:ring-primary" name="ai_status" type="radio"/>
+<span class="font-table-text text-table-text text-on-surface">Clinician Verified</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Center Column: Dense Table (Fluid Width) -->
+<div class="flex-1 flex flex-col h-full overflow-hidden bg-background">
+<div class="p-lg border-b border-outline-variant bg-surface flex justify-between items-center z-10">
+<div>
+<h2 class="font-section-title text-section-title text-on-surface">Patient Registry</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Showing 45 results for "Oncology" • High Risk</p>
+</div>
+<div class="flex gap-sm">
+<button class="h-8 px-md border border-outline-variant bg-surface rounded text-on-surface font-panel-title text-panel-title flex items-center gap-sm hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                            Export
+                        </button>
+</div>
+</div>
+<div class="flex-1 overflow-auto bg-surface-container-lowest relative">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-low border-b border-outline z-20">
+<tr>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider border-r border-outline-variant w-[200px]">Patient ID / Name</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider border-r border-outline-variant w-[60px]">Age</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider border-r border-outline-variant w-[100px]">Risk</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider border-r border-outline-variant">Primary Diagnosis</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider border-r border-outline-variant w-[120px]">Last Session</th>
+<th class="px-md py-sm font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider w-[140px]">AI Status</th>
+</tr>
+</thead>
+<tbody class="font-table-text text-table-text text-on-surface">
+<!-- Row 1 -->
+<tr class="border-b border-outline-variant h-row-height-sm hover:bg-surface-container-low transition-colors cursor-pointer bg-surface-container-low/50">
+<td class="px-md border-r border-outline-variant">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<span class="font-mono-code text-primary hover:underline">PT-8829</span>
+<span class="truncate">Doe, J.</span>
+</div>
+</td>
+<td class="px-md border-r border-outline-variant font-mono-code">62</td>
+<td class="px-md border-r border-outline-variant">
+<span class="inline-flex items-center px-sm py-[2px] rounded bg-error/10 text-error border border-error/20 font-label-caps text-[10px] uppercase">High</span>
+</td>
+<td class="px-md border-r border-outline-variant truncate" title="Non-Small Cell Lung Carcinoma (Stage III)">Non-Small Cell Lung Carcinoma (Stage III)</td>
+<td class="px-md border-r border-outline-variant font-mono-code text-on-surface-variant">2023-10-24</td>
+<td class="px-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="text-xs text-primary font-medium">Analyzed</span>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-outline-variant h-row-height-sm hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-md border-r border-outline-variant">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<span class="font-mono-code text-primary hover:underline">PT-9102</span>
+<span class="truncate">Smith, A.</span>
+</div>
+</td>
+<td class="px-md border-r border-outline-variant font-mono-code">45</td>
+<td class="px-md border-r border-outline-variant">
+<span class="inline-flex items-center px-sm py-[2px] rounded bg-error/10 text-error border border-error/20 font-label-caps text-[10px] uppercase">High</span>
+</td>
+<td class="px-md border-r border-outline-variant truncate" title="Glioblastoma Multiforme">Glioblastoma Multiforme</td>
+<td class="px-md border-r border-outline-variant font-mono-code text-on-surface-variant">2023-10-22</td>
+<td class="px-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px] text-tertiary" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-xs text-tertiary font-medium">Flagged</span>
+</div>
+</td>
+</tr>
+<!-- Row 3 (Active focus simulation) -->
+<tr class="border-b-2 border-primary h-row-height-sm bg-primary/5 cursor-pointer relative">
+<td class="px-md border-r border-outline-variant">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<span class="font-mono-code text-primary font-bold">PT-1145</span>
+<span class="truncate font-medium">Chen, M.</span>
+</div>
+</td>
+<td class="px-md border-r border-outline-variant font-mono-code">58</td>
+<td class="px-md border-r border-outline-variant">
+<span class="inline-flex items-center px-sm py-[2px] rounded bg-error/10 text-error border border-error/20 font-label-caps text-[10px] uppercase">High</span>
+</td>
+<td class="px-md border-r border-outline-variant truncate font-medium" title="Metastatic Melanoma (BRAF V600E)">Metastatic Melanoma (BRAF V600E)</td>
+<td class="px-md border-r border-outline-variant font-mono-code text-on-surface-variant">2023-10-20</td>
+<td class="px-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="text-xs text-primary font-medium">Analyzed</span>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="border-b border-outline-variant h-row-height-sm hover:bg-surface-container-low transition-colors cursor-pointer bg-surface-container-low/50">
+<td class="px-md border-r border-outline-variant">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<span class="font-mono-code text-primary hover:underline">PT-7731</span>
+<span class="truncate">Williams, R.</span>
+</div>
+</td>
+<td class="px-md border-r border-outline-variant font-mono-code">71</td>
+<td class="px-md border-r border-outline-variant">
+<span class="inline-flex items-center px-sm py-[2px] rounded bg-error/10 text-error border border-error/20 font-label-caps text-[10px] uppercase">High</span>
+</td>
+<td class="px-md border-r border-outline-variant truncate" title="Pancreatic Adenocarcinoma">Pancreatic Adenocarcinoma</td>
+<td class="px-md border-r border-outline-variant font-mono-code text-on-surface-variant">2023-10-18</td>
+<td class="px-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px] text-success">verified</span>
+<span class="text-xs text-secondary font-medium">Verified</span>
+</div>
+</td>
+</tr>
+<!-- Fill remaining space with empty rows for consistent structure -->
+<tr class="border-b border-outline-variant h-row-height-sm"><td colspan="6"></td></tr>
+<tr class="border-b border-outline-variant h-row-height-sm bg-surface-container-low/50"><td colspan="6"></td></tr>
+<tr class="border-b border-outline-variant h-row-height-sm"><td colspan="6"></td></tr>
+<tr class="border-b border-outline-variant h-row-height-sm bg-surface-container-low/50"><td colspan="6"></td></tr>
+<tr class="border-b border-outline-variant h-row-height-sm"><td colspan="6"></td></tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="h-row-height-md border-t border-outline-variant bg-surface flex items-center justify-between px-lg z-10 flex-shrink-0">
+<span class="font-table-text text-table-text text-on-surface-variant">Showing 1-4 of 45</span>
+<div class="flex gap-xs">
+<button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded border border-outline-variant bg-primary text-on-primary flex items-center justify-center font-mono-code text-[12px]">1</button>
+<button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low font-mono-code text-[12px]">2</button>
+<button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low font-mono-code text-[12px]">...</button>
+<button class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column: AI Search Explanation Panel (Fixed Width) -->
+<div class="w-full md:w-[320px] flex-shrink-0 border-l border-outline-variant bg-surface-bright overflow-y-auto h-full flex flex-col z-10 shadow-[-4px_0_12px_rgba(0,0,0,0.02)]">
+<div class="p-lg border-b border-outline-variant bg-surface sticky top-0 z-10">
+<div class="flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-[20px] text-primary">psychology</span>
+<h3 class="font-section-title text-section-title text-on-surface">Nexus Insights</h3>
+</div>
+<p class="font-table-text text-table-text text-on-surface-variant">Contextualizing search parameters for PT-1145</p>
+</div>
+<div class="p-md flex flex-col gap-md">
+<!-- Agent Confidence Meter -->
+<div class="bg-surface border border-outline-variant rounded p-md">
+<div class="flex justify-between items-end mb-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Match Confidence</span>
+<span class="font-mono-code text-[14px] text-on-surface font-bold">94%</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 94%;"></div>
+</div>
+<p class="font-table-text text-table-text text-on-surface-variant mt-sm leading-relaxed">
+                            Results retrieved from relational data and vector index for semantic match against "Oncology" and recent pathology reports.
+                        </p>
+</div>
+<!-- Extracted Entities -->
+<div class="bg-surface border border-outline-variant rounded p-md">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-md uppercase border-b border-outline-variant pb-xs">Extracted Phenotypes</h4>
+<div class="flex flex-wrap gap-xs">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-primary/10 text-primary border border-primary/20 font-table-text text-[12px]">
+                                BRAF V600E Mutation
+                                <span class="material-symbols-outlined text-[14px]">biotech</span>
+</span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container-highest text-on-surface border border-outline-variant font-table-text text-[12px]">
+                                Lymph Node Involvment
+                            </span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container-highest text-on-surface border border-outline-variant font-table-text text-[12px]">
+                                Elevated LDH
+                            </span>
+</div>
+</div>
+<!-- SQL Preview Block (Transparency) -->
+<div class="bg-surface border border-outline-variant rounded flex flex-col overflow-hidden">
+<div class="bg-surface-container-low border-b border-outline-variant px-md py-sm flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Query Execution</span>
+<span class="material-symbols-outlined text-[16px] text-outline">code</span>
+</div>
+<div class="p-md bg-surface-bright font-mono-code text-[11px] text-on-surface-variant leading-relaxed overflow-x-auto whitespace-pre">
+<span class="text-primary">SELECT</span> p.id, p.age, d.primary
+<span class="text-primary">FROM</span> patients p
+<span class="text-primary">JOIN</span> diagnosis d <span class="text-primary">ON</span> p.id = d.p_id
+<span class="text-primary">WHERE</span> p.risk_score &gt; 80
+<span class="text-primary">AND</span> vector_distance(
+  d.embedding, 
+  [0.01, -0.4...]
+) &lt; 0.2;</div>
+</div>
+<!-- Evidence Citation -->
+<div class="border border-outline-variant rounded p-sm bg-surface-container-lowest mt-auto">
+<div class="flex items-start gap-sm">
+<span class="font-mono-code text-[10px] text-primary bg-primary/10 px-1 rounded">1</span>
+<p class="font-table-text text-[12px] text-on-surface-variant leading-snug">
+                                Semantic matching utilizes Nexus Vector Index v3. Cross-referenced against NCI Thesaurus for oncology sub-classifications.
+                            </p>
+</div>
+<div class="mt-sm pt-sm border-t border-outline-variant text-right">
+<a class="font-table-text text-[12px] text-primary hover:underline" href="#">View Vector Metadata</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

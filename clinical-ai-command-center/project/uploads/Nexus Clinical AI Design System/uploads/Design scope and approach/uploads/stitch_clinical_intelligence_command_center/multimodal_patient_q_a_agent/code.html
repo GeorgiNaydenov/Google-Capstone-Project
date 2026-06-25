@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Clinical AI - Multimodal Q&amp;A</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed": "#ffdbcd",
+                        "tertiary": "#943700",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "on-tertiary-container": "#ffede6",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "surface": "#faf8ff",
+                        "on-primary-fixed": "#00174b",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#57657a",
+                        "primary": "#004ac6",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "on-background": "#191b23",
+                        "outline-variant": "#c3c6d7",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2e3039",
+                        "surface-bright": "#faf8ff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-primary-container": "#eeefff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-surface-variant": "#434655",
+                        "surface-container-highest": "#e1e2ed",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-container": "#ededf9",
+                        "surface-tint": "#0053db",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-variant": "#e1e2ed",
+                        "surface-container-low": "#f3f3fe",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-surface": "#191b23",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "secondary": "#515f74",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#d5e3fc",
+                        "surface-dim": "#d9d9e5",
+                        "tertiary-container": "#bc4800",
+                        "outline": "#737686",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-primary": "#b4c5ff",
+                        "background": "#faf8ff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "row-height-sm": "36px",
+                        "row-height-md": "44px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "xxl": "32px",
+                        "xl": "24px",
+                        "sm": "8px",
+                        "lg": "16px"
+                    },
+                    fontFamily: {
+                        "panel-title": ["Inter"],
+                        "table-text": ["Inter"],
+                        "section-title": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "page-title": ["Inter"],
+                        "mono-code": ["JetBrains Mono"],
+                        "body-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "panel-title": ["15px", { lineHeight: "20px", fontWeight: "600" }],
+                        "table-text": ["13px", { lineHeight: "18px", fontWeight: "400" }],
+                        "section-title": ["18px", { lineHeight: "24px", fontWeight: "600" }],
+                        "label-caps": ["11px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" }],
+                        "page-title": ["26px", { lineHeight: "32px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "mono-code": ["12px", { lineHeight: "18px", fontWeight: "400" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #c3c6d7; border-radius: 4px; }
+        .table-zebra tr:nth-child(even) { background-color: #f3f3fe; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen w-screen overflow-hidden flex">
+<!-- Shared Component: SideNavBar -->
+<nav class="bg-surface-container-low border-r border-outline-variant docked left-0 h-screen w-[240px] flex flex-col py-md shrink-0">
+<!-- Header -->
+<div class="px-lg pb-xl border-b border-outline-variant mb-sm">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-DEFAULT bg-primary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">local_hospital</span>
+</div>
+<div>
+<h1 class="font-panel-title text-panel-title font-bold text-on-surface">Clinical Command</h1>
+<p class="font-table-text text-table-text text-on-surface-variant">Nexus AI v2.4</p>
+</div>
+</div>
+<button class="w-full mt-lg bg-primary hover:bg-primary/90 text-on-primary font-panel-title text-panel-title h-row-height-md rounded-DEFAULT flex items-center justify-center gap-sm transition-colors duration-200">
+<span class="material-symbols-outlined">add</span>
+                New Session
+            </button>
+</div>
+<!-- Main Navigation Links -->
+<ul class="flex-1 px-sm space-y-1">
+<!-- Index 0 -->
+<li>
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-xl">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+</li>
+<!-- Index 1 -->
+<li>
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-xl">biotech</span>
+<span class="font-label-caps text-label-caps">Image Extraction</span>
+</a>
+</li>
+<!-- Index 2 (Active based on Prompt Intent) -->
+<li>
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-DEFAULT bg-secondary-container text-on-secondary-container border-l-4 border-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-xl">psychology</span>
+<span class="font-label-caps text-label-caps">Multimodal Q&amp;A</span>
+</a>
+</li>
+<!-- Index 3 -->
+<li>
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-xl">database</span>
+<span class="font-label-caps text-label-caps">DB Intelligence</span>
+</a>
+</li>
+<!-- Index 4 -->
+<li>
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-xl">policy</span>
+<span class="font-label-caps text-label-caps">Audit Logs</span>
+</a>
+</li>
+</ul>
+<!-- Footer Navigation Links -->
+<div class="px-sm mt-auto border-t border-outline-variant pt-sm">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-xl">help</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md px-md h-row-height-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-xl">check_circle</span>
+<span class="font-label-caps text-label-caps">System Status</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col min-w-0 bg-background">
+<!-- Top: Patient Context Bar -->
+<header class="h-row-height-md flex items-center justify-between px-lg border-b border-outline-variant bg-surface shrink-0">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant w-full h-full flex items-center justify-center text-xl">person</span>
+</div>
+<div class="flex flex-col">
+<span class="font-panel-title text-panel-title text-on-surface leading-tight">Patient: Sarah J. Jenkins</span>
+<div class="flex items-center gap-sm mt-0.5">
+<span class="font-table-text text-table-text text-on-surface-variant">ID: MRN-99824-A</span>
+<span class="w-1 h-1 rounded-full bg-outline"></span>
+<span class="font-table-text text-table-text text-on-surface-variant">DOB: 04/12/1965 (58y)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<!-- Status Chip -->
+<div class="px-2 py-0.5 rounded-DEFAULT bg-error-container text-on-error-container border border-error/20 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span class="font-label-caps text-label-caps">High Risk</span>
+</div>
+<div class="h-6 w-px bg-outline-variant"></div>
+<!-- Agents Involved -->
+<div class="flex items-center gap-xs">
+<span class="font-label-caps text-label-caps text-on-surface-variant mr-xs">Agents Active:</span>
+<span class="px-2 py-0.5 rounded-DEFAULT bg-primary-fixed text-on-primary-fixed-variant font-label-caps text-label-caps border border-primary/20">Retrieval</span>
+<span class="px-2 py-0.5 rounded-DEFAULT bg-primary-fixed text-on-primary-fixed-variant font-label-caps text-label-caps border border-primary/20">Context</span>
+<span class="px-2 py-0.5 rounded-DEFAULT bg-primary-fixed text-on-primary-fixed-variant font-label-caps text-label-caps border border-primary/20">Citation</span>
+</div>
+</div>
+</header>
+<!-- Content Area: CSS Grid based Layout -->
+<div class="flex-1 p-md flex flex-col gap-md min-h-0 overflow-hidden">
+<!-- Middle Section: Input, Q&A, Viewer -->
+<div class="flex-1 flex gap-md min-h-0">
+<!-- Left: Query & Filters Panel -->
+<section class="w-[280px] flex flex-col border border-outline-variant bg-surface rounded-lg overflow-hidden shrink-0">
+<div class="px-md py-sm border-b border-outline-variant bg-surface-container-lowest">
+<h2 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">search</span>
+                            Intelligence Query
+                        </h2>
+</div>
+<div class="p-md flex flex-col gap-md overflow-y-auto custom-scrollbar">
+<!-- Input -->
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant block mb-xs">Natural Language Ask</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded-DEFAULT p-sm font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary resize-none h-24 placeholder-on-surface-variant/50" placeholder="e.g., 'Summarize recent MRI findings regarding the secondary lesion.'"></textarea>
+</div>
+<!-- Filters -->
+<div class="border-t border-outline-variant pt-md">
+<h3 class="font-label-caps text-label-caps text-on-surface mb-sm">Context Filters</h3>
+<div class="space-y-sm">
+<div>
+<label class="font-table-text text-table-text text-on-surface-variant block mb-1">Date Range</label>
+<select class="w-full h-row-height-sm bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-sm font-table-text text-on-surface focus:border-primary">
+<option>Last 6 Months</option>
+<option>Last 12 Months</option>
+<option>All Time</option>
+</select>
+</div>
+<div class="pt-sm">
+<label class="font-table-text text-table-text text-on-surface-variant block mb-2">Source Types</label>
+<label class="flex items-center gap-sm mb-1.5 cursor-pointer">
+<input checked="" class="rounded-DEFAULT border-outline-variant text-primary focus:ring-primary w-4 h-4 bg-surface-container-lowest" type="checkbox"/>
+<span class="font-table-text text-on-surface">Clinical Notes (Text)</span>
+</label>
+<label class="flex items-center gap-sm mb-1.5 cursor-pointer">
+<input checked="" class="rounded-DEFAULT border-outline-variant text-primary focus:ring-primary w-4 h-4 bg-surface-container-lowest" type="checkbox"/>
+<span class="font-table-text text-on-surface">Imaging Reports (Vector)</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer">
+<input checked="" class="rounded-DEFAULT border-outline-variant text-primary focus:ring-primary w-4 h-4 bg-surface-container-lowest" type="checkbox"/>
+<span class="font-table-text text-on-surface">Lab Results (Structured)</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<div class="p-md mt-auto border-t border-outline-variant bg-surface-container-lowest">
+<button class="w-full h-row-height-md bg-primary hover:bg-primary/90 text-on-primary rounded-DEFAULT font-panel-title text-panel-title transition-colors flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+                            Synthesize Answer
+                        </button>
+</div>
+</section>
+<!-- Center: Answer Canvas -->
+<section class="flex-1 flex flex-col border border-outline-variant bg-surface rounded-lg overflow-hidden min-w-[400px]">
+<div class="px-md py-sm border-b border-outline-variant bg-surface-container-lowest flex justify-between items-center">
+<h2 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">forum</span>
+                            Agent Synthesis
+                        </h2>
+<!-- Confidence Meter Component -->
+<div class="flex items-center gap-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Synth Confidence</span>
+<div class="w-24 h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 92%;"></div>
+</div>
+<span class="font-mono-code text-[11px] text-on-surface">92%</span>
+</div>
+</div>
+<div class="flex-1 p-lg overflow-y-auto custom-scrollbar flex flex-col gap-lg bg-surface-bright">
+<!-- User Query -->
+<div class="flex flex-col gap-xs items-end max-w-[85%] self-end">
+<div class="bg-surface-container border border-outline-variant rounded-lg rounded-tr-none p-md">
+<p class="font-body-md text-on-surface">Has there been any progression in the secondary hepatic lesions since the last scan in October?</p>
+</div>
+<span class="font-table-text text-[11px] text-on-surface-variant">10:42 AM</span>
+</div>
+<!-- AI Response -->
+<div class="flex gap-md max-w-[90%]">
+<div class="w-8 h-8 rounded-full bg-primary-fixed border border-primary/20 flex flex-col items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-primary text-[18px]">neurology</span>
+</div>
+<div class="flex flex-col gap-xs flex-1">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg rounded-tl-none p-md shadow-sm">
+<p class="font-body-md text-on-surface leading-relaxed mb-md">
+                                        Based on the comparative analysis of the abdominal MRI from October 12th and the recent scan on January 5th, there is evidence of slight progression.
+                                    </p>
+<p class="font-body-md text-on-surface leading-relaxed mb-md">
+                                        The largest secondary lesion in segment VI has increased in size from 1.2 cm to approximately 1.5 cm. 
+                                        <!-- Evidence Citation inline -->
+<button class="inline-flex items-center justify-center w-5 h-5 rounded-DEFAULT bg-secondary-container text-on-secondary-container font-mono-code text-[10px] hover:bg-primary hover:text-on-primary border border-outline-variant transition-colors align-super cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none" title="View Source IMG-482">1</button>
+                                        Other smaller adjacent satellite nodules appear stable with no new definitive lesions identified in the remaining hepatic segments.
+                                        <button class="inline-flex items-center justify-center w-5 h-5 rounded-DEFAULT bg-secondary-container text-on-secondary-container font-mono-code text-[10px] hover:bg-primary hover:text-on-primary border border-outline-variant transition-colors align-super cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none" title="View Source TXT-991">2</button>
+</p>
+<!-- Embedded Citation Card (Bottom of panel style) -->
+<div class="mt-md border-t border-outline-variant pt-md">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Primary Evidence</h4>
+<div class="bg-surface-container p-sm border border-outline-variant rounded-DEFAULT flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="font-mono-code text-[11px] bg-outline-variant/30 px-1.5 py-0.5 rounded-DEFAULT text-on-surface">[1]</span>
+<span class="font-table-text text-table-text text-on-surface truncate max-w-[250px]">MRI Abdomen W/O Contrast - Jan 5</span>
+</div>
+<button class="font-panel-title text-[12px] text-primary hover:underline">View Source</button>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-sm pl-1">
+<span class="font-table-text text-[11px] text-on-surface-variant">Nexus Context Agent</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-table-text text-[11px] text-on-surface-variant">10:42 AM</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right: Source Viewer -->
+<section class="w-[340px] flex flex-col border border-outline-variant bg-surface rounded-lg overflow-hidden shrink-0">
+<div class="px-md py-sm border-b border-outline-variant bg-secondary text-on-secondary flex justify-between items-center">
+<h2 class="font-panel-title text-panel-title flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">find_in_page</span>
+                            Source Viewer
+                        </h2>
+<span class="font-mono-code text-[11px] px-2 py-0.5 bg-background/20 rounded-DEFAULT border border-on-secondary/20">Ref: [1] IMG-482</span>
+</div>
+<div class="flex-1 flex flex-col bg-surface-container-lowest overflow-hidden">
+<!-- Image Area -->
+<div class="h-[220px] bg-background border-b border-outline-variant relative group overflow-hidden">
+<img class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" data-alt="A clinical high-resolution MRI scan of an abdomen displayed on a sterile, dark-themed medical diagnostic interface. The scan highlights hepatic segments with precise green and blue bounding box annotations indicating lesions. The surrounding UI features small, technical readouts and contrast adjustment sliders in a highly professional, clinical setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByNSo--Gnvn7mkWr4bbUff8hXDA77nR86ehAwzB1ciXAAv0WvshgZ31QtUzmkxTmU0zlm_asocbvXnaYjzba4da9YZyluFUUPYzSEzozc9ZUauyFRdvSopSK8PtAY7UY-mv6MetrWCKpT5NR-hcHi-QGjcBj7wC8XVmCaLmMsn0gq3YKs6GQTyy9UDGx85L2rNgqvuptXMrB9auzutrtdQJ1MXd3Y6hDiBu8y0DcQDQF-dxiY7Y8e__XtB1m-uO_O8cX1FF93E0Pq6"/>
+<!-- Overlay tools -->
+<div class="absolute top-2 right-2 flex gap-xs bg-surface/80 backdrop-blur-sm p-1 rounded-DEFAULT border border-outline-variant">
+<button class="w-6 h-6 flex items-center justify-center text-on-surface hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">zoom_in</span></button>
+<button class="w-6 h-6 flex items-center justify-center text-on-surface hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">contrast</span></button>
+</div>
+</div>
+<!-- Extracted Data Context -->
+<div class="p-md flex-1 overflow-y-auto custom-scrollbar">
+<div class="mb-md">
+<h3 class="font-panel-title text-panel-title text-on-surface mb-xs">Extracted Finding</h3>
+<div class="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-sm">
+<p class="font-body-md text-on-surface">"...lesion in segment VI measuring 1.5 x 1.4 cm, increased from prior exam (previously 1.2 cm). Margins remain well-defined."</p>
+</div>
+</div>
+<h3 class="font-panel-title text-panel-title text-on-surface mb-xs border-b border-outline-variant pb-1">Metadata</h3>
+<table class="w-full mt-2">
+<tbody class="text-left font-table-text text-table-text">
+<tr class="border-b border-outline-variant/50">
+<th class="py-1 text-on-surface-variant font-normal w-1/3 align-top">Study Date:</th>
+<td class="py-1 text-on-surface font-mono-code text-[12px]">2024-01-05</td>
+</tr>
+<tr class="border-b border-outline-variant/50">
+<th class="py-1 text-on-surface-variant font-normal align-top">Modality:</th>
+<td class="py-1 text-on-surface">MRI W/O Contrast</td>
+</tr>
+<tr class="border-b border-outline-variant/50">
+<th class="py-1 text-on-surface-variant font-normal align-top">Vector Similarity:</th>
+<td class="py-1 text-on-surface font-mono-code text-[12px] text-primary">0.8924</td>
+</tr>
+<tr>
+<th class="py-1 text-on-surface-variant font-normal align-top">Agent:</th>
+<td class="py-1 text-on-surface">Vision Extractor V3</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+<!-- Bottom: Retrieved Sources Table -->
+<section class="h-[220px] flex flex-col border border-outline-variant bg-surface rounded-lg overflow-hidden shrink-0">
+<div class="px-md h-row-height-md border-b border-outline-variant bg-surface-container-lowest flex justify-between items-center shrink-0">
+<h2 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">list_alt</span>
+                        Retrieved Context Sources
+                    </h2>
+<span class="font-table-text text-[12px] text-on-surface-variant">Showing top 4 vectorized matches</span>
+</div>
+<div class="flex-1 overflow-auto custom-scrollbar">
+<table class="w-full text-left font-table-text text-table-text table-zebra border-collapse">
+<thead class="sticky top-0 bg-surface border-b border-outline-variant shadow-sm z-10">
+<tr>
+<th class="py-2 px-md font-panel-title text-[12px] text-on-surface-variant w-16">Ref</th>
+<th class="py-2 px-md font-panel-title text-[12px] text-on-surface-variant w-24">Type</th>
+<th class="py-2 px-md font-panel-title text-[12px] text-on-surface-variant w-32">Date</th>
+<th class="py-2 px-md font-panel-title text-[12px] text-on-surface-variant w-24">Relevance</th>
+<th class="py-2 px-md font-panel-title text-[12px] text-on-surface-variant">Document / Source Name</th>
+<th class="py-2 px-md font-panel-title text-[12px] text-on-surface-variant w-12"></th>
+</tr>
+</thead>
+<tbody class="text-on-surface">
+<tr class="h-row-height-sm border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<td class="px-md font-mono-code text-[11px] font-bold text-primary">[1]</td>
+<td class="px-md"><span class="px-1.5 py-0.5 rounded-DEFAULT bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-label-caps border border-tertiary/20">Image</span></td>
+<td class="px-md font-mono-code text-[12px]">2024-01-05</td>
+<td class="px-md">
+<div class="flex items-center gap-1">
+<div class="w-12 h-1.5 bg-surface-variant rounded-full overflow-hidden"><div class="h-full bg-primary" style="width: 89%;"></div></div>
+<span class="text-[10px] font-mono-code">.89</span>
+</div>
+</td>
+<td class="px-md truncate max-w-[300px]">MRI Abdomen W/O Contrast - Series 4</td>
+<td class="px-md text-right"><button class="text-outline hover:text-primary transition-colors opacity-0 group-hover:opacity-100"><span class="material-symbols-outlined text-[16px]">visibility</span></button></td>
+</tr>
+<tr class="h-row-height-sm border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<td class="px-md font-mono-code text-[11px]">[2]</td>
+<td class="px-md"><span class="px-1.5 py-0.5 rounded-DEFAULT bg-secondary-fixed text-on-secondary-fixed text-[10px] font-label-caps border border-secondary/20">Text</span></td>
+<td class="px-md font-mono-code text-[12px]">2023-10-12</td>
+<td class="px-md">
+<div class="flex items-center gap-1">
+<div class="w-12 h-1.5 bg-surface-variant rounded-full overflow-hidden"><div class="h-full bg-primary" style="width: 76%;"></div></div>
+<span class="text-[10px] font-mono-code">.76</span>
+</div>
+</td>
+<td class="px-md truncate max-w-[300px]">Radiology Report - Previous MRI findings</td>
+<td class="px-md text-right"><button class="text-outline hover:text-primary transition-colors opacity-0 group-hover:opacity-100"><span class="material-symbols-outlined text-[16px]">visibility</span></button></td>
+</tr>
+<tr class="h-row-height-sm border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<td class="px-md font-mono-code text-[11px]">[3]</td>
+<td class="px-md"><span class="px-1.5 py-0.5 rounded-DEFAULT bg-secondary-fixed text-on-secondary-fixed text-[10px] font-label-caps border border-secondary/20">Text</span></td>
+<td class="px-md font-mono-code text-[12px]">2024-01-08</td>
+<td class="px-md">
+<div class="flex items-center gap-1">
+<div class="w-12 h-1.5 bg-surface-variant rounded-full overflow-hidden"><div class="h-full bg-primary" style="width: 62%;"></div></div>
+<span class="text-[10px] font-mono-code">.62</span>
+</div>
+</td>
+<td class="px-md truncate max-w-[300px]">Oncology Clinic Note - Dr. R. Vance</td>
+<td class="px-md text-right"><button class="text-outline hover:text-primary transition-colors opacity-0 group-hover:opacity-100"><span class="material-symbols-outlined text-[16px]">visibility</span></button></td>
+</tr>
+<tr class="h-row-height-sm border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<td class="px-md font-mono-code text-[11px]">[4]</td>
+<td class="px-md"><span class="px-1.5 py-0.5 rounded-DEFAULT bg-surface-variant text-on-surface-variant text-[10px] font-label-caps border border-outline/20">Struct</span></td>
+<td class="px-md font-mono-code text-[12px]">2024-01-04</td>
+<td class="px-md">
+<div class="flex items-center gap-1">
+<div class="w-12 h-1.5 bg-surface-variant rounded-full overflow-hidden"><div class="h-full bg-outline" style="width: 45%;"></div></div>
+<span class="text-[10px] font-mono-code">.45</span>
+</div>
+</td>
+<td class="px-md truncate max-w-[300px]">Comprehensive Metabolic Panel (CMP)</td>
+<td class="px-md text-right"><button class="text-outline hover:text-primary transition-colors opacity-0 group-hover:opacity-100"><span class="material-symbols-outlined text-[16px]">visibility</span></button></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+</body></html>

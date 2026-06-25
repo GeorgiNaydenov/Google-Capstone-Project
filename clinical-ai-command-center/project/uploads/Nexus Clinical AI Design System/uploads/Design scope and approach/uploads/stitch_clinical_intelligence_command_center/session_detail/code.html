@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Clinical AI - Session Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdbcd",
+                        "tertiary": "#943700",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "on-tertiary-container": "#ffede6",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "surface": "#faf8ff",
+                        "on-primary-fixed": "#00174b",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#57657a",
+                        "primary": "#004ac6",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "on-background": "#191b23",
+                        "outline-variant": "#c3c6d7",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2e3039",
+                        "surface-bright": "#faf8ff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-primary-container": "#eeefff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-surface-variant": "#434655",
+                        "surface-container-highest": "#e1e2ed",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-container": "#ededf9",
+                        "surface-tint": "#0053db",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-variant": "#e1e2ed",
+                        "surface-container-low": "#f3f3fe",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-surface": "#191b23",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "secondary": "#515f74",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#d5e3fc",
+                        "surface-dim": "#d9d9e5",
+                        "tertiary-container": "#bc4800",
+                        "outline": "#737686",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-primary": "#b4c5ff",
+                        "background": "#faf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "row-height-sm": "36px",
+                        "row-height-md": "44px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "xxl": "32px",
+                        "xl": "24px",
+                        "sm": "8px",
+                        "lg": "16px"
+                    },
+                    "fontFamily": {
+                        "panel-title": ["Inter"],
+                        "table-text": ["Inter"],
+                        "section-title": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "page-title": ["Inter"],
+                        "mono-code": ["JetBrains Mono"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "panel-title": ["15px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "table-text": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "section-title": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "page-title": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "mono-code": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #faf8ff; color: #191b23; margin: 0; padding: 0; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+        .data-table th { background-color: #f3f3fe; text-align: left; padding: 0 12px; height: 36px; border-bottom: 1px solid #c3c6d7; font-weight: 600; color: #434655; }
+        .data-table td { padding: 0 12px; height: 36px; border-bottom: 1px solid #e1e2ed; }
+        .data-table tr:nth-child(even) td { background-color: #faf8ff; }
+        .data-table tr:nth-child(odd) td { background-color: #ffffff; }
+        .confidence-track { height: 4px; background-color: #e1e2ed; border-radius: 2px; overflow: hidden; width: 60px; display: inline-block; vertical-align: middle; }
+        .confidence-fill { height: 100%; }
+        .confidence-fill.high { background-color: #004ac6; }
+        .confidence-fill.medium { background-color: #bc4800; }
+        .status-chip { display: inline-flex; items-center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+        .status-chip.verified { background-color: rgba(0, 74, 198, 0.1); color: #004ac6; border: 1px solid #004ac6; }
+        .panel { background-color: #ffffff; border: 1px solid #e1e2ed; border-radius: 4px; }
+        .panel-header { padding: 12px 16px; border-bottom: 1px solid #e1e2ed; background-color: #f3f3fe; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar (Suppressed as this is a focused detail view, but we keep a minimal header for context) -->
+<header class="bg-surface dark:bg-inverse-surface border-b border-outline-variant flex justify-between items-center h-row-height-md px-lg w-full z-50 shrink-0">
+<div class="flex items-center gap-md">
+<button aria-label="Go back" class="text-on-surface-variant hover:bg-surface-container-high p-sm rounded-full transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="font-page-title text-page-title text-primary tracking-tight">Nexus Clinical AI</div>
+</div>
+<div class="flex items-center gap-md text-on-surface-variant">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="material-symbols-outlined">settings</span>
+<span class="material-symbols-outlined">sync</span>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-xl bg-background">
+<!-- Session Header -->
+<div class="mb-xl flex justify-between items-start">
+<div>
+<h1 class="font-page-title text-page-title text-on-surface mb-xs flex items-center gap-sm">
+                        Session Detail: SESS-4492
+                        <span class="status-chip verified ml-md">Verified</span>
+</h1>
+<div class="font-body-md text-on-surface-variant flex gap-xl">
+<span><strong class="text-on-surface">Date:</strong> 2023-10-27 14:30 UTC</span>
+<span><strong class="text-on-surface">Patient:</strong> Doe, John (ID: PT-8921)</span>
+</div>
+</div>
+<div class="flex gap-md">
+<button class="px-lg py-sm border border-outline-variant rounded text-on-surface-variant hover:bg-surface-container-high font-panel-title text-panel-title transition-colors">Re-run Agent</button>
+<button class="px-lg py-sm border border-outline-variant rounded text-on-surface-variant hover:bg-surface-container-high font-panel-title text-panel-title transition-colors">Edit</button>
+<button class="px-lg py-sm bg-primary text-on-primary rounded hover:bg-primary-container font-panel-title text-panel-title transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.05)]">Approve</button>
+</div>
+</div>
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-12 gap-xl">
+<!-- Left Column (Images & Extraction) -->
+<div class="col-span-8 flex flex-col gap-xl">
+<!-- Uploaded Images -->
+<div class="panel">
+<div class="panel-header flex justify-between items-center">
+<h2 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-outline">image</span>
+                                Uploaded Evidence
+                            </h2>
+<span class="font-label-caps text-label-caps text-on-surface-variant">2 ITEMS</span>
+</div>
+<div class="p-lg grid grid-cols-2 gap-lg bg-surface-container-lowest">
+<div class="relative group border border-outline-variant rounded overflow-hidden aspect-[4/3]">
+<img class="w-full h-full object-cover" data-alt="A highly detailed, crisp, clinical close-up photograph of a printed medical lab report resting on a sterile stainless steel surface. The lighting is bright, even, and shadowless, emphasizing the text and numerical data. A modern, evidence-driven medical aesthetic with a cool, clinical color palette dominated by whites, light grays, and subtle blues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSqokfm5IYLnp2UGSsPpZBjrdgs9utaPrxtL2AAtrqN0ZPajk0ODdJN3vxVaxUD6LdmcZSvuDEM7YxAxnJH75dvmq_6kP1NJZpRWlkUVdo5eqBL4GMiz8jKmXj4N0sk8mtXMbPMwDN-DSdVqvTwwXPIdopX6dp0FaA8K0vStuxlO3zBWtWk4RsFo7sIMjLGQvEKgBlJHcAuG5iNXP0TewOLOe2KUoZcrdaroBLkqeRFJWw9AvwqS2U3Z07DPYQLlavkJzaw5Wu8mB7"/>
+<div class="absolute bottom-0 left-0 right-0 bg-inverse-surface/80 p-xs text-inverse-on-surface font-label-caps text-label-caps opacity-0 group-hover:opacity-100 transition-opacity">Lab_Results_01.jpg</div>
+</div>
+<div class="relative group border border-outline-variant rounded overflow-hidden aspect-[4/3]">
+<img class="w-full h-full object-cover" data-alt="A highly detailed, professional medical imaging scan (MRI or CT) displayed on a high-resolution, dark-mode clinical monitor. The scan shows clear anatomical structures in grayscale. The surrounding interface is minimal and highly technical, emitting a soft, precise glow. The mood is serious, analytical, and technologically advanced." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA13Y6_OOAjMfMFPFL4m_twCNFog3fLn_u-MlvCDZgLMg6fXdqVbnINSmHUc9pSBAz-hFMyOoAF-XsVrIB63lIKVMHBoTX16mk2EFiW0FJTzs4LkGkbVOTeN0QcPZYOuEiG1hsREmyEpylTR525hzrnobD-69XpvMM3QRgXtAoIxRRo6hYUXaEciFoMk7Ef_bdxbdlvcnji6sdvphW7gWPgnZmS194_QoF5naZQG6X62GzFnlJ5bxWXLVSb_EUjVRqa8m5rmjfcj8sG"/>
+<div class="absolute bottom-0 left-0 right-0 bg-inverse-surface/80 p-xs text-inverse-on-surface font-label-caps text-label-caps opacity-0 group-hover:opacity-100 transition-opacity">Scan_Axial_T2.dcm</div>
+</div>
+</div>
+</div>
+<!-- Extracted Clinical Findings -->
+<div class="panel flex-1">
+<div class="panel-header">
+<h2 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-outline">list_alt</span>
+                                Extracted Clinical Findings
+                            </h2>
+</div>
+<div class="overflow-x-auto">
+<table class="data-table w-full font-table-text text-table-text">
+<thead>
+<tr>
+<th>Field</th>
+<th>Extracted Value</th>
+<th>Source</th>
+<th>Confidence</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="font-medium text-on-surface">Hemoglobin</td>
+<td>13.8 g/dL</td>
+<td><span class="text-primary hover:underline cursor-pointer border border-primary-fixed bg-surface-container rounded px-sm py-[2px] text-[11px]">Lab_Results_01</span></td>
+<td>
+<div class="flex items-center gap-sm">
+<div class="confidence-track"><div class="confidence-fill high" style="width: 98%"></div></div>
+<span class="text-on-surface-variant font-mono-code text-mono-code">98%</span>
+</div>
+</td>
+<td><span class="material-symbols-outlined text-outline hover:text-primary cursor-pointer text-[18px]">edit</span></td>
+</tr>
+<tr>
+<td class="font-medium text-on-surface">White Blood Cell</td>
+<td>6.5 x10^3/uL</td>
+<td><span class="text-primary hover:underline cursor-pointer border border-primary-fixed bg-surface-container rounded px-sm py-[2px] text-[11px]">Lab_Results_01</span></td>
+<td>
+<div class="flex items-center gap-sm">
+<div class="confidence-track"><div class="confidence-fill high" style="width: 95%"></div></div>
+<span class="text-on-surface-variant font-mono-code text-mono-code">95%</span>
+</div>
+</td>
+<td><span class="material-symbols-outlined text-outline hover:text-primary cursor-pointer text-[18px]">edit</span></td>
+</tr>
+<tr>
+<td class="font-medium text-on-surface">Platelet Count</td>
+<td>240 x10^3/uL</td>
+<td><span class="text-primary hover:underline cursor-pointer border border-primary-fixed bg-surface-container rounded px-sm py-[2px] text-[11px]">Lab_Results_01</span></td>
+<td>
+<div class="flex items-center gap-sm">
+<div class="confidence-track"><div class="confidence-fill high" style="width: 92%"></div></div>
+<span class="text-on-surface-variant font-mono-code text-mono-code">92%</span>
+</div>
+</td>
+<td><span class="material-symbols-outlined text-outline hover:text-primary cursor-pointer text-[18px]">edit</span></td>
+</tr>
+<tr>
+<td class="font-medium text-on-surface">Diagnosis Note</td>
+<td class="truncate max-w-[200px]" title="Mild irregular margins observed in lower right quadrant. Follow-up recommended.">Mild irregular margins obs...</td>
+<td><span class="text-primary hover:underline cursor-pointer border border-primary-fixed bg-surface-container rounded px-sm py-[2px] text-[11px]">Scan_Axial_T2</span></td>
+<td>
+<div class="flex items-center gap-sm">
+<div class="confidence-track"><div class="confidence-fill medium" style="width: 78%"></div></div>
+<span class="text-on-surface-variant font-mono-code text-mono-code">78%</span>
+</div>
+</td>
+<td><span class="material-symbols-outlined text-outline hover:text-primary cursor-pointer text-[18px]">edit</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Column (Meta & Status) -->
+<div class="col-span-4 flex flex-col gap-xl">
+<!-- Agent Reasoning -->
+<div class="panel bg-surface-container-lowest">
+<div class="panel-header">
+<h2 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-outline">memory</span>
+                                Agent Reasoning
+                            </h2>
+</div>
+<div class="p-lg flex flex-col gap-md">
+<div class="flex justify-between items-center p-sm bg-surface rounded border border-outline-variant">
+<div class="flex items-center gap-sm text-on-surface font-body-md text-body-md">
+<span class="material-symbols-outlined text-primary text-[18px]">document_scanner</span>
+                                    OCR Vision Agent
+                                </div>
+<span class="font-mono-code text-mono-code text-on-surface-variant">0.4s</span>
+</div>
+<div class="flex justify-between items-center p-sm bg-surface rounded border border-outline-variant">
+<div class="flex items-center gap-sm text-on-surface font-body-md text-body-md">
+<span class="material-symbols-outlined text-primary text-[18px]">data_object</span>
+                                    Structuring Agent
+                                </div>
+<span class="font-mono-code text-mono-code text-on-surface-variant">1.2s</span>
+</div>
+<div class="flex justify-between items-center p-sm bg-surface rounded border border-outline-variant">
+<div class="flex items-center gap-sm text-on-surface font-body-md text-body-md">
+<span class="material-symbols-outlined text-primary text-[18px]">fact_check</span>
+                                    Validation Agent
+                                </div>
+<span class="font-mono-code text-mono-code text-on-surface-variant">0.8s</span>
+</div>
+</div>
+</div>
+<!-- Storage & Sync Status -->
+<div class="panel bg-surface-container-lowest">
+<div class="panel-header">
+<h2 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-outline">cloud_done</span>
+                                Storage &amp; Sync
+                            </h2>
+</div>
+<div class="p-lg flex justify-between items-center">
+<div class="flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined text-primary fill">cloud</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">GCS</span>
+</div>
+<div class="h-[1px] w-8 bg-outline-variant"></div>
+<div class="flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined text-primary fill">database</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">SQL</span>
+</div>
+<div class="h-[1px] w-8 bg-outline-variant"></div>
+<div class="flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined text-primary fill">local_fire_department</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">FS</span>
+</div>
+<div class="h-[1px] w-8 bg-outline-variant"></div>
+<div class="flex flex-col items-center gap-xs">
+<span class="material-symbols-outlined text-outline">hub</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">V-DB</span>
+</div>
+</div>
+</div>
+<!-- Audit Trail -->
+<div class="panel flex-1 bg-surface-container-lowest flex flex-col">
+<div class="panel-header">
+<h2 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-outline">history</span>
+                                Audit Trail
+                            </h2>
+</div>
+<div class="p-lg flex-1 overflow-y-auto">
+<div class="relative border-l border-outline-variant ml-[11px] pl-lg pb-lg">
+<div class="absolute w-[8px] h-[8px] bg-primary rounded-full left-[-4.5px] top-[4px]"></div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-xs">14:30:12 UTC</div>
+<div class="font-body-md text-body-md text-on-surface">Data Ingestion via API</div>
+</div>
+<div class="relative border-l border-outline-variant ml-[11px] pl-lg pb-lg">
+<div class="absolute w-[8px] h-[8px] bg-primary rounded-full left-[-4.5px] top-[4px]"></div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-xs">14:30:15 UTC</div>
+<div class="font-body-md text-body-md text-on-surface">AI Extraction Initiated</div>
+</div>
+<div class="relative border-l border-outline-variant ml-[11px] pl-lg pb-lg border-transparent">
+<div class="absolute w-[8px] h-[8px] bg-surface-container-highest border border-outline-variant rounded-full left-[-4.5px] top-[4px]"></div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-xs">14:35:00 UTC</div>
+<div class="font-body-md text-body-md text-on-surface-variant">Clinician Review Pending...</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,22 @@
+<!-- @dsCard group="Spacing" viewport="700x170" name="Row Heights & Borders" subtitle="Standardized control heights, 1px hairlines" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin:0; padding:18px; background:var(--surface-container-lowest); font-family:var(--font-sans); }
+  .stack { display:flex; flex-direction:column; gap:10px; max-width:380px; }
+  .ctl { display:flex; align-items:center; justify-content:space-between; padding:0 12px; border:1px solid var(--outline-variant); border-radius:var(--radius-md); background:var(--surface-container-low); font-size:13px; color:var(--on-surface); }
+  .ctl.active { border:2px solid var(--primary); }
+  .val { font-family:var(--font-mono); font-size:10px; color:var(--on-surface-variant); }
+</style>
+</head>
+<body>
+<div class="stack">
+  <div class="ctl" style="height:36px">Compact row / input <span class="val">36px</span></div>
+  <div class="ctl" style="height:44px">Default row / app bar <span class="val">44px</span></div>
+  <div class="ctl active" style="height:44px">Active focus — 2px primary border <span class="val">no shadow</span></div>
+</div>
+</body>
+</html>

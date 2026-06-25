@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Patient Overview - Clinical Command</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Strict Data Table Row Heights */
+        .table-row-compact { height: 36px; }
+        .table-row-default { height: 44px; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-error": "#ffffff",
+                      "surface": "#faf8ff",
+                      "inverse-on-surface": "#f0f0fb",
+                      "primary-fixed": "#dbe1ff",
+                      "surface-container-low": "#f3f3fe",
+                      "on-tertiary-fixed-variant": "#7d2d00",
+                      "primary": "#004ac6",
+                      "outline-variant": "#c3c6d7",
+                      "tertiary": "#943700",
+                      "on-secondary-fixed-variant": "#3a485b",
+                      "surface-container-highest": "#e1e2ed",
+                      "error-container": "#ffdad6",
+                      "inverse-primary": "#b4c5ff",
+                      "on-surface": "#191b23",
+                      "surface-container-high": "#e7e7f3",
+                      "background": "#faf8ff",
+                      "secondary-fixed-dim": "#b9c7df",
+                      "on-surface-variant": "#434655",
+                      "tertiary-fixed": "#ffdbcd",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#2563eb",
+                      "on-tertiary-fixed": "#360f00",
+                      "on-tertiary-container": "#ffede6",
+                      "on-primary-container": "#eeefff",
+                      "secondary-container": "#d5e3fc",
+                      "error": "#ba1a1a",
+                      "on-error-container": "#93000a",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#faf8ff",
+                      "on-secondary-fixed": "#0d1c2e",
+                      "on-tertiary": "#ffffff",
+                      "outline": "#737686",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-dim": "#d9d9e5",
+                      "secondary": "#515f74",
+                      "on-primary": "#ffffff",
+                      "surface-tint": "#0053db",
+                      "on-primary-fixed": "#00174b",
+                      "inverse-surface": "#2e3039",
+                      "tertiary-container": "#bc4800",
+                      "tertiary-fixed-dim": "#ffb596",
+                      "on-background": "#191b23",
+                      "surface-variant": "#e1e2ed",
+                      "surface-container": "#ededf9",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-secondary-container": "#57657a",
+                      "secondary-fixed": "#d5e3fc"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "row-height-md": "44px",
+                      "xs": "4px",
+                      "xl": "24px",
+                      "lg": "16px",
+                      "row-height-sm": "36px",
+                      "sm": "8px",
+                      "md": "12px",
+                      "xxl": "32px"
+              },
+              "fontFamily": {
+                      "label-caps": ["Inter"],
+                      "mono-code": ["JetBrains Mono"],
+                      "table-text": ["Inter"],
+                      "section-title": ["Inter"],
+                      "panel-title": ["Inter"],
+                      "page-title": ["Inter"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "mono-code": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "table-text": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "section-title": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "panel-title": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                      "page-title": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased overflow-hidden flex h-screen">
+<!-- SideNavBar (Semantic Intent: Dashboard active for Patient Overview) -->
+<nav class="bg-surface-container-low border-r border-outline-variant h-screen w-[240px] flex flex-col py-md shrink-0 transition-all duration-200 z-40">
+<!-- Header -->
+<div class="px-lg pb-xl border-b border-outline-variant mb-md">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">
+<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+</div>
+<div>
+<h1 class="font-panel-title text-panel-title font-bold text-on-surface">Clinical Command</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Nexus AI v2.4</p>
+</div>
+</div>
+</div>
+<!-- CTA -->
+<div class="px-lg mb-lg">
+<button class="w-full bg-primary text-on-primary font-panel-title text-panel-title h-row-height-default rounded flex items-center justify-center gap-sm hover:bg-on-primary-fixed-variant transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Session
+            </button>
+</div>
+<!-- Main Nav -->
+<div class="flex-1 overflow-y-auto px-md flex flex-col gap-xs">
+<a class="bg-secondary-container text-on-secondary-container border-l-4 border-primary px-md py-sm rounded-r flex items-center gap-md font-label-caps text-label-caps hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">dashboard</span>
+                Dashboard
+            </a>
+<a class="text-on-surface-variant hover:bg-surface-container-high px-md py-sm rounded flex items-center gap-md font-label-caps text-label-caps transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">biotech</span>
+                Image Extraction
+            </a>
+<a class="text-on-surface-variant hover:bg-surface-container-high px-md py-sm rounded flex items-center gap-md font-label-caps text-label-caps transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+                Multimodal Q&A
+            </a>
+<a class="text-on-surface-variant hover:bg-surface-container-high px-md py-sm rounded flex items-center gap-md font-label-caps text-label-caps transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">database</span>
+                DB Intelligence
+            </a>
+<a class="text-on-surface-variant hover:bg-surface-container-high px-md py-sm rounded flex items-center gap-md font-label-caps text-label-caps transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">policy</span>
+                Audit Logs
+            </a>
+</div>
+<!-- Footer Nav -->
+<div class="px-md pt-md border-t border-outline-variant flex flex-col gap-xs mt-auto">
+<a class="text-on-surface-variant hover:bg-surface-container-high px-md py-sm rounded flex items-center gap-md font-label-caps text-label-caps transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span>
+                Support
+            </a>
+<a class="text-on-surface-variant hover:bg-surface-container-high px-md py-sm rounded flex items-center gap-md font-label-caps text-label-caps transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+                System Status
+            </a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col overflow-hidden">
+<!-- TopNavBar (Intent: Clinician view active) -->
+<header class="bg-surface border-b border-outline-variant flex justify-between items-center h-row-height-md px-lg w-full shrink-0 z-50">
+<div class="flex items-center gap-xl">
+<span class="font-page-title text-page-title text-primary tracking-tight">Nexus Clinical AI</span>
+<!-- RoleSwitcher (Segmented Control style) -->
+<nav class="flex h-full items-end gap-lg pt-sm">
+<a class="text-primary border-b-2 border-primary font-bold font-panel-title text-panel-title pb-sm hover:bg-surface-container-high transition-colors duration-150 ease-in-out px-sm" href="#">Clinician</a>
+<a class="text-on-surface-variant font-panel-title text-panel-title pb-sm hover:bg-surface-container-high transition-colors duration-150 ease-in-out px-sm" href="#">Admin</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<!-- Search on Right -->
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="h-row-height-sm pl-xl pr-sm bg-surface-container-low border border-outline-variant rounded text-table-text font-table-text focus:ring-1 focus:ring-primary focus:border-primary outline-none w-64" placeholder="Search patients, conditions..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high p-xs rounded transition-colors duration-150">
+<span class="material-symbols-outlined">sync</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-high p-xs rounded transition-colors duration-150">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-high p-xs rounded transition-colors duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-xl bg-surface-container-lowest">
+<div class="max-w-7xl mx-auto flex flex-col gap-lg">
+<!-- Header -->
+<div class="flex justify-between items-end mb-sm">
+<div>
+<h2 class="font-page-title text-page-title text-on-surface">Patient Population Overview</h2>
+<p class="font-body-md text-on-surface-variant mt-xs">Real-time aggregate clinical intelligence and agent coverage.</p>
+</div>
+<button class="h-row-height-sm px-md border border-outline-variant rounded flex items-center gap-xs hover:bg-surface-container-low font-panel-title text-panel-title text-primary">
+<span class="material-symbols-outlined text-[16px]">download</span>
+                        Export Data
+                    </button>
+</div>
+<!-- KPI Strip (Compact, bordered, tonal layering) -->
+<div class="grid grid-cols-4 gap-md">
+<div class="border border-outline-variant bg-surface p-md rounded flex flex-col justify-between">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Total Monitored Patients</span>
+<div class="flex items-baseline gap-sm mt-xs">
+<span class="font-page-title text-page-title text-on-surface">14,208</span>
+<span class="text-primary font-table-text text-table-text flex items-center"><span class="material-symbols-outlined text-[14px]">trending_up</span> +2.4%</span>
+</div>
+</div>
+<div class="border border-outline-variant bg-surface p-md rounded flex flex-col justify-between border-l-2 border-l-error">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">High-Risk Trajectories</span>
+<div class="flex items-baseline gap-sm mt-xs">
+<span class="font-page-title text-page-title text-error">482</span>
+<span class="text-error font-table-text text-table-text flex items-center"><span class="material-symbols-outlined text-[14px]">warning</span> Critical</span>
+</div>
+</div>
+<div class="border border-outline-variant bg-surface p-md rounded flex flex-col justify-between">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Pending Clinical Review</span>
+<div class="flex items-baseline gap-sm mt-xs">
+<span class="font-page-title text-page-title text-tertiary">156</span>
+<span class="text-on-surface-variant font-table-text text-table-text">Awaiting sign-off</span>
+</div>
+</div>
+<div class="border border-outline-variant bg-surface-container-low p-md rounded flex flex-col justify-between relative overflow-hidden">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Global AI Coverage Score</span>
+<div class="flex items-baseline gap-sm mt-xs">
+<span class="font-page-title text-page-title text-primary">92%</span>
+<span class="text-primary font-table-text text-table-text">Optimal</span>
+</div>
+<!-- Decorative subtle gradient for 'coverage' feel, keeping it minimal -->
+<div class="absolute bottom-0 left-0 h-1 bg-primary w-[92%] opacity-50"></div>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-md">
+<!-- Left Column: Charts Area (8 cols) -->
+<div class="col-span-8 flex flex-col gap-md">
+<div class="border border-outline-variant bg-surface rounded flex flex-col h-64">
+<div class="border-b border-outline-variant p-md flex justify-between items-center bg-surface-container-low rounded-t">
+<h3 class="font-section-title text-section-title text-on-surface">Risk Distribution</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">bar_chart</span>
+</div>
+<div class="flex-1 p-md flex items-end justify-around gap-sm bg-surface">
+<!-- Simple Structural Bar Chart Representation -->
+<div class="w-12 bg-primary-fixed-dim h-[20%] rounded-t border border-outline-variant"></div>
+<div class="w-12 bg-primary-fixed-dim h-[40%] rounded-t border border-outline-variant"></div>
+<div class="w-12 bg-secondary-fixed h-[70%] rounded-t border border-outline-variant"></div>
+<div class="w-12 bg-primary h-[85%] rounded-t border border-primary"></div>
+<div class="w-12 bg-error-container h-[30%] rounded-t border border-error opacity-70"></div>
+<div class="w-12 bg-error h-[10%] rounded-t border border-error"></div>
+</div>
+</div>
+</div>
+<!-- Right Column: Agent Coverage & Segmentation (4 cols) -->
+<div class="col-span-4 flex flex-col gap-md">
+<!-- Agent Coverage Panel -->
+<div class="border border-outline-variant bg-surface rounded flex flex-col">
+<div class="border-b border-outline-variant p-md bg-surface-container-low rounded-t">
+<h3 class="font-section-title text-section-title text-on-surface">Agent Coverage Status</h3>
+</div>
+<div class="p-md flex flex-col gap-md">
+<!-- Agent Item -->
+<div>
+<div class="flex justify-between font-label-caps text-label-caps mb-xs">
+<span class="text-on-surface">Radiology Extraction Agent</span>
+<span class="text-on-surface-variant">98%</span>
+</div>
+<!-- AgentConfidenceMeter -->
+<div class="h-[4px] w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[98%]"></div>
+</div>
+</div>
+<!-- Agent Item -->
+<div>
+<div class="flex justify-between font-label-caps text-label-caps mb-xs">
+<span class="text-on-surface">Clinical Notes NLP</span>
+<span class="text-on-surface-variant">85%</span>
+</div>
+<div class="h-[4px] w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-surface-tint w-[85%]"></div>
+</div>
+</div>
+<!-- Agent Item -->
+<div>
+<div class="flex justify-between font-label-caps text-label-caps mb-xs">
+<span class="text-on-surface">Genomic Variant DB</span>
+<span class="text-error">42%</span>
+</div>
+<div class="h-[4px] w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-error w-[42%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Full Width: Data Table -->
+<div class="col-span-12 border border-outline-variant bg-surface rounded overflow-hidden">
+<div class="border-b border-outline-variant p-md bg-surface-container-low flex justify-between items-center">
+<h3 class="font-section-title text-section-title text-on-surface">Recent Patient Activity</h3>
+<div class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">filter_list</span> FILTER
+                            </div>
+</div>
+<div class="w-full overflow-x-auto">
+<table class="w-full text-left font-table-text text-table-text">
+<thead class="bg-surface-container border-b border-outline-variant sticky top-0">
+<tr class="table-row-compact">
+<th class="px-md font-panel-title text-panel-title text-on-surface-variant w-1/4">Patient ID</th>
+<th class="px-md font-panel-title text-panel-title text-on-surface-variant w-1/4">Primary Condition</th>
+<th class="px-md font-panel-title text-panel-title text-on-surface-variant w-1/4">Last Encounter</th>
+<th class="px-md font-panel-title text-panel-title text-on-surface-variant w-1/4">AI Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="table-row-compact border-b border-outline-variant hover:bg-surface-container-high transition-colors bg-surface">
+<td class="px-md font-mono-code text-mono-code text-on-surface">PT-2023-8472</td>
+<td class="px-md text-on-surface">Non-Small Cell Lung Cancer</td>
+<td class="px-md text-on-surface-variant">2 hrs ago</td>
+<td class="px-md">
+<!-- StatusChip: Verified -->
+<span class="inline-flex items-center px-sm py-[2px] rounded-sm bg-[#e8f5e9] text-[#2e7d32] border border-[#a5d6a7] font-label-caps text-[10px]">
+<span class="material-symbols-outlined text-[12px] mr-[2px]">check_circle</span> VERIFIED
+                                            </span>
+</td>
+</tr>
+<tr class="table-row-compact border-b border-outline-variant hover:bg-surface-container-high transition-colors bg-surface-container-low">
+<td class="px-md font-mono-code text-mono-code text-on-surface">PT-2023-9104</td>
+<td class="px-md text-on-surface">Type 2 Diabetes, Uncontrolled</td>
+<td class="px-md text-on-surface-variant">5 hrs ago</td>
+<td class="px-md">
+<!-- StatusChip: High Risk -->
+<span class="inline-flex items-center px-sm py-[2px] rounded-sm bg-error-container text-on-error-container border border-[#ffb4ab] font-label-caps text-[10px]">
+<span class="material-symbols-outlined text-[12px] mr-[2px]">warning</span> HIGH RISK
+                                            </span>
+</td>
+</tr>
+<tr class="table-row-compact border-b border-outline-variant hover:bg-surface-container-high transition-colors bg-surface">
+<td class="px-md font-mono-code text-mono-code text-on-surface">PT-2023-1102</td>
+<td class="px-md text-on-surface">Rheumatoid Arthritis</td>
+<td class="px-md text-on-surface-variant">1 day ago</td>
+<td class="px-md">
+<!-- StatusChip: Extracted -->
+<span class="inline-flex items-center px-sm py-[2px] rounded-sm bg-secondary-container text-on-secondary-container border border-[#adcbfa] font-label-caps text-[10px]">
+<span class="material-symbols-outlined text-[12px] mr-[2px]">chip_extraction</span> EXTRACTED
+                                            </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

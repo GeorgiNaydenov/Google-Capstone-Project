@@ -1,0 +1,15 @@
+/* ============================================================
+   ELEVATION — Nexus Clinical AI
+   The system rejects depth-by-shadow. Depth = tonal layering +
+   low-contrast 1px outlines. These minimal shadow tokens exist
+   ONLY for transient floating surfaces (menus, dialogs, toasts).
+   ============================================================ */
+:root {
+  --shadow-none: none;
+  /* Subtle lift for floating UI only — never on static panels/cards */
+  --shadow-popover: 0 2px 8px rgba(25, 27, 35, 0.10), 0 0 0 1px rgba(25, 27, 35, 0.04);
+  --shadow-dialog: 0 8px 28px rgba(25, 27, 35, 0.18), 0 0 0 1px rgba(25, 27, 35, 0.06);
+
+  /* Active focus = 2px primary border, not a glow */
+  --focus-outline: var(--border-width-active) solid var(--primary);
+}

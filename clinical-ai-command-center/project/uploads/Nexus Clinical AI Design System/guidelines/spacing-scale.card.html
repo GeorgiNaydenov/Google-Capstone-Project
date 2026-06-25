@@ -1,0 +1,25 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Spacing Scale" subtitle="4px base unit — compact-first density" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin:0; padding:18px; background:var(--surface-container-lowest); font-family:var(--font-sans); }
+  .row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .item { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .bar { background:var(--primary); height:24px; border-radius:2px; }
+  .lbl { font-family:var(--font-mono); font-size:10px; color:var(--on-surface-variant); }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="item"><div class="bar" style="width:4px"></div><div class="lbl">xs · 4</div></div>
+  <div class="item"><div class="bar" style="width:8px"></div><div class="lbl">sm · 8</div></div>
+  <div class="item"><div class="bar" style="width:12px"></div><div class="lbl">md · 12</div></div>
+  <div class="item"><div class="bar" style="width:16px"></div><div class="lbl">lg · 16</div></div>
+  <div class="item"><div class="bar" style="width:24px"></div><div class="lbl">xl · 24</div></div>
+  <div class="item"><div class="bar" style="width:32px"></div><div class="lbl">xxl · 32</div></div>
+</div>
+</body>
+</html>

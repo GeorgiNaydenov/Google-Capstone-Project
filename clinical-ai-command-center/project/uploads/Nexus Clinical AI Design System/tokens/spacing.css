@@ -1,0 +1,33 @@
+/* ============================================================
+   SPACING, RADII & SIZING — Nexus Clinical AI
+   4px base unit. "Compact-first" density. Whitespace defines
+   groups, not breathability. Fixed control & row heights.
+   ============================================================ */
+:root {
+  /* Spacing scale (4px base) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+
+  /* Standardized heights — vertical predictability */
+  --row-height-sm: 36px;   /* compact rows, small inputs */
+  --row-height-md: 44px;   /* default rows, app bars, primary inputs */
+
+  /* Fixed structural widths */
+  --sidebar-width: 240px;
+  --panel-width: 280px;
+  --panel-width-wide: 320px;
+
+  /* ---- Corner radii — "Soft-Geometric" ---- */
+  --radius-sm: 4px;    /* chips, tags, checkboxes, table-interior elements */
+  --radius-md: 6px;    /* DEFAULT — buttons, inputs, UI cards */
+  --radius-lg: 8px;    /* container panels, modals */
+  --radius-full: 9999px;
+
+  /* Hairline (1px border standard) */
+  --border-width: 1px;
+  --border-width-active: 2px;
+}

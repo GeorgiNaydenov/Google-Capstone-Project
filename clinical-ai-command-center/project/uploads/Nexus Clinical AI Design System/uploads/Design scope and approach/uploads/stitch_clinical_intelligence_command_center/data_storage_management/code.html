@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Clinical AI - Data &amp; Storage Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 20px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Custom Scrollbar for dense data views */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c3c6d7; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #737686; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdbcd", "tertiary": "#943700", "on-tertiary": "#ffffff", "secondary-fixed-dim": "#b9c7df", "on-tertiary-container": "#ffede6", "on-primary": "#ffffff", "primary-container": "#2563eb", "surface": "#faf8ff", "on-primary-fixed": "#00174b", "error": "#ba1a1a", "tertiary-fixed-dim": "#ffb596", "on-error-container": "#93000a", "on-secondary-container": "#57657a", "primary": "#004ac6", "on-secondary-fixed-variant": "#3a485b", "on-background": "#191b23", "outline-variant": "#c3c6d7", "on-secondary": "#ffffff", "inverse-surface": "#2e3039", "surface-bright": "#faf8ff", "on-tertiary-fixed-variant": "#7d2d00", "on-primary-container": "#eeefff", "primary-fixed": "#dbe1ff", "on-surface-variant": "#434655", "surface-container-highest": "#e1e2ed", "inverse-on-surface": "#f0f0fb", "surface-container": "#ededf9", "surface-tint": "#0053db", "error-container": "#ffdad6", "on-tertiary-fixed": "#360f00", "on-primary-fixed-variant": "#003ea8", "surface-variant": "#e1e2ed", "surface-container-low": "#f3f3fe", "surface-container-high": "#e7e7f3", "on-error": "#ffffff", "secondary-fixed": "#d5e3fc", "on-surface": "#191b23", "on-secondary-fixed": "#0d1c2e", "secondary": "#515f74", "surface-container-lowest": "#ffffff", "secondary-container": "#d5e3fc", "surface-dim": "#d9d9e5", "tertiary-container": "#bc4800", "outline": "#737686", "primary-fixed-dim": "#b4c5ff", "inverse-primary": "#b4c5ff", "background": "#faf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "row-height-sm": "36px", "row-height-md": "44px", "xs": "4px", "md": "12px", "xxl": "32px", "xl": "24px", "sm": "8px", "lg": "16px"
+                    },
+                    "fontFamily": {
+                        "panel-title": ["Inter"], "table-text": ["Inter"], "section-title": ["Inter"], "label-caps": ["Inter"], "page-title": ["Inter"], "mono-code": ["JetBrains Mono"], "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "panel-title": ["15px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "table-text": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "section-title": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "page-title": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "mono-code": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface flex h-screen overflow-hidden antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-low text-primary font-label-caps text-label-caps docked left-0 h-screen w-[240px] border-r border-outline-variant flex flex-col h-full py-md shrink-0 transition-all duration-200 z-40">
+<div class="px-lg mb-xl flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+<div>
+<div class="font-panel-title text-panel-title font-bold text-on-surface">Clinical Command</div>
+<div class="text-[10px] text-on-surface-variant font-normal">Nexus AI v2.4</div>
+</div>
+</div>
+<div class="px-md mb-md">
+<button class="w-full bg-primary text-on-primary hover:bg-primary/90 flex items-center justify-center gap-sm py-sm rounded transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                New Session
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto px-sm space-y-xs">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">dashboard</span> Dashboard
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">biotech</span> Image Extraction
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">psychology</span> Multimodal Q&amp;A
+            </a>
+<!-- Active Tab -->
+<a class="flex items-center gap-md px-md py-sm rounded bg-secondary-container text-on-secondary-container border-l-4 border-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">database</span> DB Intelligence
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">policy</span> Audit Logs
+            </a>
+</div>
+<div class="mt-auto px-sm space-y-xs pt-md border-t border-outline-variant mx-sm">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span> Support
+            </a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">check_circle</span> System Status
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="bg-surface text-primary font-panel-title text-panel-title docked full-width top-0 border-b border-outline-variant flex justify-between items-center h-row-height-md px-lg w-full z-30 transition-colors duration-150 ease-in-out shrink-0">
+<div class="flex items-center gap-xl">
+<div class="font-page-title text-page-title text-primary tracking-tight">Nexus Clinical AI</div>
+<div class="hidden md:flex gap-md border-l border-outline-variant pl-lg">
+<a class="text-on-surface-variant hover:bg-surface-container-high px-sm py-xs rounded transition-colors duration-150 ease-in-out" href="#">Clinician</a>
+<a class="text-primary border-b-2 border-primary font-bold px-sm py-xs transition-colors duration-150 ease-in-out" href="#">Admin</a>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">search</span>
+<input class="h-8 bg-surface-container-low border border-outline-variant rounded pl-sm pr-xl text-table-text font-table-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 placeholder:text-outline" placeholder="Search systems..." type="text"/>
+</div>
+<div class="flex items-center gap-xs">
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined">sync</span></button>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined">settings</span></button>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors"><span class="material-symbols-outlined">account_circle</span></button>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-xl bg-surface-container-low">
+<div class="max-w-[1400px] mx-auto space-y-lg">
+<header class="mb-md">
+<h1 class="font-page-title text-page-title text-on-surface">Data &amp; Storage Management</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Infrastructure visibility and cross-layer lineage tracking.</p>
+</header>
+<!-- Data Lineage Visual -->
+<section class="bg-surface border border-outline-variant rounded p-lg">
+<h2 class="font-panel-title text-panel-title text-on-surface mb-md flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px] text-primary">route</span> Pipeline Lineage (Active Session: S-8821)
+                    </h2>
+<div class="flex items-center justify-between gap-sm bg-surface-container-low border border-outline-variant rounded p-md">
+<!-- Step 1 -->
+<div class="flex-1 border border-outline-variant bg-surface rounded p-sm relative">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Stage 1: Raw Ingest</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary">cloud</span>
+<span class="font-mono-code text-mono-code text-on-surface truncate">gs://nexus-clinical-raw/img_8821.dcm</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">arrow_forward</span>
+<!-- Step 2 -->
+<div class="flex-1 border border-outline-variant bg-surface rounded p-sm relative border-primary ring-1 ring-primary">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-xs text-primary">Stage 2: Extraction</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">description</span>
+<span class="font-mono-code text-mono-code text-on-surface truncate">fs/patients/p-441/scans/s-8821</span>
+</div>
+<!-- Status Chip inline -->
+<span class="absolute top-sm right-sm bg-primary/10 text-primary font-label-caps text-[9px] px-1 rounded border border-primary/20">PROCESSING</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant">arrow_forward</span>
+<!-- Step 3 -->
+<div class="flex-1 border border-outline-variant bg-surface-container-highest rounded p-sm relative opacity-60">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Stage 3: Embedding</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">scatter_plot</span>
+<span class="font-mono-code text-mono-code text-on-surface-variant truncate">vdb_index: clinical_text_v2</span>
+</div>
+<span class="absolute top-sm right-sm bg-outline-variant/20 text-on-surface-variant font-label-caps text-[9px] px-1 rounded border border-outline-variant/30">PENDING</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant">arrow_forward</span>
+<!-- Step 4 -->
+<div class="flex-1 border border-outline-variant bg-surface-container-highest rounded p-sm relative opacity-60">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Stage 4: Relational Sync</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant">table</span>
+<span class="font-mono-code text-mono-code text-on-surface-variant truncate">sql: public.clinical_findings</span>
+</div>
+<span class="absolute top-sm right-sm bg-outline-variant/20 text-on-surface-variant font-label-caps text-[9px] px-1 rounded border border-outline-variant/30">PENDING</span>
+</div>
+</div>
+</section>
+<!-- Storage Panels Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-md">
+<!-- Panel 1: GCS -->
+<div class="bg-surface border border-outline-variant rounded flex flex-col overflow-hidden h-[320px]">
+<div class="px-md py-sm border-b border-outline-variant bg-surface-container-lowest flex justify-between items-center">
+<h3 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">cloud</span> GCS Buckets (Images)
+                            </h3>
+<button class="text-primary font-table-text text-[12px] hover:underline">View All</button>
+</div>
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left font-table-text text-table-text whitespace-nowrap">
+<thead class="bg-surface-container-low sticky top-0 z-10 border-b border-outline-variant">
+<tr>
+<th class="px-md py-xs font-semibold text-on-surface-variant">Source File</th>
+<th class="px-md py-xs font-semibold text-on-surface-variant">Size</th>
+<th class="px-md py-xs font-semibold text-on-surface-variant">Status</th>
+<th class="px-md py-xs font-semibold text-on-surface-variant">Link</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="h-row-height-sm hover:bg-surface-container-low">
+<td class="px-md font-mono-code text-[11px]">scan_001.dcm</td>
+<td class="px-md text-on-surface-variant">42 MB</td>
+<td class="px-md"><span class="bg-[#137333]/10 text-[#137333] border border-[#137333]/20 px-1 py-[2px] rounded text-[10px] font-label-caps">VERIFIED</span></td>
+<td class="px-md"><a class="text-primary hover:underline" href="#">S-8820</a></td>
+</tr>
+<tr class="h-row-height-sm bg-surface-container-highest/30 hover:bg-surface-container-low">
+<td class="px-md font-mono-code text-[11px]">scan_002.dcm</td>
+<td class="px-md text-on-surface-variant">18 MB</td>
+<td class="px-md"><span class="bg-[#137333]/10 text-[#137333] border border-[#137333]/20 px-1 py-[2px] rounded text-[10px] font-label-caps">VERIFIED</span></td>
+<td class="px-md"><a class="text-primary hover:underline" href="#">S-8820</a></td>
+</tr>
+<tr class="h-row-height-sm hover:bg-surface-container-low">
+<td class="px-md font-mono-code text-[11px]">scan_003.dcm</td>
+<td class="px-md text-on-surface-variant">105 MB</td>
+<td class="px-md"><span class="bg-primary/10 text-primary border border-primary/20 px-1 py-[2px] rounded text-[10px] font-label-caps">UPLOADING</span></td>
+<td class="px-md"><a class="text-primary hover:underline" href="#">S-8821</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Panel 2: Firestore -->
+<div class="bg-surface border border-outline-variant rounded flex flex-col overflow-hidden h-[320px]">
+<div class="px-md py-sm border-b border-outline-variant bg-surface-container-lowest flex justify-between items-center">
+<h3 class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">description</span> Firestore (JSON)
+                            </h3>
+<button class="text-primary font-table-text text-[12px] hover:underline">View All</button>
+</div>
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left font-table-text text-table-text whitespace-nowrap">
+<thead class="bg-surface-container-low sticky top-0 z-10 border-b border-outline-variant">
+<tr>
+<th class="px-md py-xs font-semibold text-on-surface-variant">Collection/Doc</th>
+<th class="px-md py-xs font-semibold text-on-surface-variant">Last Updated</th>
+<th class="px-md py-xs font-semibold text-on-surface-variant">Status</th>
+<th class="px-md py-xs font-semibold text-on-surface-variant">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="h-row-height-sm hover:bg-surface-container-low">
+<td class="px-md font-mono-code text-[11px] truncate max-w-[150px]">patients/p-441</td>
+<td class="px-md text-on-surface-variant">10:42 AM</td>
+<td class="px-md"><span class="bg-primary/10 text-primary border border-primary/20 px-1 py-[2px] rounded text-[10px] font-label-caps">EXTRACTED</span></td>
+<td class="px-md"><button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined text-[16px]">visibility</span></button></td>
+</tr>
+<tr class="h-row-height-sm bg-surface-container-highest/30 hover:bg-surface-container-low">
+<td class="px-md font-mono-code text-[11px] truncate max-w-[150px]">sessions/s-8820</td>
+<td class="px-md text-on-surface-variant">10:40 AM</td>
+<td class="px-md"><span class="bg-[#137333]/10 text-[#137333] border border-[#137333]/20 px-1 py-[2px] rounded text-[10px] font-label-caps">SYNCED</span></td>
+<td class="px-md"><button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined text-[16px]">visibility</span></button></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

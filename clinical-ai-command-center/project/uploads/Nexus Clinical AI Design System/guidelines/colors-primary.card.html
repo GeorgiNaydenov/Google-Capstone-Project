@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Primary — Clinical Blue" subtitle="Core actions, navigation, structural grounding" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin:0; padding:16px; background:var(--background); font-family:var(--font-sans); }
+  .swatches { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .sw { border:1px solid var(--outline-variant); border-radius:var(--radius-md); overflow:hidden; }
+  .chip { height:52px; }
+  .meta { padding:6px 8px; background:var(--surface-container-lowest); }
+  .name { font-size:11px; font-weight:600; color:var(--on-surface); }
+  .val { font-family:var(--font-mono); font-size:10px; color:var(--on-surface-variant); }
+</style>
+</head>
+<body>
+<div class="swatches">
+  <div class="sw"><div class="chip" style="background:var(--primary)"></div><div class="meta"><div class="name">primary</div><div class="val">#004ac6</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--primary-container)"></div><div class="meta"><div class="name">primary-container</div><div class="val">#2563eb</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--primary-fixed)"></div><div class="meta"><div class="name">primary-fixed</div><div class="val">#dbe1ff</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--primary-fixed-dim)"></div><div class="meta"><div class="name">fixed-dim</div><div class="val">#b4c5ff</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--on-primary-fixed-variant)"></div><div class="meta"><div class="name">on-fixed-variant</div><div class="val">#003ea8</div></div></div>
+</div>
+</body>
+</html>

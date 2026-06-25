@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Clinical AI - Clinical Inbox</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdbcd",
+                        "tertiary": "#943700",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "on-tertiary-container": "#ffede6",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "surface": "#faf8ff",
+                        "on-primary-fixed": "#00174b",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#57657a",
+                        "primary": "#004ac6",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "on-background": "#191b23",
+                        "outline-variant": "#c3c6d7",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2e3039",
+                        "surface-bright": "#faf8ff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-primary-container": "#eeefff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-surface-variant": "#434655",
+                        "surface-container-highest": "#e1e2ed",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-container": "#ededf9",
+                        "surface-tint": "#0053db",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-variant": "#e1e2ed",
+                        "surface-container-low": "#f3f3fe",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-surface": "#191b23",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "secondary": "#515f74",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#d5e3fc",
+                        "surface-dim": "#d9d9e5",
+                        "tertiary-container": "#bc4800",
+                        "outline": "#737686",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-primary": "#b4c5ff",
+                        "background": "#faf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "row-height-sm": "36px",
+                        "row-height-md": "44px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "xxl": "32px",
+                        "xl": "24px",
+                        "sm": "8px",
+                        "lg": "16px"
+                    },
+                    "fontFamily": {
+                        "panel-title": ["Inter"],
+                        "table-text": ["Inter"],
+                        "section-title": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "page-title": ["Inter"],
+                        "mono-code": ["JetBrains Mono"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "panel-title": ["15px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "table-text": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "section-title": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "page-title": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "mono-code": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-surface text-primary font-panel-title text-panel-title border-b border-outline-variant flex justify-between items-center h-row-height-md px-lg w-full z-50 transition-colors duration-150 ease-in-out shrink-0">
+<div class="flex items-center gap-xl">
+<span class="font-page-title text-page-title text-primary tracking-tight">Nexus Clinical AI</span>
+<div class="hidden md:flex h-full gap-lg items-end">
+<a class="h-full flex items-center px-sm text-primary border-b-2 border-primary font-bold" href="#">Clinician</a>
+<a class="h-full flex items-center px-sm text-on-surface-variant hover:bg-surface-container-high transition-colors duration-150 ease-in-out" href="#">Admin</a>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-high rounded transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="bg-surface-container-low text-primary font-label-caps text-label-caps border-r border-outline-variant flex flex-col h-full py-md shrink-0 w-[240px] transition-all duration-200">
+<div class="px-md mb-xl">
+<div class="flex items-center gap-md mb-sm">
+<img class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="A minimalist abstract geometric avatar representing a clinical user profile in a high-tech medical environment. Deep blue and white color scheme. Clean and authoritative aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0hYbdQ6CTnW6cbQQzDak3VMrlUOcvmdV6JEtrfxlBNgkrD2TnT9pBaATVDHV7R3-0ZZM-ORd1Uz3BkbQiZKKlwPzVleotVS0lr-HVsr25MBhvCUw8BRfvZU_VnMU-nTaOhQp4rHIrNQVQiSzGxMGUwQK0KHnHZJw9B-hmvZhG3ydl7Gxtfk_hsvr0Pq1OjtvZbS0Vxs8NARf6w1vBNVQSHPOUZiyB8jHcmf5xF4aAOCfEu_Q06-JP4c2mUDzQZhluLoxNyLZ_jyJc"/>
+<div>
+<div class="font-panel-title text-panel-title font-bold text-on-surface">Clinical Command</div>
+<div class="text-on-surface-variant font-table-text text-table-text">Nexus AI v2.4</div>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary h-row-height-sm rounded flex items-center justify-center gap-sm hover:bg-surface-tint transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                    New Session
+                </button>
+</div>
+<div class="flex-1 overflow-y-auto flex flex-col gap-xs px-sm">
+<!-- Highlighted intent based on context -> Dashboard/Inbox -->
+<a class="bg-secondary-container text-on-secondary-container border-l-4 border-primary flex items-center gap-md px-md h-row-height-sm rounded-r transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">dashboard</span>
+                    Dashboard
+                </a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest flex items-center gap-md px-md h-row-height-sm rounded border-l-4 border-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">biotech</span>
+                    Image Extraction
+                </a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest flex items-center gap-md px-md h-row-height-sm rounded border-l-4 border-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+                    Multimodal Q&amp;A
+                </a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest flex items-center gap-md px-md h-row-height-sm rounded border-l-4 border-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">database</span>
+                    DB Intelligence
+                </a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest flex items-center gap-md px-md h-row-height-sm rounded border-l-4 border-transparent transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">policy</span>
+                    Audit Logs
+                </a>
+</div>
+<div class="mt-auto px-sm flex flex-col gap-xs pt-md border-t border-outline-variant mx-sm">
+<a class="text-on-surface-variant hover:bg-surface-container-highest flex items-center gap-md px-md h-row-height-sm rounded transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span>
+                    Support
+                </a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest flex items-center gap-md px-md h-row-height-sm rounded transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+                    System Status
+                </a>
+</div>
+</aside>
+<!-- Canvas -->
+<main class="flex-1 bg-background flex overflow-hidden">
+<!-- Inbox List (Mid Panel) -->
+<div class="w-1/2 min-w-[400px] border-r border-outline-variant flex flex-col bg-surface-container-lowest">
+<div class="h-row-height-md border-b border-outline-variant px-md flex items-center justify-between bg-surface-container-low shrink-0">
+<div class="font-section-title text-section-title text-on-surface">Clinical Inbox</div>
+<div class="flex gap-sm">
+<button class="px-md h-row-height-sm bg-surface-container-highest text-on-surface-variant font-label-caps text-label-caps rounded border border-outline-variant hover:bg-surface-dim transition-colors">
+                            Filter
+                        </button>
+</div>
+</div>
+<!-- Category Tabs -->
+<div class="flex border-b border-outline-variant bg-surface-container px-md gap-lg shrink-0">
+<button class="h-row-height-md flex items-center border-b-2 border-primary text-primary font-panel-title text-panel-title">
+                        Action Required <span class="ml-sm bg-error text-on-error px-1.5 py-0.5 rounded-full text-[10px]">3</span>
+</button>
+<button class="h-row-height-md flex items-center border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-panel-title text-panel-title">
+                        Pending Reviews
+                    </button>
+<button class="h-row-height-md flex items-center border-b-2 border-transparent text-on-surface-variant hover:text-on-surface font-panel-title text-panel-title">
+                        System Messages
+                    </button>
+</div>
+<div class="flex-1 overflow-y-auto p-md flex flex-col gap-md">
+<!-- Inbox Item 1 (Active) -->
+<div class="border border-primary bg-primary-fixed-dim bg-opacity-10 rounded p-md cursor-pointer hover:bg-opacity-20 transition-all">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<span class="bg-error bg-opacity-10 border border-error text-error px-sm py-xs rounded font-label-caps text-label-caps">HIGH RISK</span>
+<span class="text-on-surface-variant font-mono-code text-mono-code">PT-1145</span>
+</div>
+<span class="text-on-surface-variant font-table-text text-table-text text-[11px]">10m ago</span>
+</div>
+<div class="font-panel-title text-panel-title text-on-surface mb-xs">Verify AI-detected pulmonary anomalies</div>
+<div class="font-table-text text-table-text text-on-surface-variant line-clamp-2">
+                            Automated extraction flags a high probability of incidental nodules in recent CT scan. Clinician verification required before report finalization.
+                        </div>
+</div>
+<!-- Inbox Item 2 -->
+<div class="border border-outline-variant bg-surface rounded p-md cursor-pointer hover:bg-surface-container-high transition-all">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<span class="bg-surface-tint bg-opacity-10 border border-surface-tint text-surface-tint px-sm py-xs rounded font-label-caps text-label-caps">MISSING DATA</span>
+<span class="text-on-surface-variant font-mono-code text-mono-code">SESS-2231</span>
+</div>
+<span class="text-on-surface-variant font-table-text text-table-text text-[11px]">1h ago</span>
+</div>
+<div class="font-panel-title text-panel-title text-on-surface mb-xs">Missing image evidence for extraction</div>
+<div class="font-table-text text-table-text text-on-surface-variant line-clamp-2">
+                            The multimodal analysis agent failed to locate the referenced MRI sequence in the linked PACS study. Manual linking requested.
+                        </div>
+</div>
+<!-- Inbox Item 3 -->
+<div class="border border-outline-variant bg-surface rounded p-md cursor-pointer hover:bg-surface-container-high transition-all">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<span class="bg-secondary-fixed-dim bg-opacity-10 border border-secondary text-secondary px-sm py-xs rounded font-label-caps text-label-caps">REVIEW</span>
+<span class="text-on-surface-variant font-mono-code text-mono-code">AUDIT-99</span>
+</div>
+<span class="text-on-surface-variant font-table-text text-table-text text-[11px]">4h ago</span>
+</div>
+<div class="font-panel-title text-panel-title text-on-surface mb-xs">Review batch extraction confidence anomalies</div>
+<div class="font-table-text text-table-text text-on-surface-variant line-clamp-2">
+                            System detected a 15% drop in agent confidence scores across the last 50 oncology notes processed. Review sample set for prompt tuning.
+                        </div>
+</div>
+</div>
+</div>
+<!-- Detail Preview (Right Panel) -->
+<div class="flex-1 bg-surface-container-lowest overflow-y-auto flex flex-col">
+<div class="h-row-height-md border-b border-outline-variant px-lg flex items-center justify-between bg-surface-container-lowest shrink-0 sticky top-0 z-10">
+<div class="font-panel-title text-panel-title text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">description</span>
+                        PT-1145 Context
+                    </div>
+<button class="bg-primary text-on-primary px-md h-[30px] rounded font-label-caps text-label-caps hover:bg-surface-tint transition-colors flex items-center gap-xs">
+                        Open Full Session <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</button>
+</div>
+<div class="p-lg flex flex-col gap-xl">
+<!-- Top Summary Card -->
+<div class="border border-outline-variant rounded bg-surface">
+<div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<span class="font-panel-title text-panel-title text-on-surface">AI Finding Summary</span>
+<span class="bg-error bg-opacity-10 border border-error text-error px-sm py-xs rounded font-label-caps text-label-caps">ACTION REQUIRED</span>
+</div>
+<div class="p-md text-on-surface font-body-md">
+                            The vision-language model identified structural irregularities consistent with early-stage pulmonary nodules in the right lower lobe. This finding was not explicitly mentioned in the original radiology dictation.
+                        </div>
+<div class="px-md pb-md flex gap-md">
+<button class="flex-1 border border-primary text-primary h-row-height-sm rounded hover:bg-primary-fixed transition-colors font-panel-title text-panel-title flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">done</span> Verify Finding
+                            </button>
+<button class="flex-1 border border-error text-error h-row-height-sm rounded hover:bg-error-container transition-colors font-panel-title text-panel-title flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">close</span> Reject
+                            </button>
+</div>
+</div>
+<!-- Agent Confidence Meter Component -->
+<div class="border border-outline-variant rounded bg-surface p-md">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-md">AGENT CONFIDENCE</div>
+<div class="flex items-center gap-md">
+<div class="flex-1 h-1 bg-surface-container-highest rounded overflow-hidden">
+<div class="h-full bg-[#eab308] w-[82%]"></div> <!-- Explicit yellow for warning/moderate -->
+</div>
+<span class="font-mono-code text-mono-code text-on-surface">82%</span>
+</div>
+<div class="mt-sm font-table-text text-table-text text-on-surface-variant text-[11px]">
+                            Model: Nexus-Vision-v3. Confidence reduced due to poor image contrast in slice 44-48.
+                        </div>
+</div>
+<!-- Evidence Citation Card -->
+<div class="border border-outline-variant rounded bg-surface p-md">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">image</span> SOURCE EVIDENCE
+                        </div>
+<div class="flex gap-md">
+<div class="w-24 h-24 bg-surface-container-high rounded border border-outline-variant flex items-center justify-center relative overflow-hidden">
+<img class="absolute inset-0 w-full h-full object-cover mix-blend-multiply" data-alt="A clinical chest CT scan slice showing pulmonary structures. Monochromatic greyscale medical imaging with a subtle red bounding box highlighting a small anomaly in the lower right area. High contrast, precise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6iSWtGIM5xh5HpO1hPLe5vHukM6HMCugxjPZaV2P35-edI56Hp04t0cEdewg_5f9jVAtQ0vur8gBAfYspI8RvGl05YkuwQjHkWqo18S3NDJLGgTVtlID9DNvOgTuQ23ovVkAz48_eOagxoaWRsuvva5OYU2zQlo2Z6efNUXKXL13AFUiKBX_YDdFcz2A40oWlL9pduraxgqmX0sGINFWCaurN8izljFPqKpWTXceW51wKM2j10E1KSKHzSEO34SbiB8b1ZP9IL3Ng"/>
+<div class="absolute inset-0 border-2 border-error opacity-50 m-4 rounded-sm"></div>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div class="font-table-text text-table-text text-on-surface">
+<sup class="text-primary mr-1">[1]</sup> 
+                                    Excerpt from Sequence 3, Slice 46. Hyperdensity noted at coordinates x:142, y:88.
+                                </div>
+<a class="text-primary hover:text-surface-tint font-panel-title text-panel-title text-[13px] flex items-center gap-xs w-max" href="#">
+                                    View Full Study <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- SQL Preview Block -->
+<div class="border border-outline-variant rounded bg-surface-container-low p-md">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-md">EXTRACTION QUERY TRACE</div>
+<pre class="font-mono-code text-mono-code text-on-surface bg-surface-container-highest p-sm rounded border border-outline-variant overflow-x-auto text-[11px] leading-relaxed">SELECT patient_id, scan_date, modality 
+FROM pacs_metadata 
+WHERE study_id = 'S-1145-CT'
+AND has_findings = TRUE;
+
+<span class="text-secondary">-- Agent interpretation logged --</span></pre>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,114 @@
+/* ============================================================
+   COLORS — Nexus Clinical AI
+   Material-3 derived tonal palette rooted in "Clinical Blue".
+   Base tokens (raw values) + semantic aliases for app use.
+   ============================================================ */
+:root {
+  /* ---- Primary (Clinical Blue) ---- */
+  --primary: #004ac6;
+  --on-primary: #ffffff;
+  --primary-container: #2563eb;
+  --on-primary-container: #eeefff;
+  --primary-fixed: #dbe1ff;
+  --primary-fixed-dim: #b4c5ff;
+  --on-primary-fixed: #00174b;
+  --on-primary-fixed-variant: #003ea8;
+  --inverse-primary: #b4c5ff;
+  --surface-tint: #0053db;
+
+  /* ---- Secondary (Slate) ---- */
+  --secondary: #515f74;
+  --on-secondary: #ffffff;
+  --secondary-container: #d5e3fc;
+  --on-secondary-container: #57657a;
+  --secondary-fixed: #d5e3fc;
+  --secondary-fixed-dim: #b9c7df;
+  --on-secondary-fixed: #0d1c2e;
+  --on-secondary-fixed-variant: #3a485b;
+
+  /* ---- Tertiary (Burnt Amber — AI / attention accent) ---- */
+  --tertiary: #943700;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #bc4800;
+  --on-tertiary-container: #ffede6;
+  --tertiary-fixed: #ffdbcd;
+  --tertiary-fixed-dim: #ffb596;
+  --on-tertiary-fixed: #360f00;
+  --on-tertiary-fixed-variant: #7d2d00;
+
+  /* ---- Error / Critical ---- */
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+
+  /* ---- Success (clinical green — verified / stable / confidence) ---- */
+  --success: #047857;
+  --on-success: #ffffff;
+  --success-container: #d1fae5;
+  --on-success-container: #065f46;
+
+  /* ---- Surfaces & background (tonal layering, no shadows) ---- */
+  --background: #faf8ff;
+  --on-background: #191b23;
+  --surface: #faf8ff;
+  --surface-dim: #d9d9e5;
+  --surface-bright: #faf8ff;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f3f3fe;
+  --surface-container: #ededf9;
+  --surface-container-high: #e7e7f3;
+  --surface-container-highest: #e1e2ed;
+  --surface-variant: #e1e2ed;
+
+  /* ---- Text & lines ---- */
+  --on-surface: #191b23;
+  --on-surface-variant: #434655;
+  --outline: #737686;
+  --outline-variant: #c3c6d7;
+
+  /* ---- Inverse (dark surfaces, tooltips, inverse toasts) ---- */
+  --inverse-surface: #2e3039;
+  --inverse-on-surface: #f0f0fb;
+
+  /* ============================================================
+     SEMANTIC ALIASES — prefer these in product code.
+     ============================================================ */
+  /* App shell vs work-panels (depth via tone, not shadow) */
+  --app-bg: var(--background);
+  --panel-bg: var(--surface-container-lowest);   /* #ffffff work panels */
+  --panel-header-bg: var(--surface-container-low);
+  --nav-bg: var(--surface-container-low);
+
+  /* Text roles */
+  --text-strong: var(--on-surface);
+  --text-body: var(--on-surface);
+  --text-muted: var(--on-surface-variant);
+  --text-faint: var(--outline);
+  --text-link: var(--primary);
+
+  /* Lines & focus */
+  --border: var(--outline-variant);
+  --border-strong: var(--outline);
+  --focus-ring: var(--primary);
+
+  /* Interaction tints */
+  --hover-tint: var(--surface-container-high);
+  --active-tint: var(--surface-container-highest);
+  --zebra-stripe: var(--surface-container-low);
+
+  /* Status / data semantics */
+  --status-critical: var(--error);
+  --status-critical-bg: var(--error-container);
+  --status-warning: var(--tertiary);
+  --status-warning-bg: var(--tertiary-fixed);
+  --status-stable: var(--primary);
+  --status-stable-bg: var(--primary-fixed);
+  --status-verified: var(--success);
+  --status-verified-bg: var(--success-container);
+
+  /* AI / agent accents */
+  --ai-accent: var(--primary);
+  --ai-accent-bg: var(--primary-fixed);
+  --vector-accent: var(--tertiary);
+}

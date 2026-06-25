@@ -76,9 +76,9 @@ clinical.db
 capstone_agent/.adk/
 
 # =============================================================================
-# Uploads — runtime user data
+# Uploads — runtime user data (root-level only, not design system)
 # =============================================================================
-uploads/
+/uploads/
 
 # =============================================================================
 # Deployment logs

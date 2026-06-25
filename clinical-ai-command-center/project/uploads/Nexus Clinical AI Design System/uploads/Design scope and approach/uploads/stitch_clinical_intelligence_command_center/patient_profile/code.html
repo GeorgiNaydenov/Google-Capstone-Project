@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Patient Profile - Nexus Clinical AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdbcd",
+                        "tertiary": "#943700",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "on-tertiary-container": "#ffede6",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "surface": "#faf8ff",
+                        "on-primary-fixed": "#00174b",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#57657a",
+                        "primary": "#004ac6",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "on-background": "#191b23",
+                        "outline-variant": "#c3c6d7",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2e3039",
+                        "surface-bright": "#faf8ff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-primary-container": "#eeefff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-surface-variant": "#434655",
+                        "surface-container-highest": "#e1e2ed",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-container": "#ededf9",
+                        "surface-tint": "#0053db",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-variant": "#e1e2ed",
+                        "surface-container-low": "#f3f3fe",
+                        "surface-container-high": "#e7e7f3",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-surface": "#191b23",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "secondary": "#515f74",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#d5e3fc",
+                        "surface-dim": "#d9d9e5",
+                        "tertiary-container": "#bc4800",
+                        "outline": "#737686",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "inverse-primary": "#b4c5ff",
+                        "background": "#faf8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "row-height-sm": "36px",
+                        "row-height-md": "44px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "xxl": "32px",
+                        "xl": "24px",
+                        "sm": "8px",
+                        "lg": "16px"
+                    },
+                    "fontFamily": {
+                        "panel-title": ["Inter"],
+                        "table-text": ["Inter"],
+                        "section-title": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "page-title": ["Inter"],
+                        "mono-code": ["JetBrains Mono"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "panel-title": ["15px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "table-text": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "section-title": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "page-title": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "mono-code": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface h-screen flex overflow-hidden font-body-md">
+<!-- SideNavBar (from JSON) -->
+<nav class="bg-surface-container-low dark:bg-surface-container-lowest text-primary dark:text-inverse-primary font-label-caps text-label-caps docked left-0 h-screen w-[240px] border-r border-outline-variant dark:border-outline flex flex-col h-full py-md z-40 hidden md:flex flex-shrink-0">
+<div class="px-lg mb-xl flex items-center space-x-md">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A small, professional avatar or logo for a clinical system, featuring abstract medical cross or data points in primary blue and white." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU8Csb7_Bfsg-kR4coivSyIpQg0B0_hWcLlRXexabPuSlLd2WioeUUWyLsnR70rmZ00EBtvYGYmXqh9q4hAsQI_yoP00cd3kiED_IVTdpOkoh04GBdj9TRLqUUxkj_CexbzCb-lSc7iWps_Kvan8m7H2y86ZwyXlvdPovv_Lxg_kNttKguEPrZhh_1MR4BGRpVmYwdFL0yNO5XWNWUhLn5eKzKz-3lQZAzjApUa8Kt_Z1c0ptRwYR5pPv-0t0__40Pc-p1q-D8dliq"/>
+<div>
+<div class="font-panel-title text-panel-title font-bold text-on-surface">Clinical Command</div>
+<div class="text-on-surface-variant font-table-text text-table-text">Nexus AI v2.4</div>
+</div>
+</div>
+<div class="px-lg mb-lg">
+<button class="w-full bg-primary text-on-primary py-sm px-md rounded flex items-center justify-center space-x-sm font-panel-title text-panel-title hover:bg-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>New Session</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-sm space-y-xs">
+<!-- Active state logic applies here. "Dashboard" is closest for a general patient profile context if no specific patient list tab exists, or we leave them all inactive if it's a deep link. Let's assume this is accessed from Dashboard. -->
+<a class="flex items-center space-x-md px-md py-sm rounded transition-all duration-200 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center space-x-md px-md py-sm rounded transition-all duration-200 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span>Image Extraction</span>
+</a>
+<a class="flex items-center space-x-md px-md py-sm rounded transition-all duration-200 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>Multimodal Q&amp;A</span>
+</a>
+<a class="flex items-center space-x-md px-md py-sm rounded transition-all duration-200 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined">database</span>
+<span>DB Intelligence</span>
+</a>
+<a class="flex items-center space-x-md px-md py-sm rounded transition-all duration-200 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined">policy</span>
+<span>Audit Logs</span>
+</a>
+</div>
+<div class="mt-auto px-sm pt-md border-t border-outline-variant space-y-xs">
+<a class="flex items-center space-x-md px-md py-sm rounded transition-all duration-200 text-on-surface-variant hover:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>Support</span>
+</a>
+<a class="flex items-center space-x-md px-md py-sm rounded transition-all duration-200 text-on-surface-variant hover:bg-surface-container-high" href="#">
+<span class="material-symbols-outlined">check_circle</span>
+<span>System Status</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col h-screen overflow-hidden bg-surface-container-low">
+<!-- TopNavBar (from JSON) -->
+<header class="bg-surface dark:bg-inverse-surface font-panel-title text-panel-title docked full-width top-0 border-b border-outline-variant dark:border-outline flex justify-between items-center h-row-height-md px-lg w-full z-50 flex-shrink-0 transition-colors duration-150 ease-in-out">
+<div class="font-page-title text-page-title text-primary dark:text-inverse-primary tracking-tight">
+                Nexus Clinical AI
+            </div>
+<div class="flex-1 flex justify-center px-xl">
+<!-- RoleSwitcher (Style Guidance) -->
+<div class="flex bg-surface-container rounded p-xs border border-outline-variant">
+<button class="px-md py-[2px] rounded text-on-primary bg-primary font-panel-title text-panel-title">Clinician</button>
+<button class="px-md py-[2px] rounded text-secondary hover:bg-surface-container-high font-panel-title text-panel-title transition-colors">Admin</button>
+</div>
+</div>
+<div class="flex items-center space-x-md text-on-surface-variant dark:text-on-surface-variant">
+<button class="p-xs hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="p-xs hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+<button class="p-xs hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-xs hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined">sync</span>
+</button>
+</div>
+</header>
+<!-- Patient Header -->
+<div class="bg-surface border-b border-outline-variant px-lg py-md flex items-center justify-between flex-shrink-0">
+<div class="flex items-center space-x-xl">
+<div>
+<h1 class="font-page-title text-page-title text-on-surface m-0">Doe, John</h1>
+<div class="text-on-surface-variant font-table-text text-table-text mt-[2px]">ID: PT-8829 • Male • 62 yrs</div>
+</div>
+<div class="flex space-x-sm">
+<!-- StatusChips (Style Guidance) -->
+<div class="bg-error/10 text-error border border-error/20 px-sm py-[2px] rounded font-label-caps text-label-caps flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-xs">warning</span> High Risk
+                    </div>
+<div class="bg-surface-tint/10 text-surface-tint border border-surface-tint/20 px-sm py-[2px] rounded font-label-caps text-label-caps flex items-center">
+                        Oncology
+                    </div>
+<div class="bg-surface-tint/10 text-surface-tint border border-surface-tint/20 px-sm py-[2px] rounded font-label-caps text-label-caps flex items-center">
+                        NSCLC
+                    </div>
+</div>
+</div>
+<div class="flex items-center space-x-lg text-right">
+<div>
+<div class="font-label-caps text-label-caps text-on-surface-variant">Last Session</div>
+<div class="font-table-text text-table-text">Oct 24, 2023</div>
+</div>
+<div class="pl-lg border-l border-outline-variant">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-xs">Data Completeness</div>
+<!-- AgentConfidenceMeter style adapted for completeness -->
+<div class="flex items-center space-x-sm">
+<div class="w-24 h-[4px] bg-surface-variant rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 88%;"></div>
+</div>
+<span class="font-table-text text-table-text font-bold text-primary">88%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 3-Column Layout -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left Column: Demographics & Context -->
+<div class="w-[280px] bg-surface border-r border-outline-variant overflow-y-auto flex-shrink-0 p-lg space-y-xl">
+<section>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Demographics</h3>
+<div class="space-y-xs font-table-text text-table-text">
+<div class="flex justify-between"><span class="text-on-surface-variant">DOB</span><span>05/12/1961</span></div>
+<div class="flex justify-between"><span class="text-on-surface-variant">Weight</span><span>82 kg</span></div>
+<div class="flex justify-between"><span class="text-on-surface-variant">Height</span><span>178 cm</span></div>
+<div class="flex justify-between"><span class="text-on-surface-variant">Blood Type</span><span>O+</span></div>
+</div>
+</section>
+<div class="h-px w-full bg-outline-variant"></div>
+<section>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-sm flex items-center justify-between">
+                        Active Diagnoses
+                        <button class="text-primary hover:text-primary-container"><span class="material-symbols-outlined text-[16px]">edit</span></button>
+</h3>
+<ul class="space-y-sm font-table-text text-table-text">
+<li class="bg-surface-container-low p-sm rounded border border-outline-variant">
+<div class="font-bold">Non-Small Cell Lung Cancer</div>
+<div class="text-on-surface-variant text-[11px] mt-[2px]">Stage IIIa • Diagnosed 2022</div>
+</li>
+<li class="bg-surface-container-low p-sm rounded border border-outline-variant">
+<div class="font-bold">Hypertension</div>
+<div class="text-on-surface-variant text-[11px] mt-[2px]">Primary • Managed</div>
+</li>
+</ul>
+</section>
+<div class="h-px w-full bg-outline-variant"></div>
+<section>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Current Medications</h3>
+<ul class="space-y-xs font-table-text text-table-text">
+<li class="flex items-start space-x-sm">
+<span class="material-symbols-outlined text-[16px] text-surface-tint mt-[2px]">pill</span>
+<div>
+<div>Pembrolizumab</div>
+<div class="text-on-surface-variant text-[11px]">200mg IV q3w</div>
+</div>
+</li>
+<li class="flex items-start space-x-sm">
+<span class="material-symbols-outlined text-[16px] text-surface-tint mt-[2px]">pill</span>
+<div>
+<div>Lisinopril</div>
+<div class="text-on-surface-variant text-[11px]">10mg PO Daily</div>
+</div>
+</li>
+</ul>
+</section>
+<div class="h-px w-full bg-outline-variant"></div>
+<section>
+<h3 class="font-label-caps text-label-caps text-error mb-sm flex items-center">
+<span class="material-symbols-outlined text-[16px] mr-xs">allergies</span> Allergies
+                    </h3>
+<div class="bg-error-container text-on-error-container border border-error/30 p-sm rounded font-table-text text-table-text">
+<div class="font-bold">Penicillin</div>
+<div class="text-[11px]">Reaction: Hives, Anaphylaxis risk</div>
+</div>
+</section>
+</div>
+<!-- Center Column: Main Work Surface -->
+<div class="flex-1 flex flex-col bg-surface-container-lowest overflow-hidden">
+<!-- Center Tabs -->
+<div class="flex px-lg border-b border-outline-variant bg-surface flex-shrink-0 pt-sm">
+<button class="px-lg py-sm font-panel-title text-panel-title text-primary border-b-2 border-primary mr-md">Timeline</button>
+<button class="px-lg py-sm font-panel-title text-panel-title text-on-surface-variant hover:bg-surface-container-high rounded-t transition-colors mr-md">Sessions</button>
+<button class="px-lg py-sm font-panel-title text-panel-title text-on-surface-variant hover:bg-surface-container-high rounded-t transition-colors mr-md">Notes</button>
+<button class="px-lg py-sm font-panel-title text-panel-title text-on-surface-variant hover:bg-surface-container-high rounded-t transition-colors mr-md">Images</button>
+<button class="px-lg py-sm font-panel-title text-panel-title text-on-surface-variant hover:bg-surface-container-high rounded-t transition-colors">Metrics</button>
+</div>
+<!-- Timeline Content Area -->
+<div class="flex-1 overflow-y-auto p-xl bg-background">
+<div class="max-w-4xl mx-auto space-y-xl relative">
+<!-- Vertical Line for Timeline -->
+<div class="absolute left-[24px] top-4 bottom-0 w-px bg-outline-variant z-0"></div>
+<!-- Timeline Item 1 -->
+<div class="relative z-10 flex space-x-lg">
+<div class="w-12 h-12 rounded-full bg-surface border border-outline-variant flex items-center justify-center flex-shrink-0 mt-xs z-10">
+<span class="material-symbols-outlined text-surface-tint">description</span>
+</div>
+<div class="flex-1 bg-surface border border-outline-variant rounded p-md shadow-sm">
+<div class="flex justify-between items-start mb-sm">
+<div>
+<div class="font-panel-title text-panel-title">Oncology Review Note Extracted</div>
+<div class="font-table-text text-table-text text-on-surface-variant">Dr. Sarah Chen • Today, 09:42 AM</div>
+</div>
+<div class="bg-primary/10 text-primary px-sm py-[2px] rounded border border-primary/20 font-label-caps text-label-caps flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-xs">check_circle</span> Verified
+                                    </div>
+</div>
+<div class="font-body-md text-on-surface bg-surface-container-low p-md rounded border border-outline-variant">
+                                    Patient reports mild fatigue post-infusion. No new respiratory symptoms. Tumor markers remain stable. Continue current immunotherapy regimen.
+                                </div>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative z-10 flex space-x-lg">
+<div class="w-12 h-12 rounded-full bg-surface border border-outline-variant flex items-center justify-center flex-shrink-0 mt-xs z-10">
+<span class="material-symbols-outlined text-secondary">image</span>
+</div>
+<div class="flex-1 bg-surface border border-outline-variant rounded p-md shadow-sm">
+<div class="flex justify-between items-start mb-sm">
+<div>
+<div class="font-panel-title text-panel-title">CT Thorax w/ Contrast Uploaded</div>
+<div class="font-table-text text-table-text text-on-surface-variant">System Auto-Ingest • Oct 24, 2023, 14:15</div>
+</div>
+</div>
+<div class="flex space-x-md">
+<div class="w-32 h-32 bg-surface-variant rounded border border-outline-variant overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A clean, monochrome medical CT scan of a chest cavity, showing detailed lung structures, high contrast black and white, clinical UI styling." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDxUBDEiRwIAcH-qDQM6N5j7Wg27TumiQQrvdlTtELGgZdBr2M2wpE6y4gEfh_MOHAbndvzcVDr8Z4GMLh8OnC38dT9NyqtX5S86NYRhyKuIXUGmqhJ0h-kZV4cUfY3l_38GukSmxECtyh1ZCbOESyFZOso7BHEELZl-qCTiGEEHqDDR5ZNKU7NLJAl5zCIgFjKoRXMf3gIlLz8a9TCUy7gk5340ENPhYYW3vtecSkFbAyT6l2yqcsVOdXn9nYOaIKzLtT9QR39waL"/>
+</div>
+<div class="flex-1 space-y-sm">
+<div class="font-label-caps text-label-caps text-on-surface-variant">AI Findings</div>
+<ul class="list-disc pl-md font-table-text text-table-text space-y-[2px]">
+<li>Primary lesion in right upper lobe measures 3.2cm (prev 3.4cm).</li>
+<li>No new lymphadenopathy.</li>
+<li>Mild pleural effusion noted, right base.</li>
+</ul>
+<!-- AgentConfidenceMeter -->
+<div class="mt-sm flex items-center space-x-sm">
+<div class="font-label-caps text-label-caps w-24">AI Confidence</div>
+<div class="w-24 h-[4px] bg-surface-variant rounded-full overflow-hidden">
+<div class="bg-surface-tint h-full" style="width: 92%;"></div>
+</div>
+<span class="font-mono-code text-mono-code text-surface-tint">92%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: AI Copilot -->
+<div class="w-[320px] bg-surface border-l border-outline-variant flex flex-col flex-shrink-0 z-10">
+<div class="p-md border-b border-outline-variant bg-surface-container-low flex justify-between items-center flex-shrink-0">
+<h2 class="font-section-title text-section-title flex items-center">
+<span class="material-symbols-outlined text-primary mr-sm">smart_toy</span> AI Copilot
+                    </h2>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<!-- Chat History / Insights -->
+<div class="flex-1 overflow-y-auto p-md space-y-lg bg-background">
+<!-- Insight Card -->
+<div class="bg-surface border border-outline-variant rounded shadow-sm overflow-hidden">
+<div class="bg-primary/5 px-md py-sm border-b border-outline-variant flex items-center">
+<span class="material-symbols-outlined text-primary text-[16px] mr-sm">lightbulb</span>
+<span class="font-panel-title text-panel-title text-primary">Clinical Insight</span>
+</div>
+<div class="p-md font-body-md text-body-md">
+                            Based on recent CT volumetrics and clinical notes, the patient is showing a <strong>partial response</strong> to Pembrolizumab. Risk of pneumonitis remains elevated due to combination with past radiation history.
+                        </div>
+<!-- EvidenceCitationCards (Style Guidance) -->
+<div class="bg-surface-container-lowest border-t border-outline-variant p-sm flex items-start space-x-sm">
+<span class="text-[10px] text-primary font-bold mt-[2px]">[1]</span>
+<div>
+<div class="font-table-text text-table-text text-[12px] text-on-surface-variant line-clamp-2">NCCN Guidelines v3.2023 Non-Small Cell Lung Cancer, Section: Immunotherapy Toxicity Management.</div>
+<a class="font-table-text text-table-text text-[12px] text-primary hover:underline" href="#">View Source</a>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex justify-end">
+<div class="bg-surface-container-high rounded-l rounded-tr p-sm max-w-[85%] font-body-md text-body-md">
+                            Summarize last 3 lab results for creatinine.
+                        </div>
+</div>
+<!-- AI Response -->
+<div class="flex items-start space-x-sm">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-xs">
+<span class="material-symbols-outlined text-on-primary text-[14px]">smart_toy</span>
+</div>
+<div class="bg-surface border border-outline-variant rounded-r rounded-bl p-sm flex-1 font-body-md text-body-md space-y-sm">
+<p>Here are the recent creatinine trends:</p>
+<!-- SQLPreviewBlocks (Style Guidance) -->
+<div class="bg-surface-container-highest rounded p-sm border border-outline-variant">
+<div class="font-mono-code text-mono-code text-on-surface-variant mb-xs text-[10px] uppercase">Query Plan Execution</div>
+<div class="font-mono-code text-[11px] text-on-surface">
+<span class="text-tertiary">SELECT</span> date, value <span class="text-tertiary">FROM</span> labs <span class="text-tertiary">WHERE</span> test='creatinine' <span class="text-tertiary">LIMIT</span> 3;
+                                </div>
+</div>
+<ul class="font-table-text text-table-text list-disc pl-md">
+<li>Oct 24: 1.1 mg/dL</li>
+<li>Sep 12: 1.0 mg/dL</li>
+<li>Aug 05: 1.2 mg/dL</li>
+</ul>
+<p class="text-[12px] text-on-surface-variant">Values remain stable within normal limits (0.7-1.3 mg/dL).</p>
+</div>
+</div>
+</div>
+<!-- Input Area -->
+<div class="p-md border-t border-outline-variant bg-surface flex-shrink-0">
+<div class="relative">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded pl-md pr-xl py-sm font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none h-row-height-md transition-all" placeholder="Ask Copilot about this patient..." type="text"/>
+<button class="absolute right-sm top-1/2 transform -translate-y-1/2 text-primary hover:text-primary-container p-xs">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<div class="flex justify-between items-center mt-xs px-xs">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Press Enter to send</span>
+<div class="flex space-x-sm">
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">mic</span></button>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">attach_file</span></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>
