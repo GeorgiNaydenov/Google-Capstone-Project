@@ -1,0 +1,36 @@
+---
+title: MCP and A2A
+type: operations
+status: active
+updated: 2026-07-04
+source: docs/architecture.md, mcp_server/server.py, capstone_agent/a2a_server.py
+tags:
+  - operations
+  - interoperability
+aliases:
+  - MCP & A2A
+---
+
+# MCP and A2A
+
+Two interoperability surfaces let external clients and agents use Nexus capabilities.
+
+```mermaid
+flowchart LR
+    EXT["External client<br/>(Claude Desktop, other agents)"] <-- "MCP (JSON-RPC 2.0 / stdio)" --> MCP["mcp_server/server.py<br/>7 clinical tools (FastMCP)"]
+    REMOTE["Remote agent<br/>(any A2A client)"] <-- "A2A protocol<br/>agent card + tasks" --> A2A["capstone_agent/a2a_server.py<br/>:8001"]
+```
+
+## MCP server
+
+`mcp_server/server.py` — a clinical MCP server with **real database-backed tools** exposed via FastMCP (JSON-RPC 2.0 over stdio). Any MCP-compatible client (ADK, Claude Desktop, other frameworks) can discover and call the 7 clinical tools. The root orchestrator also consumes MCP tools directly ([[Agent Architecture]]).
+
+## A2A server
+
+`capstone_agent/a2a_server.py` — `to_a2a(root_agent)` ASGI app (guarded import). Serves the agent card at `/.well-known/agent-card.json` describing capabilities, input/output schemas, and supported skills. Remote agents delegate tasks over the A2A protocol with **isolated memory context** — only task-relevant, non-sensitive data crosses the boundary (Layer 4 of [[Memory Layers]]).
+
+```powershell
+uvicorn capstone_agent.a2a_server:app --port 8001
+```
+
+Related: [[System Overview]] · [[Course Concepts Map]] (Days 2a, 5a)

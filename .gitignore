@@ -71,6 +71,8 @@ frontend/vite-dev.err.log
 # Runtime databases — generated at runtime, not source
 # =============================================================================
 *.db
+*.db-shm
+*.db-wal
 capstone_sessions.db
 clinical.db
 capstone_agent/.adk/
@@ -106,3 +108,8 @@ capstone_agent/.adk/
 # Claude memory — conversation-specific, not source
 # =============================================================================
 MEMORY.md
+
+# =============================================================================
+# Obsidian vault — per-user workspace state, not source
+# =============================================================================
+Project Wiki/.obsidian/workspace.json
