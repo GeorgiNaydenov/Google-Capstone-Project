@@ -17,46 +17,69 @@ tags:
 <!-- AUTO:DEPGRAPH:BEGIN -->
 ```mermaid
 flowchart LR
-    config[config.py]
-    models[models.py]
-    security[security.py]
-    observability[observability.py]
-    memory[memory.py]
-    context[context.py]
-    llm[llm.py]
-    prompts[prompts.py]
-    callbacks[callbacks.py]
-    plugins[plugins.py]
-    orchestration[orchestration.py]
-    hitl[human_in_the_loop.py]
-    tools[tools.py]
-    schemas[clinical_schemas.py]
-    mock[mock_data.py]
+    a2a_server[a2a_server.py]
     agent[agent.py]
     app[app.py]
-    a2a[a2a_server.py]
+    callbacks[callbacks.py]
+    clinical_schemas[clinical_schemas.py]
+    config[config.py]
+    context[context.py]
+    database[database.py]
+    document_processor[document_processor.py]
+    human_in_the_loop[human_in_the_loop.py]
+    llm[llm.py]
+    memory[memory.py]
+    mock_data[mock_data.py]
+    models[models.py]
+    observability[observability.py]
+    orchestration[orchestration.py]
+    plugins[plugins.py]
+    prompts[prompts.py]
+    security[security.py]
+    tools[tools.py]
 
-    config --> models
-    config --> security
-    config --> context
-    config --> llm
-    config --> prompts
-    security --> observability
-    security --> memory
-    models --> tools
-    schemas --> tools
-    mock --> tools
-    observability --> callbacks
-    memory --> callbacks
-    callbacks --> plugins
-    context --> plugins
-    llm --> orchestration
-    tools --> orchestration
-    hitl --> agent
-    orchestration --> agent
-    llm --> agent
+    agent --> a2a_server
     agent --> app
-    agent --> a2a
+    callbacks --> agent
+    callbacks --> plugins
+    clinical_schemas --> tools
+    config --> a2a_server
+    config --> agent
+    config --> app
+    config --> context
+    config --> document_processor
+    config --> llm
+    config --> memory
+    config --> observability
+    config --> plugins
+    config --> security
+    config --> tools
+    context --> agent
+    context --> plugins
+    database --> mock_data
+    document_processor --> tools
+    human_in_the_loop --> agent
+    llm --> agent
+    llm --> orchestration
+    llm --> tools
+    memory --> agent
+    memory --> orchestration
+    models --> tools
+    observability --> agent
+    observability --> callbacks
+    observability --> human_in_the_loop
+    observability --> memory
+    observability --> plugins
+    observability --> tools
+    orchestration --> agent
+    plugins --> app
+    prompts --> agent
+    prompts --> orchestration
+    security --> callbacks
+    security --> memory
+    security --> plugins
+    tools --> agent
+    tools --> orchestration
 ```
 <!-- AUTO:DEPGRAPH:END -->
 

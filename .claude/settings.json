@@ -12,6 +12,19 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'sync_wiki.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'sync_wiki.py').is_file()), None); assert script is not None, 'Unable to locate wiki sync script'; runpy.run_path(str(script), run_name='__main__')\"",
+            "timeout": 15000,
+            "statusMessage": "Syncing project wiki..."
+          }
+        ]
+      }
     ]
   }
 }

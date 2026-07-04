@@ -19,49 +19,68 @@ This harness is **universal/domain-agnostic** and covers all 10 course notebooks
 
 ## Project Structure
 
+<!-- AUTO:STRUCTURE:BEGIN -->
 ```
-capstone_agent/           # Main ADK agent package
-  __init__.py             # Package init — imports agent module
-  config.py               # Centralized config, secret redaction, serialization
-  llm.py                  # Model registry + build_model(tier) with retry (Day 1a)
-  models.py               # Pydantic models for tool I/O (ToolResponse, ToolError)
-  security.py             # PII detection, secret scanning, input sanitization
-  context.py              # Context engineering: token budgeting, compaction
-  observability.py        # Structured logging, OpenTelemetry (OTLP/GCP) tracing
-  memory.py               # Session/memory factories, PII filter, A2A context prep
-  callbacks.py            # 3-layer security callbacks (input/tool/output)
-  plugins.py              # Observability plugin (BasePlugin) + LoggingPlugin (Day 4a)
-  orchestration.py        # Workflow agents, agent-as-tool, code exec, remote A2A (Day 1b/2a/5a)
-  human_in_the_loop.py    # Long-running approval tool (Day 2b)
-  prompts.py              # Agent instruction templates
-  tools.py                # Custom tools with Pydantic validation
-  agent.py                # Root agent wiring — imports all modules (entry point)
-  app.py                  # App(root_agent, plugins, compaction, resumability)
-  a2a_server.py           # to_a2a(root_agent) ASGI app (Day 5a; guarded import)
-mcp_server/               # Custom MCP server
-  server.py               # FastMCP tools with validation
-eval/                     # ADK evaluation (Day 4b)
-  capstone.evalset.json   # Eval cases (user_content, final_response, tool_uses)
-  test_config.json        # Criteria: tool_trajectory_avg_score, response_match_score
-tests/                    # Test + evaluation harness
-  conftest.py             # Pytest fixtures (runner, session, memory)
-  test_agent_eval.py      # Agent behavior tests (model tests skip w/o key)
-  test_security.py        # Security detection tests
-  test_callbacks.py       # Security callback wiring (no API key)
-  test_tools.py           # Tool validation tests
-  test_orchestration.py   # Workflow primitives construction
-  test_memory.py          # Memory governance / PII redaction
-  test_context.py         # Context engineering utilities
-  test_eval.py            # ADK AgentEvaluator (skips w/o key)
-deployment/               # Production deployment
-  Dockerfile              # Hardened container (non-root, healthcheck)
-  cloudbuild.yaml         # Cloud Build pipeline (Secret Manager for the key)
-  .agent_engine_config.json  # Vertex AI Agent Engine hardware config (Day 5b)
-  README.md               # Cloud Run / Agent Engine / GKE / A2A deploy guide
-docs/                     # Documentation and diagrams
-  architecture.md         # Architecture description
-  CAPSTONE_GUIDE.md       # 6-step domain specialization checklist
+capstone_agent/
+  a2a_server.py             # Expose this agent over the Agent2Agent (A2A) protocol (Day 5a).
+  agent.py                  # Root agent definition — entry point for `adk run capstone_agent`.
+  app.py                    # ADK `App` wrapper — the richer runtime around the root agent.
+  callbacks.py              # Security callbacks — defense in depth for agent safety.
+  clinical_schemas.py       # Clinical database schema definitions and query engine.
+  config.py                 # Centralized configuration and secret management.
+  context.py                # Context engineering — token budgeting, compaction, structured assembly.
+  database.py               # SQLite database layer — real persistence for all clinical data.
+  document_processor.py     # Document processing — real PDF and image extraction using PyMuPDF and Gemini.
+  human_in_the_loop.py      # Human-in-the-loop / long-running operations (Day 2b).
+  llm.py                    # Model registry and factory — the one place model selection happens.
+  memory.py                 # Memory management — Layer 2 (Session State), Layer 3 (Long-Term), Layer 4 (A2A Context).
+  mock_data.py              # Deterministic mock data for the Clinical AI Command Center.
+  models.py                 # Pydantic models for tool input/output contracts.
+  observability.py          # Observability — structured logging, tracing, and audit trail.
+  orchestration.py          # Multi-agent orchestration building blocks (Day 1b, 2a, 5a).
+  plugins.py                # Observability plugins (Day 4a).
+  prompts.py                # Clinical AI Command Center — agent instruction templates.
+  security.py               # Security module — PII detection, secret scanning, input sanitization.
+  tools.py                  # Clinical AI Command Center — tool definitions (production).
+clinical_app/
+  agent_runtime.py          # Deterministic product adapters for the real clinical agent tool layer.
+  app.py                    # FastAPI routes for clinician-facing deterministic application.
+  document.py               # Document parsing and upload policy for clinical evidence files.
+  live_bridge.py            # Lazy Google ADK execution bridge for live product mode.
+  models.py                 # Pydantic contracts for the clinician product API.
+  repository.py             # Session-isolated mutable repository for deterministic product demos.
+mcp_server/
+  server.py                 # Clinical MCP server — real database-backed tools via Model Context Protocol.
+scripts/
+  check_harness.py
+  generate_database_showcase.py # Generate a large governed SQLite cohort for the database agent.
+  generate_extraction_showcase.py # Generate synthetic extraction assets for the image extraction agent.
+  generate_multimodal_patient_showcase.py # Generate multimodal patient bundles for the Q&A agent.
+  sync_harness.py
+  sync_wiki.py              # Deterministic Project Wiki and harness synchronization.
+tests/
+  conftest.py               # Pytest configuration and shared fixtures for agent evaluation.
+  test_agent_eval.py        # Agent evaluation tests — validates agent behavior end-to-end.
+  test_callbacks.py         # Unit tests for the 3-layer security callbacks.
+  test_clinical_api.py      # Frontend contract tests for deterministic clinician product API.
+  test_clinical_tools.py    # Clinical tool integration tests — mock data consistency and HITL.
+  test_context.py           # Tests for context engineering utilities (Day 1 working memory).
+  test_document_parsing.py  # Document upload policy and extraction contract tests.
+  test_eval.py              # ADK evaluation harness test (Day 4b).
+  test_live_bridge.py       # Unit tests for the live-mode ADK bridge parsing helpers.
+  test_memory.py            # Tests for memory governance (Day 3b).
+  test_orchestration.py     # Tests for the orchestration building blocks (Day 1b / 2a).
+  test_product_integration.py # End-to-end contracts joining the clinical UI API to product state.
+  test_product_orchestration.py # Contract tests for clinician-facing production workflow boundaries.
+  test_security.py          # Security test suite — validates all detection and sanitization functions.
+  test_tools.py             # Clinical tool validation tests — ensures consistent I/O contracts.
+frontend/                   # React/Vite/TypeScript clinical UI (16 routes)
+eval/                       # ADK evaluation suite (evalset + scoring config)
+deployment/                 # Dockerfile, cloudbuild.yaml, Agent Engine config
+docs/                       # Architecture and product documentation
+Project Wiki/               # Obsidian knowledge base (auto-synced)
 ```
+<!-- AUTO:STRUCTURE:END -->
 
 ## Module Dependency Graph
 
@@ -238,3 +257,11 @@ This harness controls and validates agent executions.
 | File | Contains |
 |---|---|
 | `MEMORY.md` | Workspace variables and active model registers (Developer Agent Memory) |
+
+### Project Wiki (auto-synced)
+
+`Project Wiki/` is an Obsidian vault documenting the whole system; `Home.md` is the entry point.
+
+- A `Stop` hook runs `scripts/sync_wiki.py` after every work turn. It is deterministic (stdlib only, no LLM), idempotent, and always exits 0.
+- It regenerates the machine-owned pages in `Project Wiki/_generated/` (Module Inventory, Test Inventory, Harness Index, Changelog, Drift Report), the `AUTO:DEPGRAPH` block in `Project Wiki/02 Architecture/Module Dependency Graph.md`, the `AUTO:STRUCTURE` block in this file, and the root `MEMORY.md` registers, then runs `scripts/sync_harness.py` to mirror `CLAUDE.md` to `AGENTS.md`.
+- Never hand-edit `_generated/` pages or content inside `AUTO:*` markers; edit the hand-written wiki notes instead. Check `_generated/Drift Report.md` for modules the wiki does not cover yet.
