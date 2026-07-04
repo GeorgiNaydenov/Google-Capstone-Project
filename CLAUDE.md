@@ -74,6 +74,7 @@ tests/
   test_product_orchestration.py # Contract tests for clinician-facing production workflow boundaries.
   test_security.py          # Security test suite — validates all detection and sanitization functions.
   test_tools.py             # Clinical tool validation tests — ensures consistent I/O contracts.
+  test_wiki_sync.py         # Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py).
 frontend/                   # React/Vite/TypeScript clinical UI (16 routes)
 eval/                       # ADK evaluation suite (evalset + scoring config)
 deployment/                 # Dockerfile, cloudbuild.yaml, Agent Engine config

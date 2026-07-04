@@ -65,3 +65,4 @@ Hand-written companion: [[Module Reference]].
 | `tests` | `test_product_orchestration.py` | Contract tests for clinician-facing production workflow boundaries. |
 | `tests` | `test_security.py` | Security test suite — validates all detection and sanitization functions. |
 | `tests` | `test_tools.py` | Clinical tool validation tests — ensures consistent I/O contracts. |
+| `tests` | `test_wiki_sync.py` | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |

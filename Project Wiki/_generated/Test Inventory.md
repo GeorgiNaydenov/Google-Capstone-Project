@@ -27,5 +27,6 @@ Hand-written companion: [[Testing & Eval]].
 | `test_product_orchestration.py` | 8 | Contract tests for clinician-facing production workflow boundaries. |
 | `test_security.py` | 11 | Security test suite — validates all detection and sanitization functions. |
 | `test_tools.py` | 73 | Clinical tool validation tests — ensures consistent I/O contracts. |
+| `test_wiki_sync.py` | 7 | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |
 
-**Total test functions: 200**
+**Total test functions: 207**
