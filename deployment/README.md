@@ -37,6 +37,33 @@ Constraints to respect until the storage layer moves off-instance:
 - Q&A follow-up continuity therefore survives requests but not restarts or
   redeploys.
 
+### Data persistence (real tenant)
+
+The real (`capstone`) tenant writes `capstone.db` and `uploads_capstone/` to
+disk. Set `CLINICAL_DATA_DIR` to a writable, persistent path and both the
+tenant database and uploads relocate there:
+
+```bash
+# Local container with a named volume that survives restarts
+docker build -f deployment/Dockerfile -t nexus-clinical .
+docker run --rm -p 8080:8080 \
+    -e CLINICAL_DATA_DIR=/data -v nexus-data:/data \
+    nexus-clinical
+```
+
+On Cloud Run the container filesystem is ephemeral, so real-tenant data does
+not survive a new revision unless `CLINICAL_DATA_DIR` points at a mounted
+volume (Cloud Run volume mounts or a GCS FUSE mount). The demo tenants keep no
+files, so they need no volume. The default `clinical.db` self-seeds on first
+touch and is safe to leave ephemeral.
+
+### Health and readiness
+
+- `GET /healthz` — liveness (used by the Docker `HEALTHCHECK`).
+- `GET /readyz` — runs real component checks (database reachable, uploads
+  writable, agent + MCP importable) and returns `503` until the database and
+  upload storage are usable. Point Cloud Run / Kubernetes readiness probes here.
+
 The generic ADK CLI deployment below exposes the ADK developer UI rather than
 the Nexus product and is retained only for agent-runtime troubleshooting:
 

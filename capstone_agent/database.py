@@ -5,6 +5,7 @@ document CRUD, and full-text search across stored documents and notes.
 """
 
 import json
+import os
 import sqlite3
 import threading
 from contextlib import contextmanager
@@ -16,8 +17,12 @@ from typing import Any
 from . import clinical_schemas
 from . import mock_data
 
-DB_PATH = Path(__file__).resolve().parent.parent / "clinical.db"
-UPLOADS_ROOT = Path(__file__).resolve().parent.parent / "uploads"
+# CLINICAL_DATA_DIR relocates the default database and uploads onto a writable
+# (optionally mounted) directory so real-tenant data survives container
+# restarts; unset, both stay next to the project for local development.
+_DATA_DIR = Path(os.environ["CLINICAL_DATA_DIR"]).resolve() if os.environ.get("CLINICAL_DATA_DIR") else Path(__file__).resolve().parent.parent
+DB_PATH = _DATA_DIR / "clinical.db"
+UPLOADS_ROOT = _DATA_DIR / "uploads"
 
 # Tenant-scoped storage overrides. Contextvars propagate across await and
 # into anyio/asyncio worker threads, so everything a live agent run touches

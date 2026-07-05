@@ -221,10 +221,23 @@ def create_app() -> FastAPI:
         return {"status": "ok", "mode": effective_mode(resolve_tenant(None))}
 
     @api.get("/readyz")
-    def ready() -> dict[str, str]:
-        """Report readiness."""
+    def ready() -> dict[str, Any]:
+        """Report readiness from real component checks.
 
-        return {"status": "ready"}
+        Returns 503 when the default-tenant database is unreachable so
+        orchestrators (Cloud Run, Kubernetes) hold traffic until storage is
+        writable; the frontend-bundle check is advisory and never fails
+        readiness so API-only deployments stay ready.
+        """
+
+        default_repo = registry.get("readiness-probe", resolve_tenant(None))
+        components = component_checks(default_repo)
+        blocking = {"Clinical database", "Upload storage"}
+        degraded = [c["name"] for c in components if c["status"] != "operational" and c["name"] in blocking]
+        payload = {"status": "not-ready" if degraded else "ready", "components": components}
+        if degraded:
+            raise HTTPException(503, f"Not ready: {', '.join(degraded)}")
+        return payload
 
     @v1_router.get("/agents", response_model=AgentCatalogResponse, tags=["Agents"], responses={200: {"description": "Expose the real ADK pipeline catalog and tenant execution mode"}, **COMMON_RESPONSES})
     def agents(ctx: Context) -> dict[str, Any]:

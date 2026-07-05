@@ -1,19 +1,42 @@
+# Secrets — never bake credentials into the image
 .env
 .env.local
+*.env.local
+
+# Version control and tooling state
 .git
 .gitignore
-__pycache__
-*.pyc
+.claude
+.agents
+.codex
+.mypy_cache
 .pytest_cache
 .coverage
 htmlcov
-.claude
+.run-logs
+
+# Python and Node build artifacts
+__pycache__
+*.pyc
+*.tsbuildinfo
 .venv
 venv
 frontend/node_modules
 frontend/dist
-*.tsbuildinfo
-*.md
-docs/
-tests/
+
+# Tenant data must never be copied into the image — the real tenant's
+# database and uploads live on a mounted volume at runtime.
+*.db
+*.db-wal
+*.db-shm
+uploads
+uploads_*
+showcase_data
+
+# Docs source trees (the built hub ships inside frontend/dist)
+Project Wiki
+wiki
+raw
+docs
+docs_site
 deployment/cloudbuild.yaml

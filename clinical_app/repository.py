@@ -161,7 +161,12 @@ RESEARCH_CLINIC = DemoDataset("research_clinic", PATIENTS, SESSIONS, EVIDENCE, R
 NORTHSTAR = DemoDataset("northstar", NORTHSTAR_PATIENTS, NORTHSTAR_SESSIONS, NORTHSTAR_EVIDENCE, NORTHSTAR_NOTIFICATIONS, NORTHSTAR_USERS, MONITOR_BASELINE)
 DATASETS = {dataset.key: dataset for dataset in (RESEARCH_CLINIC, NORTHSTAR)}
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+import os
+
+# Real-tenant databases and uploads follow CLINICAL_DATA_DIR when set (e.g. a
+# mounted Docker volume) so they persist across restarts; otherwise they sit
+# beside the project for local development. Demo tenants keep no files.
+PROJECT_ROOT = Path(os.environ["CLINICAL_DATA_DIR"]).resolve() if os.environ.get("CLINICAL_DATA_DIR") else Path(__file__).resolve().parents[1]
 
 
 def now() -> str:

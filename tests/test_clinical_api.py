@@ -41,7 +41,9 @@ def test_health_demo_and_camel_case_read_contracts() -> None:
 
     api = client()
     assert api.get("/healthz").json() == {"status": "ok", "mode": "local"}
-    assert api.get("/readyz").json() == {"status": "ready"}
+    readiness = api.get("/readyz")
+    assert readiness.status_code == 200 and readiness.json()["status"] == "ready"
+    assert any(component["name"] == "Clinical database" for component in readiness.json()["components"])
     created = api.post("/api/demo/session")
     assert created.status_code == 201
     headers = clinician(created.json()["sessionId"])
