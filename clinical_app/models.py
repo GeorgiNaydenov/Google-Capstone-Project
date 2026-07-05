@@ -106,6 +106,7 @@ class SessionResponse(BaseModel):
     summary: str | None = Field(default=None, description="Brief extraction content summary")
     uploadedImageCount: int = Field(default=0, description="Number of image files processed during ingestion")
     extractionConfidence: float = Field(default=0.0, description="Agent consensus model confidence score (0.0 to 1.0)")
+    extractedFields: list[dict[str, Any]] = Field(default_factory=list, description="Persisted structured fields with per-field confidence")
     jsonSyncStatus: str = Field(default="synced", description="Object storage status: 'pending', 'synced', 'failed'")
     relationalSyncStatus: str = Field(default="synced", description="Relational database sync status")
     vectorSyncStatus: str = Field(default="synced", description="Vector index sync status")
@@ -149,6 +150,7 @@ class StorageResponse(BaseModel):
 
     assets: list[dict[str, Any]] = Field(description="Metadata of all raw uploaded files")
     persistedExtractions: list[dict[str, Any]] = Field(description="Persisted session structured receipts")
+    records: list[dict[str, Any]] = Field(default_factory=list, description="Derived storage pipeline records (uploads and per-target extraction receipts)")
     assetCount: int = Field(description="Total uploaded assets")
     persistedCount: int = Field(description="Total approved and synced session extractions")
     cloudCount: int = Field(description="Cloud Storage object count")
@@ -195,6 +197,91 @@ class UserResponse(BaseModel):
     roles: list[str] = Field(description="Assigned role access groups: 'clinician', 'reviewer', 'admin'")
     scope: str = Field(description="Access permission scope boundaries")
     status: str = Field(description="Account operational state: 'Active', 'Suspended'")
+
+
+class ComponentHealth(BaseModel):
+    """One measured system component check."""
+
+    name: str = Field(description="Human-readable component name, e.g. 'Clinical database'")
+    status: str = Field(description="Measured status: 'operational' or 'unavailable'")
+    detail: str = Field(description="What the check actually observed, including failure reasons")
+    latencyMs: float = Field(description="Measured check duration in milliseconds")
+
+
+class SystemHealthResponse(BaseModel):
+    """Real component health for the caller's tenant."""
+
+    components: list[ComponentHealth] = Field(description="Measured checks for database, agent runtime, MCP, storage, model credentials, and frontend bundle")
+    checkedAt: str = Field(description="ISO 8601 timestamp when the checks ran")
+
+
+class AgentMonitorRow(BaseModel):
+    """Per-agent runtime statistics row."""
+
+    agent: str = Field(description="Agent display name, e.g. 'Vision Agent'")
+    pipeline: str = Field(description="Owning workflow: 'extraction', 'qa', 'database'")
+    lastRun: str = Field(description="Timestamp or relative time of the agent's last observed step")
+    status: str = Field(description="Aggregated health: 'healthy' or 'degraded'")
+    avgConfidence: float = Field(description="Mean confidence of runs the agent participated in (0.0 to 1.0)")
+    failureRate: float = Field(description="Ratio of errored steps (0.0 to 1.0)")
+    reviewRate: float = Field(description="Ratio of steps that paused for human review (0.0 to 1.0)")
+    avgDurationMs: int = Field(description="Mean step duration in milliseconds; 0 when unmeasured")
+    linkedPatients: int = Field(description="Distinct patients the agent touched; 0 when unmeasured")
+
+
+class PermissionRow(BaseModel):
+    """One permission with its per-role grants."""
+
+    permission: str = Field(description="Permission label, e.g. 'Run clinical agents'")
+    grants: dict[str, bool] = Field(description="Role name to granted flag")
+
+
+class PermissionsResponse(BaseModel):
+    """Role-permission matrix for the tenant."""
+
+    roles: list[str] = Field(description="Ordered role column names")
+    matrix: list[PermissionRow] = Field(description="Permission rows with per-role grants")
+    version: int = Field(description="Monotonically increasing matrix version")
+
+
+class PermissionsUpdateRequest(BaseModel):
+    """Admin edit of the permission matrix."""
+
+    matrix: list[PermissionRow] = Field(min_length=1, description="Full permission matrix to persist")
+
+
+class SchemaColumn(BaseModel):
+    """One column in a clinical database table."""
+
+    name: str = Field(description="Column name")
+    type: str = Field(description="Declared SQL type")
+
+
+class SchemaTable(BaseModel):
+    """One clinical database table with its columns."""
+
+    table: str = Field(description="Table name, e.g. 'patients_core'")
+    columns: list[SchemaColumn] = Field(description="Declared columns in DDL order")
+
+
+class WorkspaceSummaryResponse(BaseModel):
+    """Live counts for navigation badges and the role landing page."""
+
+    queueCount: int = Field(description="Patients currently needing review")
+    inboxCount: int = Field(description="Runs awaiting explicit clinician review")
+    unreadNotifications: int = Field(description="Unread notification count")
+    patients: int = Field(description="Total patients visible to the tenant")
+    runs: int = Field(description="Agent runs recorded in this session")
+
+
+class EvidenceItemResponse(BaseModel):
+    """One patient evidence source."""
+
+    id: str = Field(description="Evidence source identifier")
+    kind: str = Field(description="Evidence kind: 'text', 'image', 'structured', 'document'")
+    date: str = Field(description="Evidence date in YYYY-MM-DD format")
+    excerpt: str = Field(description="Evidence text excerpt")
+    sourceUrl: str | None = Field(default=None, description="Asset URL when the evidence has viewable bytes")
 
 
 # --- V2 Service & Developer Console Schemas ---

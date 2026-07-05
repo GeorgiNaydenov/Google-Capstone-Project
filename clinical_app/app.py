@@ -23,8 +23,11 @@ from clinical_app.models import (
     PatientResponse, SessionResponse, AuditEventResponse, DashboardResponse, NotificationResponse,
     StorageResponse, AgentCatalogResponse, AgentConfigResponse, UserResponse,
     McpToolsListResponse, McpExecuteRequest, McpExecuteResponse, A2aCardResponse, V2HealthResponse,
-    OrchestrationPlan, ErrorResponse
+    OrchestrationPlan, ErrorResponse,
+    SystemHealthResponse, AgentMonitorRow, PermissionsResponse, PermissionsUpdateRequest,
+    SchemaTable, WorkspaceSummaryResponse, EvidenceItemResponse,
 )
+from clinical_app.system import component_checks
 from clinical_app.live_bridge import execute_live
 from clinical_app.agent_runtime import database_execution_tools, database_preview_tools, extraction_review_tools, extraction_tools, qa_tools
 from clinical_app.document import UploadPolicyError, parse_knowledge_base_upload, parse_upload, validate_knowledge_base_upload, validate_upload
@@ -74,6 +77,10 @@ def session_view(item: dict[str, Any]) -> dict[str, Any]:
         "summary": f"{item.get('uploaded_image_count', 0)} assets; extraction confidence {item.get('extraction_confidence', 0):.0%}",
         "uploadedImageCount": item.get("uploaded_image_count", 0),
         "extractionConfidence": item.get("extraction_confidence", 0),
+        "extractedFields": [
+            {"name": field.get("field_name", ""), "value": str(field.get("value", "")), "confidence": float(field.get("confidence") or 0)}
+            for field in item.get("extracted_fields", [])
+        ],
         "jsonSyncStatus": "synced",
         "relationalSyncStatus": "synced",
         "vectorSyncStatus": "synced",
@@ -229,9 +236,88 @@ def create_app() -> FastAPI:
 
     @v1_router.get("/notifications", response_model=list[NotificationResponse], tags=["Notifications"], responses={200: {"description": "List of unresolved notifications from agents"}, **COMMON_RESPONSES})
     def notifications(ctx: Context) -> list[dict[str, Any]]:
-        """Return actionable role-aware synthetic demo notifications."""
+        """Return actionable notifications — seeded for demo, derived for real tenants."""
 
-        return ctx[0].notifications
+        return ctx[0].build_notifications()
+
+    @v1_router.get("/system/health", response_model=SystemHealthResponse, tags=["Health"], responses={200: {"description": "Measured component health for the caller's tenant"}, **COMMON_RESPONSES})
+    def system_health(ctx: Context) -> dict[str, Any]:
+        """Measure real component health: database, agent runtime, MCP, storage, model, bundle."""
+
+        return {"components": component_checks(ctx[0]), "checkedAt": now()}
+
+    @v1_router.get("/agents/monitoring", response_model=list[AgentMonitorRow], tags=["Agents"], responses={200: {"description": "Per-agent runtime statistics"}, **COMMON_RESPONSES})
+    def agents_monitoring(ctx: Context) -> list[dict[str, Any]]:
+        """Return per-agent statistics — baseline+session for demo, run-derived for real tenants."""
+
+        if ctx[1] != "admin":
+            raise HTTPException(403, "Admin role required")
+        return ctx[0].agent_monitoring()
+
+    @v1_router.get("/permissions", response_model=PermissionsResponse, tags=["Admin"], responses={200: {"description": "Role-permission matrix"}, **COMMON_RESPONSES})
+    def permissions(ctx: Context) -> dict[str, Any]:
+        """Return the tenant's permission matrix."""
+
+        if ctx[1] != "admin":
+            raise HTTPException(403, "Admin role required")
+        return ctx[0].load_permissions()
+
+    @v1_router.put("/permissions", response_model=PermissionsResponse, tags=["Admin"], responses={200: {"description": "Persisted the edited permission matrix"}, **COMMON_RESPONSES})
+    def save_permissions(body: PermissionsUpdateRequest, ctx: Context) -> dict[str, Any]:
+        """Persist an admin's permission matrix edit — durable for real tenants."""
+
+        repo, role, user, _tenant = ctx
+        if role != "admin":
+            raise HTTPException(403, "Admin role required")
+        saved = repo.save_permissions([row.model_dump() for row in body.matrix], user)
+        repo.log("permissions_saved", user, role, version=saved["version"])
+        return saved
+
+    @v1_router.get("/database/schema", response_model=list[SchemaTable], tags=["Database"], responses={200: {"description": "Clinical database tables parsed from the governed DDL"}, **COMMON_RESPONSES})
+    def database_schema() -> list[dict[str, Any]]:
+        """Expose the real clinical schema the SQL pipeline queries against."""
+
+        import re
+
+        from capstone_agent.clinical_schemas import SCHEMA_DDL
+
+        tables = []
+        for table, ddl in SCHEMA_DDL.items():
+            columns = []
+            for line in ddl.splitlines()[1:]:
+                text = line.split("--")[0].strip().rstrip(",")
+                match = re.match(r"^(\w+)\s+([A-Za-z]+(?:\(\d+(?:,\s*\d+)?\))?)", text)
+                if match and match.group(1).upper() not in {"PRIMARY", "FOREIGN", "UNIQUE", "CHECK", "CONSTRAINT"}:
+                    columns.append({"name": match.group(1), "type": match.group(2).upper()})
+            tables.append({"table": table, "columns": columns})
+        return tables
+
+    @v1_router.get("/summary", response_model=WorkspaceSummaryResponse, tags=["Dashboard"], responses={200: {"description": "Live workspace counts for navigation badges"}, **COMMON_RESPONSES})
+    def summary(ctx: Context) -> dict[str, Any]:
+        """Return live counts for navigation badges and the role landing page."""
+
+        repo = ctx[0]
+        return {
+            "queueCount": sum(item.get("ai_review_status") == "needs_review" for item in repo.patients.values()),
+            "inboxCount": sum(item["workflow"] == "extraction" and item["status"] == "review" for item in repo.runs.values()),
+            "unreadNotifications": sum(not item.get("read") for item in repo.build_notifications()),
+            "patients": len(repo.patients),
+            "runs": len(repo.runs),
+        }
+
+    @v1_router.get("/patients/{patient_id}/evidence", response_model=list[EvidenceItemResponse], tags=["Patients"], responses={200: {"description": "Evidence sources for one patient"}, **COMMON_RESPONSES})
+    def patient_evidence(patient_id: str, ctx: Context) -> list[dict[str, Any]]:
+        """Return the patient's evidence sources with viewable asset links."""
+
+        repo = ctx[0]
+        patient_or_404(repo, patient_id)
+        return [
+            {
+                "id": item["source_id"], "kind": item["source_type"], "date": item["date"], "excerpt": item["text"],
+                **({"sourceUrl": f"/api/assets/{item['asset_id']}?session={repo.session_id}"} if item.get("asset_id") else {}),
+            }
+            for item in repo.evidence.get(patient_id, [])
+        ]
 
     @v1_router.post("/notifications/{notification_id}/read", response_model=NotificationResponse, tags=["Notifications"])
     def read_notification(notification_id: str, ctx: Context) -> dict[str, Any]:
@@ -275,9 +361,13 @@ def create_app() -> FastAPI:
         # report only what actually happened in this session.
         alert_base = 2 if repo.is_demo else 0
         run_base = 214 if repo.is_demo else 0
-        metrics: dict[str, int | str] = {"patients": len(patients), "assignedPatients": len(patients), "highRisk": sum(p["risk"] == "high" for p in patients), "pendingReview": pending, "pendingVerifications": pending, "imageExtractionsToday": len(sessions), "openAiAlerts": len([item for item in repo.notifications if not item["read"]]) + alert_base, "agentRuns24h": run_base + len(repo.runs), "syncRate": sync_rate, "completeness": completeness, "sessions": len(sessions)}
+        users = repo.list_users()
+        clinician_count = sum("Clinician" in user.get("roles", []) for user in users)
+        failed = sum(item["status"] == "error" for item in repo.runs.values())
+        pending_actions = pending + sum(item["status"] == "review" for item in repo.runs.values()) + sum(not item.get("read") for item in repo.build_notifications())
+        metrics: dict[str, int | str] = {"patients": len(patients), "assignedPatients": len(patients), "highRisk": sum(p["risk"] == "high" for p in patients), "pendingReview": pending, "pendingVerifications": pending, "imageExtractionsToday": len(sessions), "openAiAlerts": len([item for item in repo.notifications if not item["read"]]) + alert_base, "agentRuns24h": run_base + len(repo.runs), "syncRate": sync_rate, "completeness": completeness, "sessions": len(sessions), "failedExtractions": failed, "totalUsers": len(users), "activeClinicians": clinician_count, "pendingActions": pending_actions}
         if active_role == "admin":
-            metrics.update({"activeUsers": 2, "agentRuns": len(repo.runs), "reviewSla": "4m", "auditEvents": len(repo.audit), "storedAssets": len(repo.uploads)})
+            metrics.update({"activeUsers": len(users), "agentRuns": len(repo.runs), "reviewSla": "4m", "auditEvents": len(repo.audit), "storedAssets": len(repo.uploads)})
         return {"metrics": metrics, "patients": patients[:8], "sessions": sessions[:8], "activity": [audit_view(item) for item in reversed(repo.audit[-8:])]}
 
     @v1_router.get("/patients", response_model=list[PatientResponse], tags=["Patients"], responses={200: {"description": "List of matched patient profiles according to criteria"}, **COMMON_RESPONSES})
@@ -748,19 +838,39 @@ def create_app() -> FastAPI:
 
     @v1_router.get("/storage", response_model=StorageResponse, tags=["Storage"], responses={200: {"description": "Retrieved storage system metrics and totals"}, **COMMON_RESPONSES})
     def storage(ctx: Context) -> dict[str, Any]:
-        """Return uploaded assets and approved storage receipts."""
+        """Return uploaded assets, approved storage receipts, and derived pipeline records."""
 
         repo = ctx[0]
         persisted = [{"runId": item["id"], "receipts": item["result"]["storageReceipts"]} for item in repo.runs.values() if item["workflow"] == "extraction" and item["result"].get("persisted")]
-        return {"assets": list(repo.uploads.values()), "persistedExtractions": persisted, "assetCount": len(repo.uploads), "persistedCount": len(persisted), "cloudCount": len(repo.uploads), "jsonCount": len(persisted), "sqlCount": len(persisted), "vectorCount": len(persisted), "auditCount": len(repo.audit)}
+        destinations = {"json": "JSON document store", "relational": "Relational database", "vector": "Vector search index"}
+        records = [
+            {"id": meta["assetId"], "source": meta["filename"], "destination": "Object storage", "status": "synced", "updated": meta["createdAt"], "owner": "Upload service", "patientId": meta.get("patientId", ""), "sessionId": "", "error": ""}
+            for meta in repo.uploads.values()
+        ]
+        for item in repo.runs.values():
+            if item["workflow"] != "extraction":
+                continue
+            for receipt in item["result"].get("storageReceipts", []):
+                records.append({
+                    "id": receipt.get("receiptId") or f"{item['id']}-{receipt['target']}",
+                    "source": f"Extraction {item['id']}",
+                    "destination": destinations.get(receipt["target"], receipt["target"]),
+                    "status": receipt.get("status", "pending"),
+                    "updated": item.get("createdAt", now()),
+                    "owner": "Storage Agent",
+                    "patientId": item["result"].get("patientId", ""),
+                    "sessionId": item["result"].get("sessionId", ""),
+                    "error": "" if receipt.get("status") != "failed" else "Persistence tool reported failure",
+                })
+        return {"assets": list(repo.uploads.values()), "persistedExtractions": persisted, "records": records, "assetCount": len(repo.uploads), "persistedCount": len(persisted), "cloudCount": len(repo.uploads), "jsonCount": len(persisted), "sqlCount": len(persisted), "vectorCount": len(persisted), "auditCount": len(repo.audit)}
 
     @v1_router.get("/users", response_model=list[UserResponse], tags=["Admin"], responses={200: {"description": "Retrieved corporate user directory"}, **COMMON_RESPONSES})
     def users(ctx: Context) -> list[dict[str, Any]]:
-        """Return deterministic user and role directory."""
+        """Return the tenant's user directory — seeded fixtures for demo, persisted rows for real."""
 
         if ctx[1] != "admin":
             raise HTTPException(403, "Admin role required")
-        return [{"id": "USR-001", "name": "Dr. Sarah Chen", "email": "sarah.chen@example.demo", "roles": ["clinician", "reviewer"], "scope": "Assigned patients", "status": "Active"}, {"id": "USR-002", "name": "Clinical Platform Admin", "email": "admin@example.demo", "roles": ["admin", "clinician"], "scope": "All demo patients and platform settings", "status": "Active"}]
+        return ctx[0].list_users()
 
     @v1_router.get("/agent-config", response_model=AgentConfigResponse, tags=["Admin"], responses={200: {"description": "Retrieved current agent validation thresholds and concurrent limits"}, **COMMON_RESPONSES})
     def agent_config(ctx: Context) -> dict[str, Any]:

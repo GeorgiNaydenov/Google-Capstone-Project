@@ -10,6 +10,7 @@ from threading import Lock
 from typing import Any
 
 from clinical_app.tenancy import TENANTS, TenantConfig, TenantKind
+from clinical_app import system as system_module
 
 
 PATIENTS = [
@@ -114,6 +115,35 @@ NORTHSTAR_NOTIFICATIONS = [
 ]
 
 
+RESEARCH_USERS = [
+    {"id": "USR-001", "name": "Dr. Sarah Miller", "email": "sarah.miller@research.demo", "roles": ["Admin", "Clinician", "Reviewer"], "scope": "Organization", "status": "Active"},
+    {"id": "USR-002", "name": "Dr. Elena Park", "email": "elena.park@research.demo", "roles": ["Clinician"], "scope": "Assigned patients", "status": "Active"},
+    {"id": "USR-003", "name": "Dr. James Patel", "email": "james.patel@research.demo", "roles": ["Clinician", "Reviewer"], "scope": "Assigned patients", "status": "Active"},
+    {"id": "USR-004", "name": "Alex Morgan", "email": "alex.morgan@research.demo", "roles": ["Data Manager"], "scope": "Data platform", "status": "Active"},
+    {"id": "USR-005", "name": "Jordan Ellis", "email": "jordan.ellis@research.demo", "roles": ["Read-only Viewer"], "scope": "Audit and reports", "status": "Active"},
+    {"id": "USR-006", "name": "Dr. Sarah Chen", "email": "sarah.chen@research.demo", "roles": ["Clinician"], "scope": "Assigned patients", "status": "Active"},
+]
+
+NORTHSTAR_USERS = [
+    {"id": "USR-101", "name": "Dr. Ingrid Falk", "email": "ingrid.falk@northstar.demo", "roles": ["Admin", "Clinician"], "scope": "Organization", "status": "Active"},
+    {"id": "USR-102", "name": "Dr. Kwame Mensah", "email": "kwame.mensah@northstar.demo", "roles": ["Clinician", "Reviewer"], "scope": "Assigned patients", "status": "Active"},
+    {"id": "USR-103", "name": "Dr. Yuki Sato", "email": "yuki.sato@northstar.demo", "roles": ["Clinician"], "scope": "Assigned patients", "status": "Active"},
+    {"id": "USR-104", "name": "Noor Haddad", "email": "noor.haddad@northstar.demo", "roles": ["Data Manager"], "scope": "Data platform", "status": "Active"},
+    {"id": "USR-105", "name": "Sam Whitaker", "email": "sam.whitaker@northstar.demo", "roles": ["Read-only Viewer"], "scope": "Audit and reports", "status": "Active"},
+]
+
+# Plausible steady-state agent statistics for demo tenants; merged with the
+# session's real runs by agent_monitoring() so demo screens stay lively while
+# the real tenant reports only what actually executed.
+MONITOR_BASELINE = [
+    {"agent": "Image Quality Agent", "pipeline": "extraction", "lastRun": "2m ago", "status": "healthy", "avgConfidence": 0.96, "failureRate": 0.008, "reviewRate": 0.12, "avgDurationMs": 800, "linkedPatients": 18},
+    {"agent": "Vision Agent", "pipeline": "extraction", "lastRun": "2m ago", "status": "healthy", "avgConfidence": 0.92, "failureRate": 0.011, "reviewRate": 0.18, "avgDurationMs": 4200, "linkedPatients": 18},
+    {"agent": "Evidence Retrieval Agent", "pipeline": "qa", "lastRun": "8m ago", "status": "healthy", "avgConfidence": 0.89, "failureRate": 0.004, "reviewRate": 0.06, "avgDurationMs": 1700, "linkedPatients": 24},
+    {"agent": "SQL Generation Agent", "pipeline": "database", "lastRun": "12m ago", "status": "healthy", "avgConfidence": 0.94, "failureRate": 0.002, "reviewRate": 1.0, "avgDurationMs": 2100, "linkedPatients": 24},
+    {"agent": "Vector Indexing Agent", "pipeline": "extraction", "lastRun": "1m ago", "status": "degraded", "avgConfidence": 0.97, "failureRate": 0.024, "reviewRate": 0.0, "avgDurationMs": 3800, "linkedPatients": 24},
+]
+
+
 @dataclass(frozen=True)
 class DemoDataset:
     """Deterministic fixture bundle backing one demo tenant."""
@@ -123,10 +153,12 @@ class DemoDataset:
     sessions: list[dict[str, Any]]
     evidence: dict[str, list[dict[str, Any]]]
     notifications: list[dict[str, Any]]
+    users: list[dict[str, Any]]
+    monitor_baseline: list[dict[str, Any]]
 
 
-RESEARCH_CLINIC = DemoDataset("research_clinic", PATIENTS, SESSIONS, EVIDENCE, RESEARCH_NOTIFICATIONS)
-NORTHSTAR = DemoDataset("northstar", NORTHSTAR_PATIENTS, NORTHSTAR_SESSIONS, NORTHSTAR_EVIDENCE, NORTHSTAR_NOTIFICATIONS)
+RESEARCH_CLINIC = DemoDataset("research_clinic", PATIENTS, SESSIONS, EVIDENCE, RESEARCH_NOTIFICATIONS, RESEARCH_USERS, MONITOR_BASELINE)
+NORTHSTAR = DemoDataset("northstar", NORTHSTAR_PATIENTS, NORTHSTAR_SESSIONS, NORTHSTAR_EVIDENCE, NORTHSTAR_NOTIFICATIONS, NORTHSTAR_USERS, MONITOR_BASELINE)
 DATASETS = {dataset.key: dataset for dataset in (RESEARCH_CLINIC, NORTHSTAR)}
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -136,6 +168,50 @@ def now() -> str:
     """Return stable-format UTC timestamp."""
 
     return datetime.now(UTC).isoformat()
+
+
+def derive_monitoring(runs: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """Aggregate per-agent statistics from the runs that actually executed.
+
+    Each run step names the agent stage that produced it, so grouping steps
+    by name yields honest per-agent rows: last run time, error and review
+    ratios, and the mean confidence of the runs the agent participated in.
+    """
+
+    stats: dict[str, dict[str, Any]] = {}
+    for run in runs.values():
+        for step in run.get("steps", []):
+            name = str(step.get("name", "")).strip()
+            if not name:
+                continue
+            row = stats.setdefault(name, {
+                "agent": name, "pipeline": run.get("workflow", ""), "steps": 0,
+                "errors": 0, "reviews": 0, "confidences": [], "lastRun": "",
+            })
+            row["steps"] += 1
+            row["errors"] += step.get("status") == "error"
+            row["reviews"] += step.get("status") == "review"
+            confidence = float(run.get("confidence") or 0)
+            if confidence:
+                row["confidences"].append(confidence)
+            row["lastRun"] = max(row["lastRun"], str(step.get("timestamp", "")))
+    rows = []
+    for row in stats.values():
+        confidences = row.pop("confidences")
+        steps = row.pop("steps")
+        errors = row.pop("errors")
+        reviews = row.pop("reviews")
+        rows.append({
+            **row,
+            "status": "degraded" if errors else "healthy",
+            "avgConfidence": round(sum(confidences) / len(confidences), 3) if confidences else 0.0,
+            "failureRate": round(errors / steps, 3),
+            "reviewRate": round(reviews / steps, 3),
+            "avgDurationMs": 0,
+            "linkedPatients": 0,
+        })
+    rows.sort(key=lambda item: item["lastRun"], reverse=True)
+    return rows
 
 
 class DemoRepository:
@@ -174,6 +250,8 @@ class DemoRepository:
             "databaseEnabled": True,
         }
         self.notifications = [dict(item, createdAt=now()) for item in deepcopy(self._dataset.notifications)]
+        self.users = deepcopy(self._dataset.users)
+        self.permissions = {"roles": list(system_module.ROLES), "matrix": deepcopy(system_module.DEFAULT_PERMISSIONS), "version": 1}
         self.sequence = 0
 
     def identifier(self, prefix: str) -> str:
@@ -188,6 +266,37 @@ class DemoRepository:
         event = {"audit_id": self.identifier("AUD"), "timestamp": now(), "action": action, "actor": actor, "role": role, "details": details}
         self.audit.append(event)
         return event
+
+    def list_users(self) -> list[dict[str, Any]]:
+        """Return the seeded demo user directory."""
+
+        return self.users
+
+    def agent_monitoring(self) -> list[dict[str, Any]]:
+        """Merge the plausible demo baseline with this session's real runs."""
+
+        derived = derive_monitoring(self.runs)
+        baseline_names = {row["agent"] for row in self._dataset.monitor_baseline}
+        merged = deepcopy(self._dataset.monitor_baseline)
+        merged.extend(row for row in derived if row["agent"] not in baseline_names)
+        return merged
+
+    def load_permissions(self) -> dict[str, Any]:
+        """Return the session-scoped permission matrix."""
+
+        return self.permissions
+
+    def save_permissions(self, matrix: list[dict[str, Any]], actor: str) -> dict[str, Any]:
+        """Update the session-scoped permission matrix (demo tenants only)."""
+
+        self.permissions["matrix"] = deepcopy(matrix)
+        self.permissions["version"] = int(self.permissions["version"]) + 1
+        return self.permissions
+
+    def build_notifications(self) -> list[dict[str, Any]]:
+        """Demo notifications are seeded; return them unchanged."""
+
+        return self.notifications
 
 
 class LiveRepository:
@@ -230,6 +339,8 @@ class LiveRepository:
         Import stays local so demo tenants never touch the agent package.
         """
 
+        system_module.seed_users(self._governance_db())
+
         try:
             from capstone_agent import database
         except Exception:
@@ -240,6 +351,11 @@ class LiveRepository:
                 self._load_rows(database)
         else:
             self._load_rows(database)
+
+    def _governance_db(self) -> Path:
+        """Return the SQLite file holding this tenant's users and permissions."""
+
+        return Path(self.db_path) if self.db_path is not None else PROJECT_ROOT / "clinical.db"
 
     def _load_rows(self, database: Any) -> None:
         """Read patients, sessions, and notes from the active database file."""
@@ -266,6 +382,20 @@ class LiveRepository:
             item["extraction_confidence"] = float(item.get("extraction_confidence") or 0)
             item.setdefault("extracted_fields", [])
             self.sessions[item["session_id"]] = item
+
+        # Join persisted extracted fields into their sessions so SessionDetail
+        # shows what the extraction pipeline actually stored, not placeholders.
+        fields = database.execute_sql(
+            "SELECT session_id, field_name, field_value AS value, confidence FROM extracted_fields"
+        )
+        for row in fields.get("rows", []):
+            session = self.sessions.get(row["session_id"])
+            if session is not None:
+                session["extracted_fields"].append({
+                    "field_name": row["field_name"],
+                    "value": row["value"],
+                    "confidence": float(row.get("confidence") or 0),
+                })
 
         notes = database.execute_sql(
             "SELECT note_id, patient_id, note_date, note_text FROM clinical_notes"
@@ -312,6 +442,57 @@ class LiveRepository:
         }
         self.patients[patient_id] = patient
         return patient
+
+    def list_users(self) -> list[dict[str, Any]]:
+        """Return the read-only user directory persisted in the tenant DB."""
+
+        return system_module.load_users(self._governance_db())
+
+    def agent_monitoring(self) -> list[dict[str, Any]]:
+        """Return only agents that actually ran — empty before any runs."""
+
+        return derive_monitoring(self.runs)
+
+    def load_permissions(self) -> dict[str, Any]:
+        """Return the permission matrix persisted in the tenant DB."""
+
+        return system_module.load_permissions(self._governance_db())
+
+    def save_permissions(self, matrix: list[dict[str, Any]], actor: str) -> dict[str, Any]:
+        """Persist an admin's permission matrix edit to the tenant DB."""
+
+        return system_module.save_permissions(self._governance_db(), matrix, actor)
+
+    def build_notifications(self) -> list[dict[str, Any]]:
+        """Derive real-tenant notifications from actual run state.
+
+        Runs awaiting clinician review surface as critical items and failed
+        runs as warnings; nothing is invented when the session has no runs.
+        """
+
+        derived: list[dict[str, Any]] = []
+        for run in self.runs.values():
+            patient_id = run.get("result", {}).get("patientId", "")
+            if run.get("status") == "review":
+                route = "/app/inbox" if run.get("workflow") == "extraction" else "/app/database"
+                derived.append({
+                    "id": f"NTF-{run['id']}", "title": f"{run.get('workflow', 'run').title()} awaiting review",
+                    "detail": f"Run {run['id']}{f' for {patient_id}' if patient_id else ''} needs an explicit clinician decision.",
+                    "severity": "critical", "agent": run.get("agentName", "pipeline"),
+                    "read": any(n["id"] == f"NTF-{run['id']}" and n.get("read") for n in self.notifications),
+                    "route": route, "createdAt": run.get("createdAt", now()),
+                })
+            elif run.get("status") == "error":
+                derived.append({
+                    "id": f"NTF-{run['id']}", "title": f"{run.get('workflow', 'run').title()} run failed",
+                    "detail": f"Run {run['id']} ended in an error; inspect the run steps and retry.",
+                    "severity": "warning", "agent": run.get("agentName", "pipeline"),
+                    "read": any(n["id"] == f"NTF-{run['id']}" and n.get("read") for n in self.notifications),
+                    "route": "/app/inbox",
+                    "createdAt": run.get("createdAt", now()),
+                })
+        self.notifications = derived
+        return derived
 
 
 class RepositoryRegistry:

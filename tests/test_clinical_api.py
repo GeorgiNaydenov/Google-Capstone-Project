@@ -130,12 +130,12 @@ def test_qa_database_admin_and_configuration_contracts() -> None:
     executed = api.post(f"/api/runs/database/{preview['id']}/execute", headers=admin_headers).json()
     assert executed["status"] == "completed" and executed["result"]["chart"]["type"] == "bar"
     assert sum(row["patient_count"] for row in executed["result"]["rows"]) == 24
-    assert len(api.get("/api/users", headers=admin_headers).json()) == 2
+    assert len(api.get("/api/users", headers=admin_headers).json()) >= 5
     config = api.get("/api/agent-config", headers=admin_headers).json()
     saved = api.put("/api/agent-config", headers=admin_headers, json={"autoApprovalThreshold": 94, "reviewThreshold": 70, "maxConcurrentRuns": 12, "databaseEnabled": False}).json()
     assert saved["version"] == config["version"] + 1 and saved["autoApprovalThreshold"] == 94
     users = api.get("/api/users", headers=admin_headers).json()
-    assert users[1]["roles"] == ["admin", "clinician"] and users[1]["scope"]
+    assert any("Admin" in user["roles"] for user in users) and all(user["scope"] for user in users)
     metrics = api.get("/api/dashboard", headers=admin_headers, params={"role": "admin"}).json()["metrics"]
     assert {"activeUsers", "agentRuns", "syncRate", "reviewSla", "highRisk", "pendingReview", "completeness"} <= set(metrics)
     audit = api.get("/api/audit", headers=admin_headers).json()
@@ -292,3 +292,83 @@ def test_registry_keys_by_tenant() -> None:
     assert registry.find("shared") is northstar
     assert registry.get("shared", TENANTS["research-clinic"]) is research
     assert registry.find("missing") is None
+
+
+def test_system_health_reports_measured_components_without_model_key() -> None:
+    """Component health rows are measured and well-formed even with no credentials."""
+
+    api = client()
+    payload = api.get("/api/system/health", headers=clinician()).json()
+    names = {component["name"] for component in payload["components"]}
+    assert {"Clinical database", "ADK agent runtime", "MCP tool server", "Upload storage", "Model credentials", "Frontend bundle"} <= names
+    for component in payload["components"]:
+        assert component["status"] in {"operational", "unavailable"}
+        assert component["latencyMs"] >= 0
+        assert component["detail"]
+    assert payload["checkedAt"]
+
+
+def test_database_schema_endpoint_lists_governed_tables() -> None:
+    """Schema explorer data comes from the real governed DDL."""
+
+    api = client()
+    tables = api.get("/api/database/schema", headers=clinician()).json()
+    by_name = {table["table"]: table for table in tables}
+    assert "patients_core" in by_name
+    columns = {column["name"] for column in by_name["patients_core"]["columns"]}
+    assert {"patient_id", "risk_level", "primary_diagnosis"} <= columns
+
+
+def test_permissions_matrix_default_and_admin_edit() -> None:
+    """Permission matrix serves the default grants and accepts admin edits."""
+
+    api = client()
+    denied = api.get("/api/permissions", headers=clinician())
+    assert denied.status_code == 403
+    matrix = api.get("/api/permissions", headers=admin()).json()
+    assert matrix["roles"][0] == "Admin"
+    assert any(row["permission"] == "Run clinical agents" for row in matrix["matrix"])
+    edited = dict(matrix)
+    edited["matrix"][0]["grants"]["Data Manager"] = True
+    saved = api.put("/api/permissions", headers=admin(), json={"matrix": edited["matrix"]}).json()
+    assert saved["version"] == matrix["version"] + 1
+    assert saved["matrix"][0]["grants"]["Data Manager"] is True
+
+
+def test_agent_monitoring_merges_demo_baseline_with_session_runs() -> None:
+    """Demo monitoring shows the plausible baseline plus real session runs."""
+
+    api = client()
+    assert api.get("/api/agents/monitoring", headers=clinician()).status_code == 403
+    rows = api.get("/api/agents/monitoring", headers=admin()).json()
+    assert any(row["agent"] == "Vision Agent" for row in rows)
+    for row in rows:
+        assert row["status"] in {"healthy", "degraded"}
+        assert 0.0 <= row["avgConfidence"] <= 1.0
+
+
+def test_summary_counts_reflect_repository_state() -> None:
+    """Navigation badge counts derive from live repository state."""
+
+    api = client()
+    headers = clinician()
+    summary = api.get("/api/summary", headers=headers).json()
+    assert summary["patients"] == 24
+    assert summary["queueCount"] > 0
+    assert summary["runs"] == 0
+    asset_id = upload_asset(api, headers)
+    run = api.post("/api/runs/extraction", headers=headers, json={"patientId": "PT-8829", "uploadIds": [asset_id]}).json()
+    assert run["status"] == "review"
+    refreshed = api.get("/api/summary", headers=headers).json()
+    assert refreshed["runs"] == 1
+    assert refreshed["inboxCount"] == 1
+
+
+def test_patient_evidence_endpoint_returns_sources() -> None:
+    """Patient evidence rows expose kind, date, excerpt, and viewable links."""
+
+    api = client()
+    rows = api.get("/api/patients/PT-8829/evidence", headers=clinician()).json()
+    assert rows and {"id", "kind", "date", "excerpt"} <= set(rows[0])
+    assert any(row.get("sourceUrl") for row in rows)
+    assert api.get("/api/patients/PT-0000/evidence", headers=clinician()).status_code == 404

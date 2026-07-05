@@ -255,7 +255,7 @@ def test_dashboard_and_users_match_rendered_frontend_contract(api: TestClient) -
     users = api.get("/api/users", headers=admin_headers).json()
     assert users
     assert all({"id", "name", "email", "roles", "scope", "status"} <= set(user) for user in users)
-    assert any({"clinician", "admin"} <= set(user["roles"]) for user in users)
+    assert any({"Clinician", "Admin"} <= set(user["roles"]) for user in users)
 
 
 def test_repository_registry_evicts_oldest_session_at_capacity() -> None:
@@ -557,3 +557,38 @@ def test_capstone_preview_rejects_empty_sql(api: TestClient, tmp_path, monkeypat
     )
     assert response.status_code == 502
     assert "did not return SQL" in response.json()["detail"]
+
+
+def test_capstone_users_and_permissions_persist_across_sessions(api: TestClient, tmp_path, monkeypatch) -> None:
+    """The real tenant's directory is DB-seeded and matrix edits survive new sessions."""
+
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
+    first = {**capstone_headers("capstone-perms-a"), "X-Clinical-Role": "admin"}
+    users = api.get("/api/users", headers=first).json()
+    assert len(users) >= 5
+    assert any("Admin" in user["roles"] for user in users)
+
+    matrix = api.get("/api/permissions", headers=first).json()
+    edited = matrix["matrix"]
+    edited[1]["grants"]["Reviewer"] = True
+    saved = api.put("/api/permissions", headers=first, json={"matrix": edited}).json()
+    assert saved["version"] == matrix["version"] + 1
+
+    # A fresh session on the same tenant sees the persisted edit — proof the
+    # matrix lives in capstone.db, not in per-session memory.
+    second = {**capstone_headers("capstone-perms-b"), "X-Clinical-Role": "admin"}
+    persisted = api.get("/api/permissions", headers=second).json()
+    assert persisted["version"] == saved["version"]
+    row = next(item for item in persisted["matrix"] if item["permission"] == edited[1]["permission"])
+    assert row["grants"]["Reviewer"] is True
+
+
+def test_capstone_monitoring_and_notifications_derive_from_runs(api: TestClient, tmp_path, monkeypatch) -> None:
+    """The real tenant reports no agent activity until something actually runs."""
+
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
+    request_headers = {**capstone_headers("capstone-honest"), "X-Clinical-Role": "admin"}
+    assert api.get("/api/agents/monitoring", headers=request_headers).json() == []
+    assert api.get("/api/notifications", headers=request_headers).json() == []
+    summary = api.get("/api/summary", headers=request_headers).json()
+    assert summary["patients"] == 0 and summary["runs"] == 0
