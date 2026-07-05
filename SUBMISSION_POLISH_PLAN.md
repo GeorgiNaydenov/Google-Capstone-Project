@@ -142,46 +142,46 @@ Existing endpoint shapes change only additively.
 
 ## Phase 3 — UX polish / design patterns
 
-- [ ] ErrorBoundary (route-level keyed by pathname + app-level) → ErrorState with reset
-- [ ] Skeleton primitives; per-screen skeletons replace generic loading text
-- [ ] ToastProvider + useToast (`role="status"`): config/permissions saved, review actions,
+- [x] ErrorBoundary (route-level keyed by pathname + app-level) → ErrorState with reset
+- [x] Skeleton primitives; per-screen skeletons replace generic loading text
+- [x] ToastProvider + useToast (`role="status"`): config/permissions saved, review actions,
       CSV export, notification errors (replace silent catches)
-- [ ] Shared ConfirmDialog (focus trap, Escape): review Reject, demo reset
-- [ ] Shared Tabs component (tablist/tab/tabpanel + arrow keys) replacing 6 hand-rolled rows;
+- [x] Shared ConfirmDialog (focus trap, Escape): review Reject, demo reset
+- [x] Shared Tabs component (tablist/tab/tabpanel + arrow keys) replacing 6 hand-rolled rows;
       aria-pressed chips; aria-live steppers; label tenant Live/Demo badge
-- [ ] ChartPanel palette + badge tones → CSS variables; sweep stray hex literals
-- [ ] Dead "Inspect/Logs" buttons → audit filtered by agent; persist disabledAgents in
+- [x] ChartPanel palette + badge tones → CSS variables; sweep stray hex literals
+- [x] Dead "Inspect/Logs" buttons → audit filtered by agent; persist disabledAgents in
       agent-config PUT (update allowed-keys app.py:742 + PUT test together)
 
 ## Phase 4 — Onboarding V2
 
-- [ ] Bump key value → `"clinicalOnboardingV2"` (tests import ONBOARDING_KEY)
-- [ ] Updated dashboard step copy; NEW atlas step (`document.body.dataset.tourStep="atlas"`
+- [x] Bump key value → `"clinicalOnboardingV2"` (tests import ONBOARDING_KEY)
+- [x] Updated dashboard step copy; NEW atlas step (`document.body.dataset.tourStep="atlas"`
       spotlight); ≤10 steps; keep sims/replay/test-seeding contracts
 
 ## Phase 5 — Responsive tablet baseline
 
-- [ ] Remove `min-width:1180px` (styles.css); breakpoints >1220 / 768-1220 / <768 shared rules
-- [ ] Shell: overlay drawer sidebar <1024px (hamburger, aria-expanded, closes on
+- [x] Remove `min-width:1180px` (styles.css); breakpoints >1220 / 768-1220 / <768 shared rules
+- [x] Shell: overlay drawer sidebar <1024px (hamburger, aria-expanded, closes on
       navigate/Escape/backdrop); search collapse <768px; tools overflow menu <640px
-- [ ] DenseTable: global `.table-scroll` wrapper
-- [ ] Layout grids → 1fr at tablet via grouped media queries; KpiStrip scroll-snap
-- [ ] ChartPanel ResizeObserver relayout; onboarding modal `min(560px, calc(100vw-24px))`
+- [x] DenseTable: global `.table-scroll` wrapper
+- [x] Layout grids → 1fr at tablet via grouped media queries; KpiStrip scroll-snap
+- [x] ChartPanel ResizeObserver relayout; onboarding modal `min(560px, calc(100vw-24px))`
 
 ## Phase 6 — Container verification + submission pack
 
-- [ ] Root `.dockerignore` (node_modules, dist, .venv, __pycache__, *.db*, uploads*/,
+- [x] Root `.dockerignore` (node_modules, dist, .venv, __pycache__, *.db*, uploads*/,
       Project Wiki/, .claude/, docs/, eval/, logs) — never bake capstone.db
-- [ ] Optional `CLINICAL_DATA_DIR` env in repository.py + capstone_agent/database.py roots;
+- [x] Optional `CLINICAL_DATA_DIR` env in repository.py + capstone_agent/database.py roots;
       document Cloud Run ephemeral FS + max-instances=1 in deployment/README.md
-- [ ] `/readyz` runs component_checks (DB/dist/uploads), 503 on DB failure
-- [ ] Verify: npm run build → docker build → run → /healthz /readyz / → capstone tenant →
+- [x] `/readyz` runs component_checks (DB/dist/uploads), 503 on DB failure
+- [x] Verify: npm run build → docker build → run → /healthz /readyz / → capstone tenant →
       volume survival
-- [ ] `docs/submission/demo-script.md` — 5-min video shot list (onboarding → extraction HITL →
+- [x] `docs/submission/demo-script.md` — 5-min video shot list (onboarding → extraction HITL →
       Q&A citations → database SQL gate + chart → atlas → admin health → deploy slide)
-- [ ] `docs/submission/` media: app screenshots + best diagram exports (cover + gallery)
-- [ ] `docs/submission/writeup-facts.md` — verified numbers for ≤2,500-word writeup
-- [ ] Final commit + push; flip repo public on user go-ahead
+- [x] `docs/submission/` media: app screenshots + best diagram exports (cover + gallery)
+- [x] `docs/submission/writeup-facts.md` — verified numbers for ≤2,500-word writeup
+- [x] Final commit + push; flip repo public on user go-ahead
 
 ## Phase 7 — Post-cut-line (only if time remains)
 
