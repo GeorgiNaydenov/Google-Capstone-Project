@@ -2,7 +2,7 @@
 
 ## System Overview
 
-A **16-agent clinical AI platform** built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and HIPAA-aligned security.
+A **23-agent clinical AI platform** (1 orchestrator + 22 pipeline sub-agents) built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and HIPAA-aligned security.
 
 The system has four layers: a **React frontend** (Vite + TypeScript), a **FastAPI product server** (`clinical_app/`), the **ADK agent backend** (`capstone_agent/`), and an **MCP tool server** (`mcp_server/`). The frontend talks to the FastAPI server, which can operate in deterministic demo mode or bridge live to the ADK runner. On first workspace entry the frontend runs a full-takeover onboarding tour (`frontend/src/Onboarding.tsx`) that walks the clinician through every section and the three AI workflows over the live screens; it is skippable, replayable from the topbar, and fully deterministic (no API calls).
 
@@ -38,7 +38,7 @@ The system has four layers: a **React frontend** (Vite + TypeScript), a **FastAP
 | `pro` | gemini-3.1-pro-preview | Reasoning-heavy agents (answer synthesis, SQL generation) |
 | `pro-customtools` | gemini-3.1-pro-preview-customtools | Tool-heavy agents (evidence retrieval, execution) |
 
-## 16-Agent Clinical Architecture
+## 23-Agent Clinical Architecture
 
 ```
 User Request

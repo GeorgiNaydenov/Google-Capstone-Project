@@ -1,8 +1,20 @@
 # Nexus Clinical AI Command Center
 
-A clinician-facing AI platform powered by **16 specialist agents** built on [Google ADK](https://google.github.io/adk-docs/), demonstrating production-grade multi-agent orchestration, security, memory, observability, and deployment for clinical intelligence workflows.
+A clinician-facing AI platform powered by **23 agents** (1 orchestrator + 22 pipeline sub-agents) built on [Google ADK](https://google.github.io/adk-docs/), demonstrating production-grade multi-agent orchestration, security, memory, observability, and deployment for clinical intelligence workflows.
 
-> **Capstone project** for [Kaggle's 5-Day AI Agents: Intensive Vibe Coding Course](https://www.kaggle.com/learn-guide/5-day-genai-intensive-course) by Google.
+> **Capstone submission** for [Kaggle's AI Agents: Intensive Vibe Coding Capstone Project](https://www.kaggle.com/competitions/vibecoding-agents-capstone-project) (Google 5-Day AI Agents course).
+
+## For Reviewers — Competition Concepts Demonstrated (5 of the required 3)
+
+| Concept | Where to look |
+|---------|---------------|
+| **Agent/Multi-agent system (ADK)** | `capstone_agent/agent.py` (root orchestrator), `capstone_agent/orchestration.py` (3 SequentialAgent pipelines + LoopAgent validation, 22 sub-agents) |
+| **MCP Server** | `mcp_server/server.py` — FastMCP clinical tools over JSON-RPC/stdio, consumed by the ADK agent and any MCP client |
+| **Security** | `capstone_agent/callbacks.py` + `security.py` — 3-layer callback pipeline (injection blocking, tool validation/rate limits, PII/PHI/secret output scanning), tested in `tests/test_security.py` |
+| **Deployability** | `deployment/` — multi-stage Dockerfile (frontend + API single origin), Cloud Build → Cloud Run pipeline, Vertex AI Agent Engine config |
+| **Agent Skills** | `.agents/skills/` + `.claude/` harness — reusable agent skills (diagramming, testing workflow, deployment) governing this repo's own development |
+
+**Fastest demo path (no API key needed):** follow [Local Setup](#local-setup), open `http://localhost:8000`, take the built-in product tour, then run the three guided workflows (`/app/extraction`, `/app/qa`, `/app/database`). The demo tenants are deterministic; switching the org selector to the **Capstone (Live)** tenant exercises the real ADK + Gemini path when credentials are configured.
 
 ---
 
@@ -280,7 +292,7 @@ All agents use `llm.build_model(tier)` — never bare model-id strings. This cen
 
 | Category | Points | Implementation |
 |----------|--------|----------------|
-| Technical Implementation | 50 | Multi-agent (16), MCP, 3-layer security, 4-layer memory, Pydantic, observability |
+| Technical Implementation | 50 | Multi-agent (23 agents), MCP, 3-layer security, 4-layer memory, Pydantic, observability |
 | Documentation | 20 | README, inline docstrings, architecture docs, delivery map |
 | Core Concept & Value | 10 | Clinical intelligence with visible agent reasoning |
 | Video Demo | 10 | End-to-end workflow demonstration |
@@ -290,4 +302,5 @@ All agents use `llm.build_model(tier)` — never bare model-id strings. This cen
 
 ## License
 
-This project is a capstone submission for educational purposes.
+Licensed under the [Apache License 2.0](LICENSE). This project is a capstone
+submission; all clinical data is synthetic.
