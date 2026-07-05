@@ -81,6 +81,7 @@ export function Shell() {
   const [notifications, setNotifications] = useState<ClinicalNotification[]>([]);
   const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const groups = role === "clinician" ? clinicianGroups : adminGroups;
   const unread = notifications.filter(item => !item.read).length;
   const title = routeTitle(location.pathname, location.search);
@@ -106,7 +107,13 @@ export function Shell() {
     document.addEventListener("keydown", shortcut);
     return () => document.removeEventListener("keydown", shortcut);
   }, []);
-  useEffect(() => { setNoticeOpen(false); setSearchOpen(false); setProfileOpen(false); }, [location.pathname, location.search]);
+  useEffect(() => { setNoticeOpen(false); setSearchOpen(false); setProfileOpen(false); setMenuOpen(false); }, [location.pathname, location.search]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   const switchRole = (next: typeof role) => {
     setRole(next);
@@ -139,8 +146,9 @@ export function Shell() {
   const currentPath = `${location.pathname}${location.search}`;
   const nav = useMemo(() => groups, [groups]);
 
-  return <div className="clinical-shell">
-    <aside className="clinical-sidebar">
+  return <div className={menuOpen ? "clinical-shell menu-open" : "clinical-shell"}>
+    {menuOpen && <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)}/>}
+    <aside className={menuOpen ? "clinical-sidebar open" : "clinical-sidebar"}>
       <NavLink to="/" className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></NavLink>
       <button className="new-session" onClick={() => navigate("/app/extraction")}><Icon name="plus" size={16}/>New session</button>
       <nav className="grouped-nav" aria-label={`${role} navigation`}>{nav.map(group => <section key={group.label}><h2>{group.label}</h2>{group.items.map(item => {
@@ -162,6 +170,7 @@ export function Shell() {
     </aside>
 
     <header className="clinical-topbar">
+      <button className="menu-toggle" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)}><Icon name="list" size={20}/></button>
       <div className="workspace-title"><strong>{title}</strong><RoleSwitcher role={role} onChange={switchRole}/></div>
       <form className="unified-search" onSubmit={submitSearch}><Icon name="search" size={16}/><input ref={searchRef} aria-label="Global patient search and orchestrator" value={search} onFocus={() => setSearchOpen(true)} onChange={event => { setSearch(event.target.value); setSearchOpen(true); }} placeholder="Search patients, IDs, or ask orchestrator"/><kbd>{isMac ? "Cmd K" : "Ctrl K"}</kbd></form>
       <div className="topbar-tools">
