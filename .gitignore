@@ -81,6 +81,7 @@ capstone_agent/.adk/
 # Uploads — runtime user data (root-level only, not design system)
 # =============================================================================
 /uploads/
+/uploads_capstone/
 
 # =============================================================================
 # Deployment logs
@@ -102,7 +103,14 @@ capstone_agent/.adk/
 .claude/state/
 .agents/state/
 .agents/settings.local.json
+.agents/scheduled_tasks.lock
 .codex/
+.run-logs/
+
+# =============================================================================
+# Generated showcase data — reproducible via scripts/generate_*_showcase.py
+# =============================================================================
+showcase_data/
 
 # =============================================================================
 # Claude memory — conversation-specific, not source
