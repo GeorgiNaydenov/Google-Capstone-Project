@@ -13,6 +13,7 @@ export const primaryRoutes = [
   "/", "/roles", "/app/patients", "/app/overview", "/app/dashboard", "/app/queue",
   "/app/patient/:patientId", "/app/session/:sessionId", "/app/extraction", "/app/qa",
   "/app/database", "/app/inbox", "/app/admin", "/app/users", "/app/storage", "/app/configuration", "/app/console",
+  "/docs-viewer",
 ] as const;
 
 function RequireRole({ allow, fallback, children }: { allow: Role; fallback: string; children: ReactNode }) {
@@ -24,6 +25,7 @@ function RequireRole({ allow, fallback, children }: { allow: Role; fallback: str
 export function App() {
   return <ClinicalProvider><Routes>
     <Route path="/" element={<Landing/>}/><Route path="/roles" element={<RoleSelection/>}/>
+    <Route path="/docs-viewer" element={<DeveloperConsole/>}/>
     <Route path="/app" element={<Shell/>}>
       <Route index element={<Navigate to="dashboard" replace/>}/>
       <Route path="patients" element={<PatientSearch/>}/><Route path="overview" element={<PatientOverview/>}/>
@@ -35,7 +37,7 @@ export function App() {
       <Route path="users" element={<RequireRole allow="admin" fallback="/app/dashboard"><UsersRoles/></RequireRole>}/>
       <Route path="storage" element={<RequireRole allow="admin" fallback="/app/dashboard"><DataStorage/></RequireRole>}/>
       <Route path="configuration" element={<RequireRole allow="admin" fallback="/app/dashboard"><AgentConfiguration/></RequireRole>}/>
-      <Route path="console" element={<RequireRole allow="admin" fallback="/app/dashboard"><DeveloperConsole/></RequireRole>}/>
+      <Route path="console" element={<Navigate to="/docs-viewer?tab=api_runner" replace/>}/>
     </Route><Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes></ClinicalProvider>;
 }

@@ -1,0 +1,54 @@
+filters:
+  and:
+    - 'status == "active"'
+properties:
+  file.name:
+    displayName: "Note"
+  type:
+    displayName: "Type"
+  status:
+    displayName: "Status"
+  updated:
+    displayName: "Updated"
+  source:
+    displayName: "Source"
+views:
+  - type: table
+    name: "Architecture Notes"
+    filters:
+      and:
+        - 'type == "architecture"'
+    order:
+      - file.name
+      - type
+      - updated
+      - source
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: "Operations Notes"
+    filters:
+      and:
+        - 'type == "operations"'
+    order:
+      - file.name
+      - type
+      - updated
+      - source
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: "Process Notes"
+    filters:
+      and:
+        - 'type == "process"'
+    order:
+      - file.name
+      - type
+      - updated
+      - source
+    sort:
+      - property: file.name
+        direction: ASC

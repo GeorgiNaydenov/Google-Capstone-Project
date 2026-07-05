@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Execution Mode Switch">
+    <mxGraphModel dx="1300" dy="900" grid="1" gridSize="10" page="1" pageWidth="1360" pageHeight="900">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Live and Deterministic Execution Modes (clinical_app)" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="360" y="10" width="640" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="start" value="Clinician request reaches a clinical_app route" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="70" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dec" value="AGENT_EXECUTION_MODE equals live?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="540" y="180" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="detlane" value="Deterministic mode (default)" style="swimlane;startSize=30;fillColor=#f0fff0;strokeColor=#82b366;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="360" width="500" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="agent_runtime.py runs deterministic product adapters" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="detlane">
+          <mxGeometry x="110" y="60" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="repository.py returns session isolated mock state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="detlane">
+          <mxGeometry x="110" y="160" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="No model call, no network, no API key required" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="detlane">
+          <mxGeometry x="110" y="260" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" value="Returns a stable, reproducible response for demos and tests" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="detlane">
+          <mxGeometry x="110" y="360" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="livelane" value="Live mode" style="swimlane;startSize=30;fillColor=#f0f6ff;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="360" width="500" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="l1" value="live_bridge.execute_live lazily imports the ADK stack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="livelane">
+          <mxGeometry x="110" y="60" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="Runner drives root_agent with the session and memory services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="livelane">
+          <mxGeometry x="110" y="160" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="Gemini answers, tools run, author steps and tool calls are captured" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="livelane">
+          <mxGeometry x="110" y="260" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="l4" value="Returns the live response with real agent trace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="livelane">
+          <mxGeometry x="110" y="360" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="start" target="dec">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="no" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=12;fontStyle=1;" edge="1" parent="1" source="dec" target="detlane">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=12;fontStyle=1;" edge="1" parent="1" source="dec" target="livelane">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1030" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="d1" target="d2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="d2" target="d3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="d3" target="d4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="l1" target="l2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="l2" target="l3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="l3" target="l4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -41,10 +41,13 @@ Hand-written companion: [[Module Reference]].
 | `clinical_app` | `live_bridge.py` | Lazy Google ADK execution bridge for live product mode. |
 | `clinical_app` | `models.py` | Pydantic contracts for the clinician product API. |
 | `clinical_app` | `repository.py` | Session-isolated mutable repository for deterministic product demos. |
+| `clinical_app` | `system.py` | Real system introspection and tenant governance storage. |
 | `clinical_app` | `tenancy.py` | Tenant registry for the clinician product — single source of truth. |
 | `mcp_server` | `__init__.py` | (no docstring) |
 | `mcp_server` | `server.py` | Clinical MCP server — real database-backed tools via Model Context Protocol. |
+| `scripts` | `build_llm_wiki.py` | Script to compile the Obsidian Project Wiki into the Karpathy LLM Wiki structure. |
 | `scripts` | `check_harness.py` | (no docstring) |
+| `scripts` | `export_diagrams.py` | Export Project Wiki draw.io diagrams into frontend public assets. |
 | `scripts` | `generate_database_showcase.py` | Generate a large governed SQLite cohort for the database agent. |
 | `scripts` | `generate_extraction_showcase.py` | Generate synthetic extraction assets for the image extraction agent. |
 | `scripts` | `generate_multimodal_patient_showcase.py` | Generate multimodal patient bundles for the Q&A agent. |

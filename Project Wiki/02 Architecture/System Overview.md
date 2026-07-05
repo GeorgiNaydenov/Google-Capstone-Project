@@ -2,7 +2,7 @@
 title: System Overview
 type: architecture
 status: active
-updated: 2026-07-04
+updated: 2026-07-05
 source: docs/architecture.md
 tags:
   - architecture
@@ -30,6 +30,19 @@ flowchart TD
 - **FastAPI product server** (`clinical_app/`) — operates in deterministic demo mode or bridges live to the ADK runner; session isolation, role-based access, audit trail. See [[Clinical App]].
 - **ADK agent backend** (`capstone_agent/`) — the agent pipelines, tools, security callbacks, memory, and observability. See [[Agent Architecture]] and [[Module Reference]].
 - **MCP tool server** (`mcp_server/`) — real database-backed clinical tools exposed over the Model Context Protocol. See [[MCP and A2A]].
+
+## Visible Architecture
+
+The frontend now exposes [[Diagram Atlas]] as a first-class product surface. It renders six categories with sub-tabs, pan and zoom controls, SVG-first assets, PNG fallbacks, fullscreen viewing, and contextual inline diagrams beside the workflows they explain.
+
+| Category | Product coverage |
+|---|---|
+| System | Full stack, C4 pages, module graph, route map, REST API map |
+| Agents & Pipelines | Agent hierarchy, A2A, MCP, execution mode, context pipeline, Gemini tiers |
+| Security & Memory | Memory layers, security callbacks, security block sequence, harness governance |
+| Processes | Request lifecycle, HITL, ingestion, wiki sync, chat, approval, A2A delegation, animated Q&A flow |
+| Data & API | Clinical ERD and Pydantic contracts |
+| Deployment & Quality | Deployment, observability, eval flywheel, rubric coverage |
 
 ## Google Cloud ecosystem mapping
 

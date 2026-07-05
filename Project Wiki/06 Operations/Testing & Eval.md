@@ -33,6 +33,8 @@ pytest + pytest-asyncio for system contracts; ADK `AgentEvaluator` for content q
 | `test_agent_eval.py` | Agent behavior end-to-end (model tests skip without key) |
 | `test_eval.py` | ADK evaluation harness (Day 4b, skips without key) |
 | `test_wiki_sync.py` | Deterministic wiki sync script ([[Development Workflow]]) |
+| `test_showcase_generators.py` | Smoke tests for showcase data generators |
+| `test_versioned_api.py` | Unit tests for versioned V1 and V2 API endpoints and Swagger/ReDoc customization |
 
 ## Rules
 

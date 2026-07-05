@@ -29,6 +29,9 @@ integration layer between them.
 - [AI_FIRST_REMEDIATION_PLAN.md](AI_FIRST_REMEDIATION_PLAN.md): audit and
   delivery plan for AI-first UX, document ingestion, upload limits, agent
   traces, optimization, and stale harness documentation.
+- [../../Project Wiki/02 Architecture/Diagram Atlas.md](../../Project%20Wiki/02%20Architecture/Diagram%20Atlas.md): Obsidian catalog for
+  the exported architecture, process, security, data, deployment, and agent
+  diagrams rendered in the frontend atlas.
 
 ## Product Boundary
 
@@ -36,6 +39,7 @@ The target architecture is:
 
 ```text
 Clinical React UI
+  -> visible diagram atlas and contextual architecture embeds
   -> FastAPI product API
   -> application services and policy enforcement
   -> ADK Runner and clinical pipelines
@@ -59,8 +63,10 @@ ADK Web remains a developer surface. It is not the clinician product.
 7. Make every mutation visible through the API response, repository state,
    audit event, refreshed UI, and browser assertion.
 8. Expose safe workflow rationale and evidence, never hidden chain-of-thought.
-9. Use synthetic data only in the public demo.
-10. Deploy only after explicit human approval.
+9. Keep architecture diagrams visible in the product and wiki when routes,
+   agents, data flows, or API boundaries change.
+10. Use synthetic data only in the public demo.
+11. Deploy only after explicit human approval.
 
 ## Priority Order
 

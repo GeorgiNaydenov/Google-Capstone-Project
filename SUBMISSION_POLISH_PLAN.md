@@ -44,9 +44,9 @@ container — **and ready for Kaggle submission**.
 ## Phase 0 — Submission blockers
 
 - [x] Persist this plan as `SUBMISSION_POLISH_PLAN.md` + memory pointer
-- [ ] Commit current working tree (staged by name) and push to `origin/main`
-- [ ] Add `LICENSE` (Apache-2.0), reference in README
-- [ ] README top section = judge path: problem → solution → 5 concepts with file pointers →
+- [x] Commit current working tree (staged by name) and push to `origin/main`
+- [x] Add `LICENSE` (Apache-2.0), reference in README
+- [x] README top section = judge path: problem → solution → 5 concepts with file pointers →
       demo quickstart (no API key) → live-mode setup; verify agent counts (22, 9/7/6)
 - [ ] `gh repo edit --visibility public` — **only on user go-ahead at submission time**
 

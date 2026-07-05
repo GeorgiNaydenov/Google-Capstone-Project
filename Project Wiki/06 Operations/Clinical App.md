@@ -2,7 +2,7 @@
 title: Clinical App
 type: operations
 status: active
-updated: 2026-07-04
+updated: 2026-07-05
 source: README.md, clinical_app module docstrings
 tags:
   - operations
@@ -25,6 +25,14 @@ The clinician-facing product: a React frontend served by a FastAPI server that r
 | `clinical_app/document.py` | Document parsing and upload policy for clinical evidence files |
 | `frontend/` | React/Vite/TypeScript UI — 16 routes, clinician + admin views |
 
+Additional frontend documentation surfaces:
+
+| Module | Purpose |
+|--------|---------|
+| `frontend/src/diagrams.ts` | Typed diagram catalog used by the product atlas and contextual embeds |
+| `frontend/src/components/DiagramAtlas.tsx` | Category tabs, diagram sub-tabs, viewer, and summary panel |
+| `frontend/src/components/InlineDiagram.tsx` | Collapsible contextual architecture embed for workflow screens |
+
 ## Onboarding tour
 
 `frontend/src/Onboarding.tsx` runs a full-takeover guided tour the first time a user enters the workspace (`/app/*`). The modal is the focal point while the real screens render dimmed behind it; each of the 9 steps navigates the actual route it describes (dashboard → queue → extraction → Q&A → database → inbox → orchestrator → finish) and the AI workflow steps play deterministic in-modal simulations (agent pipeline, cited answer, SQL-to-chart) with zero API calls.
@@ -33,6 +41,23 @@ The clinician-facing product: a React frontend served by a FastAPI server that r
 - Replay: "Replay product tour" utility button in the Shell topbar
 - Keyboard: Escape skips, arrow keys navigate
 - Frontend tests that render `/app` routes must seed the flag first (see `frontend/src/App.test.tsx`); the tour's own suite is `frontend/src/Onboarding.test.tsx`
+
+## Diagram atlas routing
+
+The app exposes [[Diagram Atlas]] in the public landing page and inside the product shell:
+
+| Route | Visible architecture |
+|---|---|
+| `/` | Full diagram atlas with category tabs and diagram sub-tabs |
+| `/app/dashboard` | Compact System atlas below clinician quick actions |
+| `/app/admin` | Compact System atlas below admin KPIs and health panels |
+| `/app/configuration` | Agent hierarchy inline diagram on monitoring |
+| `/app/configuration?view=settings` | Security pipeline inline diagram on safety settings |
+| `/app/storage` | Memory architecture inline diagram in storage overview |
+| `/app/inbox` | Human-in-the-loop BPMN inline diagram below the review workspace |
+| `/app/extraction` | Document ingestion flow beside source controls |
+| `/app/qa` | Chat turn sequence beside patient context and knowledge-base upload |
+| `/app/database` | Clinical database ERD beside schema explorer |
 
 ## Tenancy
 
@@ -69,4 +94,4 @@ Three tenants are selectable from the organization dropdown in the Shell topbar 
 
 FastAPI serves the frontend build at `http://localhost:8000`. During frontend development, `npm run dev` in `frontend/` proxies `/api` to port 8000.
 
-Related: [[System Overview]] · [[End-to-End Request Flow]] · [[Testing & Eval]] (test_clinical_api.py, test_product_integration.py, test_live_bridge.py)
+Related: [[System Overview]] · [[End-to-End Request Flow]] · [[Testing & Eval]] · [[REST API and Developer Console]]

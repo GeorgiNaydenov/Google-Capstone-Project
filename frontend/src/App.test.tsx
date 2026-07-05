@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App, primaryRoutes } from "./App";
@@ -7,14 +7,21 @@ import { ONBOARDING_KEY } from "./Onboarding";
 describe("clinical product shell", () => {
   beforeEach(() => { localStorage.setItem(ONBOARDING_KEY, "done"); });
   afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); sessionStorage.clear(); });
-  it("declares exactly sixteen primary screens", () => { expect(primaryRoutes).toHaveLength(16); });
+  it("declares the current primary screen inventory", () => {
+    expect(primaryRoutes).toHaveLength(18);
+    expect(primaryRoutes).toContain("/app/console");
+    expect(primaryRoutes).toContain("/docs-viewer");
+  });
   it("renders public synthetic demo landing", () => {
     render(<MemoryRouter initialEntries={["/"]}><App/></MemoryRouter>);
     expect(screen.getByRole("heading", { name: /turn fragmented clinical evidence/i })).toBeInTheDocument();
     expect(screen.getByText(/synthetic clinical data/i)).toBeInTheDocument();
     expect(screen.getByText(/architecture diagram atlas/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /system architecture/i })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("link", { name: /open system architecture image/i })).toBeInTheDocument();
+    const categoryTabs = within(screen.getByRole("tablist", { name: /diagram categories/i }));
+    expect(categoryTabs.getByRole("tab", { name: /^System/i })).toHaveAttribute("aria-selected", "true");
+    expect(categoryTabs.getByRole("tab", { name: /Agents & Pipelines/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /C4 containers/i })).toBeInTheDocument();
+    expect(screen.queryByText(/open draw\.io/i)).not.toBeInTheDocument();
   });
   it("uses a real upload input", () => {
     render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);

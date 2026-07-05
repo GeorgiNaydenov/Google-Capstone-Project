@@ -36,6 +36,14 @@ Frontend (React)
 
 ## API Endpoints
 
+Interactive API documentation is served by the FastAPI app:
+
+- `GET /docs` - branded Swagger UI for the versioned `/api/v1` and `/api/v2` schema.
+- `GET /redoc` - branded ReDoc reference for the same OpenAPI schema.
+- `GET /openapi.json` - raw OpenAPI schema used by the developer console.
+
+The frontend diagram atlas is intentionally outside the OpenAPI schema. Its SVG and PNG assets are static product documentation under `frontend/public/diagrams/` and are cataloged in `Project Wiki/02 Architecture/Diagram Atlas.md`.
+
 ### Patient Operations
 - `GET /api/patients` — List all patients (role-filtered)
 - `GET /api/patients/{id}` — Patient detail with sessions

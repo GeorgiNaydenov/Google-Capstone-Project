@@ -49,11 +49,14 @@ clinical_app/
   live_bridge.py            # Lazy Google ADK execution bridge for live product mode.
   models.py                 # Pydantic contracts for the clinician product API.
   repository.py             # Session-isolated mutable repository for deterministic product demos.
+  system.py                 # Real system introspection and tenant governance storage.
   tenancy.py                # Tenant registry for the clinician product — single source of truth.
 mcp_server/
   server.py                 # Clinical MCP server — real database-backed tools via Model Context Protocol.
 scripts/
+  build_llm_wiki.py         # Script to compile the Obsidian Project Wiki into the Karpathy LLM Wiki structure.
   check_harness.py
+  export_diagrams.py        # Export Project Wiki draw.io diagrams into frontend public assets.
   generate_database_showcase.py # Generate a large governed SQLite cohort for the database agent.
   generate_extraction_showcase.py # Generate synthetic extraction assets for the image extraction agent.
   generate_multimodal_patient_showcase.py # Generate multimodal patient bundles for the Q&A agent.

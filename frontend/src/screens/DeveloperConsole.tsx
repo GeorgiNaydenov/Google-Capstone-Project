@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { Card, DenseTable, ErrorState, JsonViewer, LoadingState, StatusBadge } from "../components";
 
@@ -22,9 +23,97 @@ const PRESET_ENDPOINTS: Endpoint[] = [
   { method: "GET", path: "/api/v2/mcp/tools", description: "List all dynamic tools registered on the FastMCP clinical server" },
   { method: "GET", path: "/api/v2/a2a/card", description: "Retrieve Agent Card metadata for Agent-to-Agent discovery" },
 ];
+function renderMarkdown(md: string): string {
+  if (!md) return "";
+  let html = md;
+
+  // Escape HTML tags to prevent arbitrary execution, but keep basic formatting
+  html = html
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Bold
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+  // Headings
+  html = html.replace(/^### (.*$)/gim, "<h3>$1</h3>");
+  html = html.replace(/^## (.*$)/gim, "<h2>$1</h2>");
+  html = html.replace(/^# (.*$)/gim, "<h1>$1</h1>");
+
+  // Blockquotes / alerts
+  html = html.replace(/^> \[\!([A-Z]+)\]\s*(.*$)/gim, '<div class="alert-box alert-$1" style="border-left: 4px solid var(--blue); padding: 8px 12px; background: var(--bg-subtle); margin: 10px 0;"><strong>$1</strong>: $2</div>');
+  html = html.replace(/^> (.*$)/gim, '<blockquote style="border-left: 3px solid var(--border); padding-left: 10px; margin: 10px 0; color: var(--fg-muted)">$1</blockquote>');
+
+  // Code blocks
+  html = html.replace(/```([\s\S]*?)```/gm, '<pre style="background: var(--bg-subtle); padding: 12px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 0.9em; margin: 12px 0; border: 1px solid var(--border);"><code style="white-space: pre;">$1</code></pre>');
+  html = html.replace(/`([^`]+)`/g, '<code style="background: var(--bg-subtle); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; border: 1px solid var(--border);">$1</code>');
+
+  // Wikilinks [[Note|Label]] or [[Note]]
+  html = html.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '<span class="wiki-link" style="color:var(--blue);cursor:pointer;text-decoration:underline;">$2</span>');
+  html = html.replace(/\[\[([^\]]+)\]\]/g, '<span class="wiki-link" style="color:var(--blue);cursor:pointer;text-decoration:underline;">$1</span>');
+
+  // Normal links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--blue);text-decoration:underline;">$1</a>');
+
+  // Unordered list
+  html = html.replace(/^\- (.*$)/gim, "<li>$1</li>");
+
+  // GFM style tables
+  const lines = html.split("\n");
+  let inTable = false;
+  let tableHtml = "";
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith("|") && line.endsWith("|")) {
+      if (!inTable) {
+        inTable = true;
+        tableHtml += '<table class="dense-table" style="width:100%; border-collapse: collapse; margin: 15px 0;">';
+      }
+      const cells = line.split("|").slice(1, -1).map(c => c.trim());
+      if (cells.every(c => c.startsWith("-") || c.startsWith(":") || c === "")) {
+        continue;
+      }
+      const tag = tableHtml.includes("<thead>") ? "td" : "th";
+      const wrapStart = tag === "th" ? '<thead style="background: var(--bg-subtle);"><tr>' : "<tr>";
+      const wrapEnd = tag === "th" ? "</tr></thead><tbody>" : "</tr>";
+      tableHtml += wrapStart + cells.map(c => `<${tag} style="border: 1px solid var(--border); padding: 8px; text-align: left; font-weight: ${tag === "th" ? "bold" : "normal"};">${c}</${tag}>`).join("") + wrapEnd;
+    } else {
+      if (inTable) {
+        inTable = false;
+        tableHtml += "</tbody></table>";
+        lines[i] = tableHtml + "\n" + lines[i];
+        tableHtml = "";
+      }
+    }
+  }
+  if (inTable) {
+    tableHtml += "</tbody></table>";
+    html = lines.join("\n") + "\n" + tableHtml;
+  } else {
+    html = lines.join("\n");
+  }
+
+  // Convert remaining linebreaks to <br />
+  html = html.split("\n").join("<br />");
+
+  return html;
+}
 
 export function DeveloperConsole() {
-  const [activeTab, setActiveTab] = useState<"api_runner" | "mcp_tools" | "a2a_card" | "openapi">("api_runner");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isStandalone = location.pathname === "/docs-viewer";
+  const tabParam = searchParams.get("tab");
+  const activeTab = (tabParam as any) || "api_runner";
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams(prev => {
+      prev.set("tab", tab);
+      return prev;
+    });
+  };
 
   // API Runner state
   const [selectedEndpoint, setSelectedEndpoint] = useState<Endpoint>(PRESET_ENDPOINTS[0]);
@@ -62,6 +151,18 @@ export function DeveloperConsole() {
   const [openapiLoading, setOpenapiLoading] = useState<boolean>(false);
   const [openapiError, setOpenapiError] = useState<string>("");
   const [openapiSchema, setOpenapiSchema] = useState<any>(null);
+
+  // API Documentation view state
+  const [apiDocsMode, setApiDocsMode] = useState<"swagger" | "redoc" | "raw">("swagger");
+
+  // Wiki state
+  const [docsList, setDocsList] = useState<{ obsidian: any[]; karpathy: any[] } | null>(null);
+  const [docsListLoading, setDocsListLoading] = useState<boolean>(false);
+  const [docsListError, setDocsListError] = useState<string>("");
+  const [selectedDocPath, setSelectedDocPath] = useState<string>("");
+  const [docContent, setDocContent] = useState<string>("");
+  const [docLoading, setDocLoading] = useState<boolean>(false);
+  const [docError, setDocError] = useState<string>("");
 
   // Synchronize preset values when endpoint changes
   useEffect(() => {
@@ -138,16 +239,65 @@ export function DeveloperConsole() {
     }
   };
 
+  const loadDocsList = async () => {
+    setDocsListLoading(true);
+    setDocsListError("");
+    try {
+      const res = await api.docsList();
+      setDocsList(res);
+      const files = activeTab === "obsidian_wiki" ? res.obsidian : res.karpathy;
+      if (files && files.length > 0) {
+        setSelectedDocPath(files[0].path);
+      }
+    } catch (e: any) {
+      setDocsListError(e.message || "Failed to load documentation list");
+    } finally {
+      setDocsListLoading(false);
+    }
+  };
+
+  const loadDocFile = async (type: "obsidian" | "karpathy", path: string) => {
+    if (!path) return;
+    setDocLoading(true);
+    setDocError("");
+    setDocContent("");
+    try {
+      const res = await api.docsFile(type, path);
+      setDocContent(res.content);
+    } catch (e: any) {
+      setDocError(e.message || "Failed to load document content");
+    } finally {
+      setDocLoading(false);
+    }
+  };
+
   // Handle Tab Switch
   useEffect(() => {
     if (activeTab === "mcp_tools") {
       void loadMcpTools();
     } else if (activeTab === "a2a_card") {
       void loadA2aCard();
-    } else if (activeTab === "openapi") {
+    } else if (activeTab === "api_docs" && apiDocsMode === "raw") {
       void loadOpenApiSchema();
+    } else if (activeTab === "obsidian_wiki" || activeTab === "karpathy_wiki") {
+      if (!docsList) {
+        void loadDocsList();
+      } else {
+        const files = activeTab === "obsidian_wiki" ? docsList.obsidian : docsList.karpathy;
+        if (files && files.length > 0) {
+          setSelectedDocPath(files[0].path);
+        }
+      }
     }
-  }, [activeTab]);
+  }, [activeTab, apiDocsMode]);
+
+  useEffect(() => {
+    if (activeTab === "obsidian_wiki" && selectedDocPath) {
+      void loadDocFile("obsidian", selectedDocPath);
+    } else if (activeTab === "karpathy_wiki" && selectedDocPath) {
+      void loadDocFile("karpathy", selectedDocPath);
+    }
+  }, [selectedDocPath, activeTab]);
 
   // Execute Preset API Call
   const executeApiCall = async () => {
@@ -242,30 +392,69 @@ export function DeveloperConsole() {
   };
 
   return (
-    <div className="developer-console">
-      <header className="page-head">
-        <div>
-          <span className="eyebrow accent">DEVELOPER TOOLING</span>
-          <h1>API Command Center</h1>
-          <p>Govern, execute, and monitor versioned OpenAPI services, MCP tools, and Agent-to-Agent cards.</p>
-        </div>
-      </header>
+    <div className={isStandalone ? "standalone-docs-viewer" : "developer-console"} style={isStandalone ? { minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" } : undefined}>
+      {isStandalone ? (
+        <header className="landing-nav" style={{ position: "sticky", top: 0, zIndex: 30, display: "flex", height: "64px", alignItems: "center", justifyContent: "space-between", padding: "0 4vw", borderBottom: "1px solid var(--border-strong)", background: "#ffffffeb", backdropFilter: "blur(14px) saturate(1.12)", width: "100%" }}>
+          <div className="product-lockup" style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }} onClick={() => navigate("/")}>
+            <span className="product-symbol" style={{ display: "flex", alignItems: "center" }}>
+              <img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/>
+            </span>
+            <span style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}><strong style={{ fontSize: "14px", color: "var(--blue-dark)" }}>Clinician AI KIT</strong><small style={{ fontSize: "10px", color: "var(--muted)" }}>Documentation Viewer</small></span>
+          </div>
+          <nav className="tabs" style={{ display: "flex", gap: "10px", borderBottom: "none", padding: 0, margin: 0, height: "100%", alignItems: "center" }}>
+            <button className={activeTab === "api_docs" ? "active" : ""} onClick={() => setActiveTab("api_docs")} style={{ padding: "8px 16px", border: "none", background: "none", color: activeTab === "api_docs" ? "var(--blue)" : "#475569", fontWeight: activeTab === "api_docs" ? "700" : "500", cursor: "pointer", borderBottom: activeTab === "api_docs" ? "2px solid var(--blue)" : "none", height: "100%", fontSize: "13px" }}>
+              Interactive API Docs
+            </button>
+            <a href="/documentation/project-wiki/Home.html" style={{ padding: "8px 16px", color: "#475569", fontWeight: "500", fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", height: "100%" }}>
+              Obsidian Wiki
+            </a>
+            <a href="/documentation/llm-wiki/index.html" style={{ padding: "8px 16px", color: "#475569", fontWeight: "500", fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", height: "100%" }}>
+              Karpathy LLM Wiki
+            </a>
+            <button className={activeTab === "api_runner" ? "active" : ""} onClick={() => setActiveTab("api_runner")} style={{ padding: "8px 16px", border: "none", background: "none", color: activeTab === "api_runner" ? "var(--blue)" : "#475569", fontWeight: activeTab === "api_runner" ? "700" : "500", cursor: "pointer", borderBottom: activeTab === "api_runner" ? "2px solid var(--blue)" : "none", height: "100%", fontSize: "13px" }}>
+              API Console
+            </button>
+          </nav>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button className="button secondary" onClick={() => navigate("/")} style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid var(--border)", background: "#fff", cursor: "pointer", fontSize: "13px", fontWeight: "600", color: "#475569", fontFamily: "inherit" }}>Exit Viewer</button>
+            <button className="button primary" onClick={() => navigate("/roles")} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "var(--blue)", color: "#fff", cursor: "pointer", fontSize: "13px", fontWeight: "600", fontFamily: "inherit" }}>Enter Workspace</button>
+          </div>
+        </header>
+      ) : (
+        <>
+          <header className="page-head">
+            <div>
+              <span className="eyebrow accent">DEVELOPER TOOLING</span>
+              <h1>API Command Center</h1>
+              <p>Govern, execute, and monitor versioned OpenAPI services, MCP tools, and Agent-to-Agent cards.</p>
+            </div>
+          </header>
 
-      {/* Tabs */}
-      <nav className="tabs">
-        <button className={activeTab === "api_runner" ? "active" : ""} onClick={() => setActiveTab("api_runner")}>
-          API Endpoint Runner
-        </button>
-        <button className={activeTab === "mcp_tools" ? "active" : ""} onClick={() => setActiveTab("mcp_tools")}>
-          MCP Tools Playground
-        </button>
-        <button className={activeTab === "a2a_card" ? "active" : ""} onClick={() => setActiveTab("a2a_card")}>
-          Agent Card (A2A)
-        </button>
-        <button className={activeTab === "openapi" ? "active" : ""} onClick={() => setActiveTab("openapi")}>
-          OpenAPI Specification
-        </button>
-      </nav>
+          {/* Tabs */}
+          <nav className="tabs">
+            <button className={activeTab === "api_runner" ? "active" : ""} onClick={() => setActiveTab("api_runner")}>
+              API Endpoint Runner
+            </button>
+            <button className={activeTab === "mcp_tools" ? "active" : ""} onClick={() => setActiveTab("mcp_tools")}>
+              MCP Tools Playground
+            </button>
+            <button className={activeTab === "a2a_card" ? "active" : ""} onClick={() => setActiveTab("a2a_card")}>
+              Agent Card (A2A)
+            </button>
+            <button className={activeTab === "api_docs" ? "active" : ""} onClick={() => setActiveTab("api_docs")}>
+              Interactive API Docs
+            </button>
+            <a href="/documentation/project-wiki/Home.html" style={{ display: "flex", alignItems: "center", padding: "0 14px", textDecoration: "none", color: "#475569" }}>
+              Obsidian Wiki
+            </a>
+            <a href="/documentation/llm-wiki/index.html" style={{ display: "flex", alignItems: "center", padding: "0 14px", textDecoration: "none", color: "#475569" }}>
+              Karpathy LLM Wiki
+            </a>
+          </nav>
+        </>
+      )}
+
+      <div className={isStandalone ? "standalone-docs-content" : ""} style={isStandalone ? { flex: 1, padding: "35px 4vw", maxWidth: "1600px", width: "100%", margin: "0 auto", display: "flex", flexDirection: "column" } : undefined}>
 
       {/* API RUNNER TAB */}
       {activeTab === "api_runner" && (
@@ -548,23 +737,186 @@ export function DeveloperConsole() {
         </Card>
       )}
 
-      {/* OPENAPI SCHEMA TAB */}
-      {activeTab === "openapi" && (
-        <Card title="OpenAPI Spec Explorer">
-          {openapiLoading ? (
-            <LoadingState />
-          ) : openapiError ? (
-            <ErrorState error={new Error(openapiError)} retry={loadOpenApiSchema} />
-          ) : openapiSchema ? (
-            <div>
-              <p style={{ marginBottom: "15px" }}>Interactive raw JSON tree for <code>openapi.json</code>. Describes all routes, schemas, and tags.</p>
-              <div style={{ border: "1px solid var(--border)", borderRadius: "6px", maxHeight: "600px", overflowY: "auto" }}>
-                <JsonViewer value={openapiSchema} />
-              </div>
+      {/* API DOCUMENTATION TAB */}
+      {activeTab === "api_docs" && (
+        <Card title="Interactive OpenAPI Documentation">
+          <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "15px", marginBottom: "10px" }}>
+              <label style={{ fontWeight: "bold" }}>Select Documentation View:</label>
+              <select
+                value={apiDocsMode}
+                onChange={e => setApiDocsMode(e.target.value as any)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  backgroundColor: "var(--bg-subtle)",
+                  color: "var(--fg)",
+                  border: "1px solid var(--border)",
+                  cursor: "pointer"
+                }}
+              >
+                <option value="swagger">Swagger UI Console (Interactive)</option>
+                <option value="redoc">ReDoc Specifications (Reader)</option>
+                <option value="raw">Raw OpenAPI Schema (Explorer)</option>
+              </select>
             </div>
-          ) : null}
+
+            {apiDocsMode === "swagger" && (
+              <div style={{ border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden", height: "800px", background: "#fff" }}>
+                <iframe
+                  src="/docs"
+                  title="Swagger UI"
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
+              </div>
+            )}
+
+            {apiDocsMode === "redoc" && (
+              <div style={{ border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden", height: "800px", background: "#fff" }}>
+                <iframe
+                  src="/redoc"
+                  title="ReDoc"
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
+              </div>
+            )}
+
+            {apiDocsMode === "raw" && (
+              <div>
+                {openapiLoading ? (
+                  <LoadingState />
+                ) : openapiError ? (
+                  <ErrorState error={new Error(openapiError)} retry={loadOpenApiSchema} />
+                ) : openapiSchema ? (
+                  <div>
+                    <p style={{ marginBottom: "15px" }}>Interactive raw JSON tree for <code>openapi.json</code>. Describes all routes, schemas, and tags.</p>
+                    <div style={{ border: "1px solid var(--border)", borderRadius: "6px", maxHeight: "600px", overflowY: "auto" }}>
+                      <JsonViewer value={openapiSchema} />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
         </Card>
       )}
+
+      {/* Obsidian Wiki Tab */}
+      {activeTab === "obsidian_wiki" && (
+        <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "20px", height: "800px" }}>
+          <Card title="Obsidian Notes">
+            <div style={{ height: "720px", overflowY: "auto", marginTop: "10px" }}>
+              {docsListLoading ? (
+                <LoadingState />
+              ) : docsListError ? (
+                <ErrorState error={new Error(docsListError)} retry={loadDocsList} />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "5px", paddingRight: "10px" }}>
+                  {docsList?.obsidian.map(file => (
+                    <button
+                      key={file.path}
+                      onClick={() => setSelectedDocPath(file.path)}
+                      style={{
+                        textAlign: "left",
+                        padding: "10px",
+                        borderRadius: "6px",
+                        border: "1px solid var(--border)",
+                        backgroundColor: selectedDocPath === file.path ? "var(--blue-soft)" : "transparent",
+                        color: selectedDocPath === file.path ? "var(--blue-dark)" : "var(--fg)",
+                        cursor: "pointer",
+                        fontSize: "0.9em",
+                        fontWeight: selectedDocPath === file.path ? "bold" : "normal"
+                      }}
+                    >
+                      {file.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+          <Card title={selectedDocPath ? `Document: ${selectedDocPath.split('/').pop()}` : "Document Reader"}>
+            <div style={{ height: "720px", overflowY: "auto", padding: "10px", marginTop: "10px" }}>
+              {docLoading ? (
+                <LoadingState />
+              ) : docError ? (
+                <ErrorState error={new Error(docError)} retry={() => loadDocFile("obsidian", selectedDocPath)} />
+              ) : docContent ? (
+                <div
+                  className="markdown-body"
+                  style={{
+                    lineHeight: "1.6",
+                    color: "var(--fg)",
+                    fontSize: "0.95em",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(docContent) }}
+                />
+              ) : (
+                <div style={{ color: "var(--fg-muted)", textAlign: "center", marginTop: "100px" }}>Select a note from the list to view its content.</div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Karpathy LLM Wiki Tab */}
+      {activeTab === "karpathy_wiki" && (
+        <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "20px", height: "800px" }}>
+          <Card title="Compiled Wiki Pages">
+            <div style={{ height: "720px", overflowY: "auto", marginTop: "10px" }}>
+              {docsListLoading ? (
+                <LoadingState />
+              ) : docsListError ? (
+                <ErrorState error={new Error(docsListError)} retry={loadDocsList} />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "5px", paddingRight: "10px" }}>
+                  {docsList?.karpathy.map(file => (
+                    <button
+                      key={file.path}
+                      onClick={() => setSelectedDocPath(file.path)}
+                      style={{
+                        textAlign: "left",
+                        padding: "10px",
+                        borderRadius: "6px",
+                        border: "1px solid var(--border)",
+                        backgroundColor: selectedDocPath === file.path ? "var(--blue-soft)" : "transparent",
+                        color: selectedDocPath === file.path ? "var(--blue-dark)" : "var(--fg)",
+                        cursor: "pointer",
+                        fontSize: "0.9em",
+                        fontWeight: selectedDocPath === file.path ? "bold" : "normal"
+                      }}
+                    >
+                      {file.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+          <Card title={selectedDocPath ? `Wiki Page: ${selectedDocPath.split('/').pop()}` : "Wiki Page Reader"}>
+            <div style={{ height: "720px", overflowY: "auto", padding: "10px", marginTop: "10px" }}>
+              {docLoading ? (
+                <LoadingState />
+              ) : docError ? (
+                <ErrorState error={new Error(docError)} retry={() => loadDocFile("karpathy", selectedDocPath)} />
+              ) : docContent ? (
+                <div
+                  className="markdown-body"
+                  style={{
+                    lineHeight: "1.6",
+                    color: "var(--fg)",
+                    fontSize: "0.95em",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(docContent) }}
+                />
+              ) : (
+                <div style={{ color: "var(--fg-muted)", textAlign: "center", marginTop: "100px" }}>Select a wiki page from the list to view its content.</div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+      </div>
     </div>
   );
 }

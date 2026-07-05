@@ -35,6 +35,12 @@ export interface Patient {
   lastAiReview?: string;
 }
 
+export interface ExtractedField {
+  name: string;
+  value: string;
+  confidence: number;
+}
+
 export interface ClinicalSession {
   id: string;
   patientId: string;
@@ -44,6 +50,7 @@ export interface ClinicalSession {
   summary?: string;
   uploadedImageCount?: number;
   extractionConfidence?: number;
+  extractedFields?: ExtractedField[];
   jsonSyncStatus?: string;
   relationalSyncStatus?: string;
   vectorSyncStatus?: string;
@@ -105,6 +112,19 @@ export interface DashboardData {
   activity?: AuditEvent[];
 }
 
+export interface StorageData {
+  assets?: Array<Record<string, unknown>>;
+  persistedExtractions?: Array<Record<string, unknown>>;
+  records?: Array<Record<string, unknown>>;
+  assetCount?: number;
+  persistedCount?: number;
+  cloudCount?: number;
+  jsonCount?: number;
+  sqlCount?: number;
+  vectorCount?: number;
+  auditCount?: number;
+}
+
 export interface ClinicalUser {
   id: string;
   name: string;
@@ -155,4 +175,65 @@ export interface AgentCatalog {
   orchestrator: string;
   framework: string;
   pipelines: AgentPipeline[];
+}
+
+export interface ComponentHealth {
+  name: string;
+  status: "operational" | "unavailable";
+  detail: string;
+  latencyMs: number;
+}
+
+export interface SystemHealth {
+  components: ComponentHealth[];
+  checkedAt: string;
+}
+
+export interface AgentMonitorRow {
+  agent: string;
+  pipeline: string;
+  lastRun: string;
+  status: "healthy" | "degraded";
+  avgConfidence: number;
+  failureRate: number;
+  reviewRate: number;
+  avgDurationMs: number;
+  linkedPatients: number;
+}
+
+export interface PermissionRow {
+  permission: string;
+  grants: Record<string, boolean>;
+}
+
+export interface Permissions {
+  roles: string[];
+  matrix: PermissionRow[];
+  version: number;
+}
+
+export interface SchemaColumn {
+  name: string;
+  type: string;
+}
+
+export interface SchemaTable {
+  table: string;
+  columns: SchemaColumn[];
+}
+
+export interface WorkspaceSummary {
+  queueCount: number;
+  inboxCount: number;
+  unreadNotifications: number;
+  patients: number;
+  runs: number;
+}
+
+export interface EvidenceItem {
+  id: string;
+  kind: string;
+  date: string;
+  excerpt: string;
+  sourceUrl?: string;
 }

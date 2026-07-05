@@ -5,31 +5,38 @@ import { Icon, RoleSwitcher, StatusBadge } from "./components";
 import { useClinical } from "./context";
 import { ONBOARDING_KEY, OnboardingTour } from "./Onboarding";
 import { OrchestrationPanel } from "./OrchestrationPanel";
-import { TENANTS, type ClinicalNotification, type Patient, type TenantId } from "./types";
+import { TENANTS, type ClinicalNotification, type Patient, type TenantId, type WorkspaceSummary } from "./types";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
-type NavItem = { to: string; icon: string; label: string; count?: number };
+type NavItem = { to: string; icon: string; label: string; countKey?: "queue" | "inbox"; external?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
+
+const documentationGroup: NavGroup = { label: "Developer & Documentation", items: [
+  { to: "/documentation/", icon: "report", label: "Documentation Hub", external: true },
+  { to: "/documentation/llm-wiki/index.html", icon: "brain", label: "Karpathy LLM Wiki", external: true },
+  { to: "/documentation/project-wiki/Home.html", icon: "activity", label: "Obsidian Wiki", external: true },
+  { to: "/docs", icon: "report", label: "Interactive API Docs", external: true },
+  { to: "/docs-viewer?tab=api_runner", icon: "sliders", label: "API Console" },
+]};
 
 const clinicianGroups: NavGroup[] = [
   { label: "Workspace", items: [
     { to: "/app/dashboard", icon: "dashboard", label: "Dashboard" },
-    { to: "/app/queue", icon: "list", label: "Patient Queue", count: 3 },
+    { to: "/app/queue", icon: "list", label: "Patient Queue", countKey: "queue" },
     { to: "/app/patients", icon: "patients", label: "Patients" },
     { to: "/app/patients?view=sessions", icon: "calendar", label: "Sessions" },
     { to: "/app/overview", icon: "chart", label: "Population Overview" },
-    { to: "/app/inbox", icon: "inbox", label: "Clinical Inbox", count: 6 },
-  ]},
-  { label: "AI Agents", items: [
+    { to: "/app/inbox", icon: "inbox", label: "Clinical Inbox", countKey: "inbox" },
     { to: "/app/extraction", icon: "microscope", label: "Image Extraction" },
     { to: "/app/qa", icon: "brain", label: "Multimodal Q&A" },
     { to: "/app/database", icon: "database", label: "Database Intelligence" },
   ]},
-  { label: "Governance", items: [
+  { label: "Reports & Compliance", items: [
     { to: "/app/overview?view=reports", icon: "report", label: "Reports" },
     { to: "/app/inbox?view=audit", icon: "shield", label: "Audit Trail" },
   ]},
+  documentationGroup,
 ];
 
 const adminGroups: NavGroup[] = [
@@ -45,18 +52,17 @@ const adminGroups: NavGroup[] = [
     { to: "/app/storage?view=vector", icon: "vector", label: "Vector Indexes" },
     { to: "/app/storage?view=relational", icon: "database", label: "Relational Database" },
   ]},
-  { label: "Governance", items: [
+  { label: "Governance & Audit", items: [
     { to: "/app/inbox?view=audit", icon: "shield", label: "Audit Logs" },
     { to: "/app/admin?view=health", icon: "pulse", label: "System Health" },
     { to: "/app/configuration?view=settings", icon: "settings", label: "Settings" },
   ]},
-  { label: "Developer Tools", items: [
-    { to: "/app/console", icon: "sliders", label: "API Console" },
-  ]},
+  documentationGroup,
 ];
 
-function routeTitle(pathname: string) {
-  const match = [...clinicianGroups, ...adminGroups].flatMap(group => group.items).find(item => item.to.split("?")[0] === pathname);
+function routeTitle(pathname: string, search: string) {
+  const fullPath = search ? `${pathname}${search}` : pathname;
+  const match = [...clinicianGroups, ...adminGroups].flatMap(group => group.items).find(item => item.to === fullPath || item.to === pathname);
   return match?.label ?? "Clinical workspace";
 }
 
@@ -73,9 +79,11 @@ export function Shell() {
   const [search, setSearch] = useState("");
   const [matches, setMatches] = useState<Patient[]>([]);
   const [notifications, setNotifications] = useState<ClinicalNotification[]>([]);
+  const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const groups = role === "clinician" ? clinicianGroups : adminGroups;
   const unread = notifications.filter(item => !item.read).length;
-  const title = routeTitle(location.pathname);
+  const title = routeTitle(location.pathname, location.search);
 
   useEffect(() => {
     if (location.pathname === "/app/console") {
@@ -85,6 +93,7 @@ export function Shell() {
   }, [location.pathname]);
 
   useEffect(() => { void api.notifications().then(setNotifications).catch(() => setNotifications([])); }, [tenant.id]);
+  useEffect(() => { void api.summary().then(setSummary).catch(() => setSummary(null)); }, [tenant.id, location.pathname]);
   useEffect(() => {
     if (search.trim().length < 2) { setMatches([]); return; }
     const timer = window.setTimeout(() => { void api.patients(search).then(setMatches).catch(() => setMatches([])); }, 180);
@@ -97,7 +106,7 @@ export function Shell() {
     document.addEventListener("keydown", shortcut);
     return () => document.removeEventListener("keydown", shortcut);
   }, []);
-  useEffect(() => { setNoticeOpen(false); setSearchOpen(false); }, [location.pathname, location.search]);
+  useEffect(() => { setNoticeOpen(false); setSearchOpen(false); setProfileOpen(false); }, [location.pathname, location.search]);
 
   const switchRole = (next: typeof role) => {
     setRole(next);
@@ -132,14 +141,24 @@ export function Shell() {
 
   return <div className="clinical-shell">
     <aside className="clinical-sidebar">
-      <NavLink to="/" className="product-lockup"><span className="product-symbol"><img src="/mark.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></NavLink>
+      <NavLink to="/" className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></NavLink>
       <button className="new-session" onClick={() => navigate("/app/extraction")}><Icon name="plus" size={16}/>New session</button>
       <nav className="grouped-nav" aria-label={`${role} navigation`}>{nav.map(group => <section key={group.label}><h2>{group.label}</h2>{group.items.map(item => {
         const target = item.to.split("?")[0];
         const active = currentPath === item.to || (!item.to.includes("?") && location.pathname === target);
-        return <NavLink key={item.to} to={item.to} className={active ? "active" : ""}><Icon name={item.icon} size={17}/><span>{item.label}</span>{item.count ? <b>{item.count}</b> : null}</NavLink>;
+        const count = item.countKey === "queue" ? summary?.queueCount : item.countKey === "inbox" ? summary?.inboxCount : undefined;
+        if (item.external) return <a key={item.to} href={item.to} target="_blank" rel="noreferrer"><Icon name={item.icon} size={17}/><span>{item.label}</span></a>;
+        return <NavLink key={item.to} to={item.to} className={active ? "active" : ""}><Icon name={item.icon} size={17}/><span>{item.label}</span>{count ? <b>{count}</b> : null}</NavLink>;
       })}</section>)}</nav>
-      <button className="sidebar-profile" onClick={() => navigate(role === "admin" ? "/app/users" : "/app/patient/PT-8829")}><span>SM</span><span><strong>Dr. Sarah Miller</strong><small>Clinical Informatics</small></span><Icon name="chevron" size={14}/></button>
+      <div className="sidebar-profile-wrap">
+        <button className="sidebar-profile" aria-expanded={profileOpen} aria-haspopup="menu" onClick={() => setProfileOpen(value => !value)}><span>{role === "admin" ? "AD" : "CL"}</span><span><strong>{role === "admin" ? "Administrator" : "Clinician"} workspace</strong><small>{tenant.name} · {tenant.kind === "real" ? "Live" : "Demo"}</small></span><Icon name="chevron" size={14}/></button>
+        {profileOpen && <div className="profile-popover" role="menu">
+          <button role="menuitem" onClick={() => { setProfileOpen(false); switchRole(role === "admin" ? "clinician" : "admin"); }}>Switch to {role === "admin" ? "clinician" : "admin"} view</button>
+          <button role="menuitem" onClick={() => { setProfileOpen(false); setTourOpen(true); }}>Replay product tour</button>
+          <button role="menuitem" onClick={() => { setProfileOpen(false); window.location.assign("/documentation/"); }}>Documentation hub</button>
+          <button role="menuitem" onClick={() => { setProfileOpen(false); navigate("/"); }}>Back to landing page</button>
+        </div>}
+      </div>
     </aside>
 
     <header className="clinical-topbar">

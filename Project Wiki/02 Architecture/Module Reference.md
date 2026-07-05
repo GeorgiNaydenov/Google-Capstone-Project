@@ -48,6 +48,7 @@ Every Python module currently in the repository, with its purpose (taken from mo
 | `repository.py` | Session-isolated mutable repository for deterministic product demos |
 | `models.py` | Pydantic contracts for the clinician product API |
 | `document.py` | Document parsing and upload policy for clinical evidence files |
+| `system.py` | Real system health checks, latency monitoring, and database seeding for the real tenant |
 
 ## mcp_server/
 
@@ -62,6 +63,7 @@ Every Python module currently in the repository, with its purpose (taken from mo
 | `check_harness.py` | PreToolUse hook — verifies harness integrity ([[Claude Harness]]) |
 | `sync_harness.py` | Mirrors `.claude/` → `.agents/` and CLAUDE.md → AGENTS.md |
 | `sync_wiki.py` | Stop hook — deterministic wiki/harness auto-update ([[Development Workflow]]) |
+| `export_diagrams.py` | Export Project Wiki draw.io diagrams into frontend public assets |
 | `generate_database_showcase.py` | Generate a large governed SQLite cohort for the database agent |
 | `generate_extraction_showcase.py` | Generate synthetic extraction assets for the image extraction agent |
 | `generate_multimodal_patient_showcase.py` | Generate multimodal patient bundles for the Q&A agent |

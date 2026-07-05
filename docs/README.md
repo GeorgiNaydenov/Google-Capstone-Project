@@ -8,8 +8,9 @@ Architecture descriptions, capstone guides, and clinical product delivery docume
 
 | Document | Description |
 |----------|-------------|
-| [`architecture.md`](architecture.md) | Full system architecture — 16-agent pipeline diagrams, model registry, security layers, memory layers, observability stack, and Google Cloud integration points |
+| [`architecture.md`](architecture.md) | Full system architecture, visible diagram atlas, 23-agent pipeline diagrams, model registry, security layers, memory layers, observability stack, and Google Cloud integration points |
 | [`CAPSTONE_GUIDE.md`](CAPSTONE_GUIDE.md) | 6-step domain specialization checklist for adapting the universal ADK harness to a specific capstone domain. Edit points marked with `# >>> CUSTOMIZE:` |
+| [`../Project Wiki/02 Architecture/Diagram Atlas.md`](../Project%20Wiki/02%20Architecture/Diagram%20Atlas.md) | Obsidian-native catalog for the exported draw.io, SVG, and PNG views rendered in the frontend |
 
 ### clinical-product/
 

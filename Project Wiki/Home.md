@@ -2,7 +2,7 @@
 title: Nexus Clinical AI Command Center — Wiki Home
 type: dashboard
 status: active
-updated: 2026-07-04
+updated: 2026-07-05
 tags:
   - home
   - index
@@ -20,7 +20,7 @@ Clinician-facing AI platform built on Google ADK: specialist agent pipelines for
 - [[Problem & Solution]] — what Nexus does and why
 - [[Course Concepts Map]] — Days 1a–5b coverage and rubric alignment
 
-## Architecture
+## Architecture & Agent Workflows
 
 - [[System Overview]] — the four-layer stack
 - [[Agent Architecture]] — every agent, tier, and tool
@@ -28,16 +28,13 @@ Clinician-facing AI platform built on Google ADK: specialist agent pipelines for
 - [[Module Reference]] — every Python module and its purpose
 - [[Module Dependency Graph]] — auto-regenerated import graph
 - [[Architecture Board.canvas|Architecture Board]] — visual system map
-
-## Processes (BPMN-style)
-
-- [[End-to-End Request Flow]]
-- [[Image Extraction Pipeline]]
-- [[Patient QA Pipeline]]
-- [[DB Intelligence Pipeline]]
-- [[Human-in-the-Loop Approval]]
-- [[Development Workflow]]
-- [[Deployment Pipeline]]
+- [[End-to-End Request Flow]] — request lifecycle sequence
+- [[Image Extraction Pipeline]] — 9-agent extraction loop
+- [[Patient QA Pipeline]] — 7-agent grounded Q&A workflow
+- [[DB Intelligence Pipeline]] — 6-agent NL-to-SQL executor
+- [[Human-in-the-Loop Approval]] — human verification gates
+- [[Development Workflow]] — local build and sync cycles
+- [[Deployment Pipeline]] — production topology and engines
 
 ## Security & Memory
 
@@ -47,6 +44,7 @@ Clinician-facing AI platform built on Google ADK: specialist agent pipelines for
 ## Operations
 
 - [[Clinical App]] — FastAPI product server + React frontend
+- [[REST API and Developer Console]] — versioned REST APIs, styled Swagger, and interactive playground console
 - [[MCP and A2A]] — interoperability surfaces
 - [[Testing & Eval]] — pytest suite + ADK evaluation
 - [[Observability]] — logs, traces, clinical audit
@@ -57,5 +55,7 @@ Clinician-facing AI platform built on Google ADK: specialist agent pipelines for
 - [[Claude Harness]] — rules, skills, hooks, memory, sync scripts
 
 ## Machine-Generated (auto-updated)
+
+- [[Architecture Views.base|Architecture Views Base]] - active architecture, operations, and process notes
 
 - [[Module Inventory]] · [[Test Inventory]] · [[Harness Index]] · [[Changelog]] · [[Drift Report]]

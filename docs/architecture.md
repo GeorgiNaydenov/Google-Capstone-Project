@@ -6,6 +6,8 @@ A **23-agent clinical AI platform** (1 orchestrator + 22 pipeline sub-agents) bu
 
 The system has four layers: a **React frontend** (Vite + TypeScript), a **FastAPI product server** (`clinical_app/`), the **ADK agent backend** (`capstone_agent/`), and an **MCP tool server** (`mcp_server/`). The frontend talks to the FastAPI server, which can operate in deterministic demo mode or bridge live to the ADK runner. On first workspace entry the frontend runs a full-takeover onboarding tour (`frontend/src/Onboarding.tsx`) that walks the clinician through every section and the three AI workflows over the live screens; it is skippable, replayable from the topbar, and fully deterministic (no API calls).
 
+The visible architecture layer now has a first-class diagram atlas. Draw.io sources are exported to SVG and PNG assets under `frontend/public/diagrams/`, cataloged in `frontend/src/diagrams.ts`, and rendered by `DiagramAtlas`, `DiagramViewer`, and `InlineDiagram`. The public landing page, clinician dashboard, admin dashboard, configuration, storage, inbox, extraction, Q&A, and database routes embed the relevant views so a new guest can inspect system design while using the product. The Obsidian source note is `Project Wiki/02 Architecture/Diagram Atlas.md`.
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  React Frontend (frontend/)                              │
