@@ -2,22 +2,29 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { DiagramAtlas } from "../components/DiagramAtlas";
-import { Icon, StatusBadge } from "../components";
+import { Icon, StatusBadge, useToast } from "../components";
 import { useClinical } from "../context";
 import type { Role } from "../types";
 
 export function Landing() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const enter = async () => {
     setBusy(true);
+    if (!sessionStorage.getItem("tenant")) sessionStorage.setItem("tenant", "research-clinic");
     try {
-      if (!sessionStorage.getItem("tenant")) sessionStorage.setItem("tenant", "research-clinic");
+      // A demo session isolates this browser's state, but the API also
+      // accepts the default "public-demo" session, so entry never depends on
+      // this call succeeding — a transient failure must not trap the user on
+      // the landing page.
       const session = await api.startDemo();
       sessionStorage.setItem("demoSession", session.sessionId);
-      navigate("/roles");
+    } catch {
+      toast("Could not reach the demo API; continuing with a shared session.", "info");
     } finally {
       setBusy(false);
+      navigate("/roles");
     }
   };
   const workflowCards = [
@@ -92,8 +99,9 @@ type DocsGuide = {
   what: string;
   prerequisites: string[];
   commands: string;
-  url: string;
-  urlLabel: string;
+  // Origin-relative path so the link resolves against wherever the app is
+  // served — localhost during development and the Cloud Run URL once deployed.
+  path: string;
   note?: string;
 };
 
@@ -104,9 +112,8 @@ const docsGuides: DocsGuide[] = [
     what: "Auto-generated, styled OpenAPI console for every /api/v1 and /api/v2 REST endpoint. Lets you send real requests to the running backend from the browser.",
     prerequisites: ["Python 3.11+", "uv (or pip)", "Packages from requirements.txt — fastapi and uvicorn are already listed there"],
     commands: `uv venv .venv --python 3.11\nuv pip install --python .venv\\Scripts\\python.exe -r requirements.txt\nuv run uvicorn clinical_app.app:app --reload --port 8000`,
-    url: "http://localhost:8000/docs",
-    urlLabel: "localhost:8000/docs",
-    note: "Works the same in demo or live mode — only the backend process needs to be running.",
+    path: "/docs",
+    note: "Works the same in demo or live mode — only the backend process needs to be running. After deployment the same page is at <your-service-url>/docs.",
   },
   {
     id: "redoc",
@@ -114,8 +121,7 @@ const docsGuides: DocsGuide[] = [
     what: "The same OpenAPI contract as Swagger, rendered as a structured, read-only reference organized by tag. Better for skimming the schema than for firing test requests.",
     prerequisites: ["Same backend process as Swagger — no extra install"],
     commands: `uv run uvicorn clinical_app.app:app --reload --port 8000`,
-    url: "http://localhost:8000/redoc",
-    urlLabel: "localhost:8000/redoc",
+    path: "/redoc",
     note: "The raw machine-readable contract is also available at /openapi.json on the same server.",
   },
   {
@@ -123,23 +129,23 @@ const docsGuides: DocsGuide[] = [
     title: "3. Obsidian Project Wiki — engineering vault",
     what: "The full engineering vault: architecture notes, security and memory design, operations runbooks, and generated inventories. Pre-rendered to static HTML and already committed to the repo.",
     prerequisites: ["None to just read it — the rendered pages ship in frontend/public/documentation/project-wiki/", "To rebuild after editing Project Wiki/*.md: Python 3.11+ and the markdown-it-py package", "Optional, to edit the vault itself with backlinks and graph view: the Obsidian desktop app (obsidian.md)"],
-    commands: `# View it (dev server)\ncd frontend && npm ci && npm run dev\n# then open the URL below\n\n# Rebuild after editing Project Wiki/*.md\nuv pip install markdown-it-py\nuv run python scripts/build_docs_site.py`,
-    url: "http://localhost:5173/documentation/project-wiki/Home.html",
-    urlLabel: "localhost:5173/documentation/project-wiki/Home.html",
-    note: "Once the FastAPI backend serves the built frontend, the same page is at localhost:8000/documentation/project-wiki/Home.html.",
+    commands: `# View it — no build needed, the pages are committed and served\n# at /documentation on whatever origin runs the app.\n\n# Rebuild only after editing Project Wiki/*.md\nuv pip install markdown-it-py\nuv run python scripts/build_docs_site.py`,
+    path: "/documentation/project-wiki/Home.html",
+    note: "Served on the same origin as the app: locally at localhost:8000/documentation/... and, once deployed, at <your-service-url>/documentation/...",
   },
   {
     id: "karpathy",
     title: "4. Karpathy LLM Wiki — distilled knowledge base",
     what: "One distilled article per topic, summarized and categorized for fast reading, compiled from the same Obsidian vault by the same build script.",
     prerequisites: ["None to just read it — already committed under frontend/public/documentation/llm-wiki/", "To rebuild after editing wiki/*.md: Python 3.11+ and the markdown-it-py package"],
-    commands: `# View it (dev server)\ncd frontend && npm ci && npm run dev\n# then open the URL below\n\n# Rebuild (regenerates both wikis in one pass)\nuv pip install markdown-it-py\nuv run python scripts/build_docs_site.py`,
-    url: "http://localhost:5173/documentation/llm-wiki/index.html",
-    urlLabel: "localhost:5173/documentation/llm-wiki/index.html",
+    commands: `# View it — committed and served at /documentation on the app origin.\n\n# Rebuild (regenerates both wikis in one pass)\nuv pip install markdown-it-py\nuv run python scripts/build_docs_site.py`,
+    path: "/documentation/llm-wiki/index.html",
+    note: "Same origin as the app, both locally and after deployment.",
   },
 ];
 
 export function DocsAccess() {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
   return <main className="docs-access-page">
     <header className="landing-nav">
       <div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div>
@@ -159,7 +165,7 @@ export function DocsAccess() {
         <h3>Commands</h3>
         <pre>{guide.commands}</pre>
         <h3>Open it</h3>
-        <a href={guide.url} target="_blank" rel="noreferrer">{guide.urlLabel}</a>
+        <a href={guide.path} target="_blank" rel="noreferrer">{origin ? `${origin}${guide.path}` : guide.path}</a>
         {guide.note && <p className="docs-access-note">{guide.note}</p>}
       </article>)}
     </section>

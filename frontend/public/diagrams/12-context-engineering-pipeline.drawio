@@ -27,7 +27,7 @@
           <mxGeometry x="1240" y="180" width="240" height="120" as="geometry" />
         </mxCell>
         <mxCell id="f1" value="estimate_tokens&#xa;chars over four heuristic for budget decisions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="40" y="400" width="240" height="70" as="geometry" />
+          <mxGeometry x="940" y="400" width="240" height="70" as="geometry" />
         </mxCell>
         <mxCell id="f2" value="compact_history&#xa;keep_recent turns preserved, older turns summarized, returns a new list" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="640" y="400" width="240" height="70" as="geometry" />
@@ -54,12 +54,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="g1" value="uses" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="s4" target="f1">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="1060" y="340" />
-              <mxPoint x="160" y="340" />
-            </Array>
-          </mxGeometry>
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="g2" value="uses" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="s3" target="f2">
           <mxGeometry relative="1" as="geometry" />

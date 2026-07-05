@@ -151,17 +151,33 @@ def build_tree(source: Path, destination: Path, renderer: MarkdownIt, link_index
 
         if wikilinks:
             def replace_wikilink(match: re.Match[str]) -> str:
-                target, _, label = match.group(1).partition("|")
-                target = target.split("#")[0].strip()
-                label = (label or target).strip()
-                href = link_index.get(target.casefold())
+                raw, _, custom_label = match.group(1).partition("|")
+                raw = raw.strip()
+                note_name = raw.split("#")[0].strip()
+                # Fall back to the original (un-truncated) text so a same-page
+                # anchor like "#06 Agent Hierarchy" keeps its heading text
+                # instead of collapsing to an empty label.
+                label = (custom_label or raw).lstrip("#").strip()
+                href = link_index.get(note_name.casefold())
                 if href:
                     encoded = ("../" * depth + href).replace(" ", "%20")
                     return f"[{label}]({encoded})"
                 return label
             text = re.sub(r"(?<!\!)\[\[([^\]]+)\]\]", replace_wikilink, text)
-            # Embedded images and file transclusions render as plain references.
-            text = re.sub(r"\!\[\[([^\]]+)\]\]", lambda match: f"`{match.group(1)}`", text)
+
+            def replace_embed(match: re.Match[str]) -> str:
+                """Render file transclusions; diagram images resolve to the
+                app's shared static diagram assets (SVG primary, PNG
+                fallback), other embeds stay as a plain filename reference."""
+
+                target = match.group(1).split("|")[0].strip()
+                name = target.rsplit("/", 1)[-1]
+                if re.search(r"\.svg$", name, re.IGNORECASE):
+                    return f"![{name}](/diagrams/svg/{name})"
+                if re.search(r"\.(png|jpe?g|gif)$", name, re.IGNORECASE):
+                    return f"![{name}](/diagrams/{name})"
+                return f"`{target}`"
+            text = re.sub(r"\!\[\[([^\]]+)\]\]", replace_embed, text)
             # Obsidian callouts render as titled blockquotes.
             text = re.sub(r"^>\s*\[!(\w+)\][-+]?\s*(.*)$", lambda match: f"> **{match.group(1).title()}:** {match.group(2)}", text, flags=re.MULTILINE)
 
