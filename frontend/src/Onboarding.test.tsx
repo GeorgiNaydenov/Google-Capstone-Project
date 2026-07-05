@@ -51,6 +51,9 @@ describe("first-run onboarding tour", () => {
     expect(screen.getByRole("dialog", { name: /patients who need attention/i })).toBeInTheDocument();
     expect(document.body.dataset.tourStep).toBe("dashboard");
     fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByRole("dialog", { name: /demo tenants to explore/i })).toBeInTheDocument();
+    expect(document.body.dataset.tourStep).toBe("tenants");
+    fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     expect(screen.getByRole("dialog", { name: /full clinical picture/i })).toBeInTheDocument();
     expect(document.body.dataset.tourStep).toBe("record");
     fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
@@ -65,6 +68,9 @@ describe("first-run onboarding tour", () => {
     expect(screen.getByRole("dialog", { name: /part of the record/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     expect(screen.getByRole("dialog", { name: /inspect the plan/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByRole("dialog", { name: /architecture is documented/i })).toBeInTheDocument();
+    expect(document.body.dataset.tourStep).toBe("atlas");
     fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     fireEvent.click(screen.getByRole("button", { name: /open patient queue/i }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

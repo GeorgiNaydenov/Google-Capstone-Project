@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 // First-run onboarding tour. The real application stays visible behind the
 // panel, and each step navigates to the actual screen it describes.
-export const ONBOARDING_KEY = "clinicalOnboardingV1";
+export const ONBOARDING_KEY = "clinicalOnboardingV2";
 
 type TourStep = {
   id: string;
@@ -75,7 +75,13 @@ const steps: TourStep[] = [
   {
     id: "dashboard", route: "/app/dashboard", eyebrow: "YOUR MORNING, TRIAGED", screen: "Dashboard",
     title: "Start with the patients who need attention first.",
-    body: "The dashboard turns the day into a prioritized clinical view. It surfaces high-risk patients, pending verifications, and agent alerts with confidence, source links, and the next action in reach.",
+    body: "The dashboard turns the day into a prioritized clinical view. Every number is live from the API: high-risk patients, pending verifications, and agent alerts with confidence, source links, and quick actions in reach.",
+  },
+  {
+    id: "tenants", route: "/app/dashboard", eyebrow: "DEMO AND LIVE TENANTS", screen: "Organization switcher",
+    title: "Two demo tenants to explore, one live tenant for real work.",
+    body: "The organization switcher in the top bar moves between Research Clinic and Northstar Health, two seeded demo tenants that show the product with realistic data. Switch to the Capstone tenant to work for real: it starts empty and fills only with what you upload and approve.",
+    visual: <ChipRow flow chips={["Research Clinic (demo)", "Northstar Health (demo)", "Capstone (live)"]}/>,
   },
   {
     id: "record", route: "/app/queue", eyebrow: "ONE PATIENT RECORD", screen: "Patient queue",
@@ -112,9 +118,15 @@ const steps: TourStep[] = [
     visual: <ChipRow flow chips={["Intent", "Workflow", "Agents", "Permissions", "Run"]}/>,
   },
   {
+    id: "atlas", route: "/app/dashboard", eyebrow: "SEE THE WHOLE SYSTEM", screen: "System atlas",
+    title: "The architecture is documented right where you work.",
+    body: "The System atlas at the bottom of the dashboard holds the full architecture as pan-and-zoom diagrams, grouped into categories. For the complete story, the Documentation hub opens the wikis and API reference as standalone reading, separate from this workspace.",
+    visual: <ChipRow flow chips={["System", "Agents", "Security", "Processes", "Data", "Deployment"]}/>,
+  },
+  {
     id: "ready", route: "/app/dashboard", eyebrow: "READY TO WORK", screen: "Dashboard",
     title: "The full loop is now visible.",
-    body: "Evidence comes in, agents extract it, you verify it, the record answers questions, the database reveals trends, and every step is auditable. Start with the queue. It is already prioritized.",
+    body: "Evidence comes in, agents extract it, you verify it, the record answers questions, the database reveals trends, and every step is auditable. The workspace is responsive, so it works on a tablet at the bedside too. Start with the queue. It is already prioritized.",
     visual: <ChipRow flow chips={["Evidence", "Extraction", "Review", "Q&A", "Insight", "Audit"]}/>,
   },
 ];
