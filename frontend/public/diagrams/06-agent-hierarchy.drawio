@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Agent Hierarchy">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" page="1" pageWidth="1460" pageHeight="1200">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Multi Agent Hierarchy (capstone_agent/orchestration.py and agent.py)" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="380" y="10" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="toolnote" value="Orchestrator tools: MCP toolset, code executor, document upload and search, load_memory, past conversation search, sensitive action review (human in the loop), audit trail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="400" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="root" value="clinical_orchestrator&#xa;root LlmAgent on the flash lite tier" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="70" width="280" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lane1" value="image_extraction_pipeline (SequentialAgent)" style="swimlane;startSize=30;fillColor=#f0f6ff;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="420" height="900" as="geometry" />
+        </mxCell>
+        <mxCell id="x1" value="quality_assessor_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="50" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="x2" value="ocr_processor_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="130" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="x3" value="vision_analyzer_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="210" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="x4" value="clinical_structuring_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="290" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="loopg" value="validation_gate (LoopAgent)" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;html=1;" vertex="1" parent="lane1">
+          <mxGeometry x="40" y="370" width="340" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="crit" value="extraction_critic_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="loopg">
+          <mxGeometry x="40" y="45" width="260" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="refi" value="extraction_refiner_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="loopg">
+          <mxGeometry x="40" y="135" width="260" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="x6" value="clinical_review_gate_agent&#xa;pauses for clinician approval" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="610" width="300" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="x7" value="extraction_persistence_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="695" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="x8" value="extraction_audit_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="775" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2" value="patient_qa_pipeline (SequentialAgent)" style="swimlane;startSize=30;fillColor=#f0f6ff;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="240" width="420" height="900" as="geometry" />
+        </mxCell>
+        <mxCell id="q1" value="qa_request_validation_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="50" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="q2" value="context_assembly_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="130" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="q3" value="evidence_retrieval_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="210" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="q4" value="image_evidence_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="290" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="q5" value="citation_builder_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="370" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="q6" value="answer_synthesis_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="450" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="q7" value="qa_audit_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="530" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="lane3" value="db_intelligence_pipeline (SequentialAgent)" style="swimlane;startSize=30;fillColor=#f0f6ff;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="240" width="420" height="900" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="schema_discovery_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="50" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="nl_to_sql_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="130" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="sql_validator_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="210" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="sql_preview_approval_agent&#xa;pauses for clinician approval" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="290" width="300" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" value="query_executor_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="375" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b6" value="insight_chart_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="455" width="300" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="Legend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="50" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="lgd1" value="" style="rounded=0;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="legend">
+          <mxGeometry x="10" y="30" width="30" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="lgd1t" value="Human approval gate" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="legend">
+          <mxGeometry x="50" y="27" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lgd2" value="" style="rounded=0;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="legend">
+          <mxGeometry x="10" y="52" width="30" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="lgd2t" value="LoopAgent validation gate" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="legend">
+          <mxGeometry x="50" y="49" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lgd3" value="" style="rounded=0;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="legend">
+          <mxGeometry x="10" y="74" width="30" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="lgd3t" value="Audit stage" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="legend">
+          <mxGeometry x="50" y="71" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="h1" value="transfers control" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="root" target="lane1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="190" />
+              <mxPoint x="250" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="h2" value="transfers control" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="root" target="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="h3" value="transfers control" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="root" target="lane3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="800" y="190" />
+              <mxPoint x="1210" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="x1" target="x2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="x2" target="x3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="x3" target="x4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="x4" target="loopg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="critiques" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;entryX=0.25;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="crit" target="refi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" value="repeats until approved or exit_loop fires" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0;entryX=0.75;entryY=1;labelBackgroundColor=#ffffff;fontSize=10;" edge="1" parent="1" source="refi" target="crit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="loopg" target="x6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="x6" target="x7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="x7" target="x8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="t1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="q1" target="q2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="q2" target="q3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="t3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="q3" target="q4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="q4" target="q5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="t5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="q5" target="q6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="t6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="q6" target="q7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b1" target="b2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b2" target="b3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b3" target="b4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b4" target="b5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b5" target="b6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

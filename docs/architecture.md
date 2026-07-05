@@ -4,7 +4,7 @@
 
 A **16-agent clinical AI platform** built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and HIPAA-aligned security.
 
-The system has four layers: a **React frontend** (Vite + TypeScript), a **FastAPI product server** (`clinical_app/`), the **ADK agent backend** (`capstone_agent/`), and an **MCP tool server** (`mcp_server/`). The frontend talks to the FastAPI server, which can operate in deterministic demo mode or bridge live to the ADK runner.
+The system has four layers: a **React frontend** (Vite + TypeScript), a **FastAPI product server** (`clinical_app/`), the **ADK agent backend** (`capstone_agent/`), and an **MCP tool server** (`mcp_server/`). The frontend talks to the FastAPI server, which can operate in deterministic demo mode or bridge live to the ADK runner. On first workspace entry the frontend runs a full-takeover onboarding tour (`frontend/src/Onboarding.tsx`) that walks the clinician through every section and the three AI workflows over the live screens; it is skippable, replayable from the topbar, and fully deterministic (no API calls).
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -20,7 +20,7 @@ The system has four layers: a **React frontend** (Vite + TypeScript), a **FastAP
                          │ ADK Runner
 ┌────────────────────────▼─────────────────────────────────┐
 │  ADK Agent Backend (capstone_agent/)                     │
-│  16 sub-agents · 3 pipelines · 22 tools                 │
+│  22 sub-agents · 3 pipelines · 24+ tools                 │
 │  3-layer security · 4-layer memory · HITL · observability│
 ├──────────────────────────────────────────────────────────┤
 │  MCP Server (mcp_server/server.py)                       │
@@ -64,7 +64,7 @@ User Request
 │ (Sequential) │  │                  │  │                  │
 └──────┬───────┘  └────────┬─────────┘  └────────┬─────────┘
        │                   │                     │
-  (5 agents)          (6 agents)            (5 agents)
+  (9 agents)          (7 agents)            (6 agents)
 ```
 
 ### Image Extraction Pipeline (SequentialAgent)
@@ -308,7 +308,7 @@ config.py ──────── standalone (env vars, redaction, clinical gov
     tools.py ─────────── 22 clinical tools + clinical event logging
     clinical_schemas.py ─ SQL DDL + validation + mock query engine
     mock_data.py ─────── deterministic clinical fixture data
-    agent.py ─────────── imports ALL, wires root_agent + 16 sub-agents
+    agent.py ─────────── imports ALL, wires root_agent + 22 sub-agents
     app.py ───────────── App(root_agent, plugins, compaction, resumability)
     a2a_server.py ────── to_a2a(root_agent) ASGI app (Day 5a)
 ```

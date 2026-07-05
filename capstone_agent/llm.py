@@ -29,10 +29,14 @@ from .config import get_config
 
 # Registry of supported model tiers → concrete model ids (verified June 2026).
 # The `-preview` Flash-Lite variant was retired May 2026, so we pin the GA id.
+# `flash-image` is the image-OUTPUT tier (verified on Vertex 2026-07-02): it is
+# called directly via google-genai with response_modalities=[TEXT, IMAGE] by
+# tools.generate_clinical_visual, not wrapped in an ADK LlmAgent.
 MODEL_TIERS: dict[str, str] = {
     "flash-lite": "gemini-3.1-flash-lite",
     "pro": "gemini-3.1-pro-preview",
     "pro-customtools": "gemini-3.1-pro-preview-customtools",
+    "flash-image": "gemini-3.1-flash-image",
 }
 
 DEFAULT_TIER = "flash-lite"

@@ -281,6 +281,13 @@ class ChartSpecInput(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
 
 
+class VisualGenerationInput(BaseModel):
+    """Input for the generate_clinical_visual tool."""
+    description: str = Field(min_length=10, max_length=2000, description="What the visual should show")
+    patient_id: str = Field(default="", max_length=20)
+    session_id: str = Field(default="", max_length=40)
+
+
 class ChartSpec(BaseModel):
     """Chart specification for frontend rendering."""
     chart_type: str

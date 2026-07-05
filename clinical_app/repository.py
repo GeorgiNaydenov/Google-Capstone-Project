@@ -1,11 +1,15 @@
 """Session-isolated mutable repository for deterministic product demos."""
 
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from collections import OrderedDict
+from pathlib import Path
 from time import monotonic
 from threading import Lock
 from typing import Any
+
+from clinical_app.tenancy import TENANTS, TenantConfig, TenantKind
 
 
 PATIENTS = [
@@ -66,6 +70,67 @@ EVIDENCE = {
     "PT-9921": [{"source_id": "NOTE-9921-002", "source_type": "text", "date": "2026-06-10", "text": "CHF exacerbation with EF 35%, BNP 890, weight gain, and bilateral effusions."}],
 }
 
+RESEARCH_NOTIFICATIONS = [
+    {"id": "NTF-001", "title": "Diuretic change below confidence", "detail": "PT-1029 extraction scored 76%; clinician verification required.", "severity": "critical", "agent": "Validation Agent", "read": False, "route": "/app/inbox"},
+    {"id": "NTF-002", "title": "High-risk cohort increased", "detail": "Four patients crossed the high-risk threshold this week.", "severity": "info", "agent": "Database Intelligence Agent", "read": False, "route": "/app/overview"},
+    {"id": "NTF-003", "title": "Re-run extraction with high resolution OCR", "detail": "PT-8829 has a prior extraction below the preferred confidence target.", "severity": "warning", "agent": "Image Quality Agent", "read": False, "route": "/app/extraction?patient=PT-8829"},
+]
+
+NORTHSTAR_PATIENTS = [
+    {"patient_id": "PT-7301", "name": "Marcus Webb", "age": 58, "sex": "Male", "risk_level": "high", "primary_diagnosis": "Hepatocellular carcinoma, BCLC stage B", "assigned_clinician": "Dr. Ingrid Falk", "last_session_date": "2026-06-14", "data_completeness_score": 0.89, "open_tasks": 3, "ai_review_status": "needs_review"},
+    {"patient_id": "PT-4185", "name": "Linnea Sorensen", "age": 47, "sex": "Female", "risk_level": "needs_review", "primary_diagnosis": "Atrial fibrillation, paroxysmal", "assigned_clinician": "Dr. Kwame Mensah", "last_session_date": "2026-06-13", "data_completeness_score": 0.77, "open_tasks": 2, "ai_review_status": "needs_review"},
+    {"patient_id": "PT-9077", "name": "Tomas Herrera", "age": 66, "sex": "Male", "risk_level": "high", "primary_diagnosis": "Idiopathic pulmonary fibrosis", "assigned_clinician": "Dr. Ingrid Falk", "last_session_date": "2026-06-12", "data_completeness_score": 0.86, "open_tasks": 2, "ai_review_status": "needs_review"},
+    {"patient_id": "PT-2560", "name": "Amara Diallo", "age": 34, "sex": "Female", "risk_level": "stable", "primary_diagnosis": "Asthma, moderate persistent", "assigned_clinician": "Dr. Yuki Sato", "last_session_date": "2026-06-11", "data_completeness_score": 0.93, "open_tasks": 0, "ai_review_status": "verified"},
+    {"patient_id": "PT-6934", "name": "Viktor Petrov", "age": 71, "sex": "Male", "risk_level": "high", "primary_diagnosis": "Abdominal aortic aneurysm, 5.1cm", "assigned_clinician": "Dr. Kwame Mensah", "last_session_date": "2026-06-10", "data_completeness_score": 0.82, "open_tasks": 3, "ai_review_status": "needs_review"},
+    {"patient_id": "PT-3408", "name": "Hana Kobayashi", "age": 29, "sex": "Female", "risk_level": "stable", "primary_diagnosis": "Celiac disease", "assigned_clinician": "Dr. Yuki Sato", "last_session_date": "2026-06-09", "data_completeness_score": 0.95, "open_tasks": 0, "ai_review_status": "verified"},
+    {"patient_id": "PT-8216", "name": "Declan Murphy", "age": 54, "sex": "Male", "risk_level": "needs_review", "primary_diagnosis": "Chronic hepatitis C, treatment-naive", "assigned_clinician": "Dr. Ingrid Falk", "last_session_date": "2026-06-08", "data_completeness_score": 0.74, "open_tasks": 2, "ai_review_status": "needs_review"},
+    {"patient_id": "PT-5723", "name": "Rosa Mendes", "age": 62, "sex": "Female", "risk_level": "needs_review", "primary_diagnosis": "Osteoporosis with prior vertebral fracture", "assigned_clinician": "Dr. Kwame Mensah", "last_session_date": "2026-06-07", "data_completeness_score": 0.81, "open_tasks": 1, "ai_review_status": "needs_review"},
+    {"patient_id": "PT-1892", "name": "Elias Lindqvist", "age": 43, "sex": "Male", "risk_level": "stable", "primary_diagnosis": "Ankylosing spondylitis", "assigned_clinician": "Dr. Yuki Sato", "last_session_date": "2026-06-06", "data_completeness_score": 0.90, "open_tasks": 1, "ai_review_status": "verified"},
+    {"patient_id": "PT-7645", "name": "Chioma Okeke", "age": 51, "sex": "Female", "risk_level": "stable", "primary_diagnosis": "Iron deficiency anemia, resolved", "assigned_clinician": "Dr. Ingrid Falk", "last_session_date": "2026-06-05", "data_completeness_score": 0.88, "open_tasks": 0, "ai_review_status": "verified"},
+    {"patient_id": "PT-4029", "name": "Bruno Costa", "age": 39, "sex": "Male", "risk_level": "stable", "primary_diagnosis": "Gout, chronic tophaceous", "assigned_clinician": "Dr. Kwame Mensah", "last_session_date": "2026-06-04", "data_completeness_score": 0.85, "open_tasks": 1, "ai_review_status": "verified"},
+    {"patient_id": "PT-9518", "name": "Ingrid Halvorsen", "age": 76, "sex": "Female", "risk_level": "needs_review", "primary_diagnosis": "Mild cognitive impairment", "assigned_clinician": "Dr. Yuki Sato", "last_session_date": "2026-06-03", "data_completeness_score": 0.72, "open_tasks": 2, "ai_review_status": "needs_review"},
+]
+
+NORTHSTAR_SESSIONS = [
+    {"session_id": "SES-7301-002", "patient_id": "PT-7301", "date": "2026-06-14", "uploaded_image_count": 2, "extraction_confidence": 0.84, "clinician_verification_status": "pending", "extracted_fields": [{"field_name": "lesion_count", "value": "4", "confidence": 0.86}, {"field_name": "afp_level", "value": "412 ng/mL", "confidence": 0.90}]},
+    {"session_id": "SES-4185-001", "patient_id": "PT-4185", "date": "2026-06-13", "uploaded_image_count": 1, "extraction_confidence": 0.78, "clinician_verification_status": "pending", "extracted_fields": [{"field_name": "ecg_rhythm", "value": "Atrial fibrillation with rapid ventricular response", "confidence": 0.83}]},
+    {"session_id": "SES-9077-001", "patient_id": "PT-9077", "date": "2026-06-12", "uploaded_image_count": 2, "extraction_confidence": 0.88, "clinician_verification_status": "pending", "extracted_fields": [{"field_name": "fvc_percent_predicted", "value": "64%", "confidence": 0.90}]},
+    {"session_id": "SES-6934-001", "patient_id": "PT-6934", "date": "2026-06-10", "uploaded_image_count": 1, "extraction_confidence": 0.91, "clinician_verification_status": "verified", "extracted_fields": [{"field_name": "aneurysm_diameter", "value": "5.1cm", "confidence": 0.93}]},
+    {"session_id": "SES-8216-001", "patient_id": "PT-8216", "date": "2026-06-08", "uploaded_image_count": 1, "extraction_confidence": 0.71, "clinician_verification_status": "pending", "extracted_fields": [{"field_name": "fibrosis_stage", "value": "F2", "confidence": 0.75}]},
+    {"session_id": "SES-9518-001", "patient_id": "PT-9518", "date": "2026-06-03", "uploaded_image_count": 1, "extraction_confidence": 0.76, "clinician_verification_status": "pending", "extracted_fields": [{"field_name": "moca_score", "value": "23", "confidence": 0.80}]},
+]
+
+NORTHSTAR_EVIDENCE = {
+    "PT-7301": [{"source_id": "NOTE-7301-004", "source_type": "text", "date": "2026-06-14", "text": "MRI liver shows four LI-RADS 5 lesions, largest 3.1cm in segment VII; AFP 412 ng/mL, up from 260."}, {"source_id": "SES-7301-002", "source_type": "image", "date": "2026-06-14", "text": "MRI abdomen with contrast shows multifocal hepatic lesions."}],
+    "PT-4185": [{"source_id": "NOTE-4185-002", "source_type": "text", "date": "2026-06-13", "text": "Holter confirms paroxysmal AF burden of 11%; CHA2DS2-VASc score 3, anticoagulation started."}],
+    "PT-6934": [{"source_id": "NOTE-6934-003", "source_type": "text", "date": "2026-06-10", "text": "CT angiogram shows infrarenal AAA at 5.1cm, growth of 4mm in six months; vascular surgery referral placed."}],
+    "PT-9518": [{"source_id": "NOTE-9518-001", "source_type": "text", "date": "2026-06-03", "text": "MoCA score 23/30 with deficits in delayed recall; B12 and TSH normal, MRI ordered."}],
+}
+
+NORTHSTAR_NOTIFICATIONS = [
+    {"id": "NTF-N01", "title": "Hepatitis staging below confidence", "detail": "PT-8216 fibrosis staging scored 71%; clinician verification required.", "severity": "critical", "agent": "Validation Agent", "read": False, "route": "/app/inbox"},
+    {"id": "NTF-N02", "title": "AAA surveillance interval exceeded", "detail": "PT-6934 aneurysm grew 4mm in six months; vascular review recommended.", "severity": "warning", "agent": "Database Intelligence Agent", "read": False, "route": "/app/overview"},
+    {"id": "NTF-N03", "title": "Weekly cohort export completed", "detail": "Northstar Health population export finished with 12 patient records.", "severity": "info", "agent": "Database Intelligence Agent", "read": False, "route": "/app/database"},
+]
+
+
+@dataclass(frozen=True)
+class DemoDataset:
+    """Deterministic fixture bundle backing one demo tenant."""
+
+    key: str
+    patients: list[dict[str, Any]]
+    sessions: list[dict[str, Any]]
+    evidence: dict[str, list[dict[str, Any]]]
+    notifications: list[dict[str, Any]]
+
+
+RESEARCH_CLINIC = DemoDataset("research_clinic", PATIENTS, SESSIONS, EVIDENCE, RESEARCH_NOTIFICATIONS)
+NORTHSTAR = DemoDataset("northstar", NORTHSTAR_PATIENTS, NORTHSTAR_SESSIONS, NORTHSTAR_EVIDENCE, NORTHSTAR_NOTIFICATIONS)
+DATASETS = {dataset.key: dataset for dataset in (RESEARCH_CLINIC, NORTHSTAR)}
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 
 def now() -> str:
     """Return stable-format UTC timestamp."""
@@ -76,17 +141,18 @@ def now() -> str:
 class DemoRepository:
     """Mutable state belonging to exactly one browser demo session."""
 
-    def __init__(self) -> None:
+    def __init__(self, dataset: DemoDataset = RESEARCH_CLINIC) -> None:
         self.session_id = ""
         self.is_demo = True
+        self._dataset = dataset
         self.reset()
 
     def reset(self) -> None:
-        """Restore deterministic seed state."""
+        """Restore deterministic seed state for this repository's dataset."""
 
-        self.patients = {item["patient_id"]: item for item in deepcopy(PATIENTS)}
-        self.sessions = {item["session_id"]: item for item in deepcopy(SESSIONS)}
-        self.evidence = deepcopy(EVIDENCE)
+        self.patients = {item["patient_id"]: item for item in deepcopy(self._dataset.patients)}
+        self.sessions = {item["session_id"]: item for item in deepcopy(self._dataset.sessions)}
+        self.evidence = deepcopy(self._dataset.evidence)
         self.source_assets: dict[str, tuple[bytes, str]] = {}
         for patient_id, evidence_rows in self.evidence.items():
             for evidence in evidence_rows:
@@ -107,11 +173,7 @@ class DemoRepository:
             "maxConcurrentRuns": 8,
             "databaseEnabled": True,
         }
-        self.notifications = [
-            {"id": "NTF-001", "title": "Diuretic change below confidence", "detail": "PT-1029 extraction scored 76%; clinician verification required.", "severity": "critical", "agent": "Validation Agent", "createdAt": now(), "read": False, "route": "/app/inbox"},
-            {"id": "NTF-002", "title": "High-risk cohort increased", "detail": "Four patients crossed the high-risk threshold this week.", "severity": "info", "agent": "Database Intelligence Agent", "createdAt": now(), "read": False, "route": "/app/overview"},
-            {"id": "NTF-003", "title": "Re-run extraction with high resolution OCR", "detail": "PT-8829 has a prior extraction below the preferred confidence target.", "severity": "warning", "agent": "Image Quality Agent", "createdAt": now(), "read": False, "route": "/app/extraction?patient=PT-8829"},
-        ]
+        self.notifications = [dict(item, createdAt=now()) for item in deepcopy(self._dataset.notifications)]
         self.sequence = 0
 
     def identifier(self, prefix: str) -> str:
@@ -129,11 +191,15 @@ class DemoRepository:
 
 
 class LiveRepository:
-    """Mutable state for real-data sessions — starts empty, accumulates from agent runs."""
+    """Mutable per-session view over the real clinical database plus agent runs."""
 
-    def __init__(self) -> None:
+    def __init__(self, db_path: Path | None = None, uploads_root: Path | None = None) -> None:
         self.session_id = ""
         self.is_demo = False
+        # None keeps the legacy clinical.db store; a real tenant passes its
+        # own SQLite file so its data never mixes with the seeded demo DB.
+        self.db_path = db_path
+        self.uploads_root = uploads_root
         self.patients: dict[str, dict[str, Any]] = {}
         self.sessions: dict[str, dict[str, Any]] = {}
         self.evidence: dict[str, list[dict[str, Any]]] = {}
@@ -153,11 +219,69 @@ class LiveRepository:
         }
         self.notifications: list[dict[str, Any]] = []
         self.sequence = 0
+        self._hydrate_from_database()
+
+    def _hydrate_from_database(self) -> None:
+        """Load patients, sessions, and note evidence from clinical.db.
+
+        Live sessions must reflect the persisted store so uploads validate
+        against real patients, dashboards show real counts, and Q&A grounds
+        answers in stored clinical notes instead of an empty registry.
+        Import stays local so demo tenants never touch the agent package.
+        """
+
+        try:
+            from capstone_agent import database
+        except Exception:
+            return
+
+        if self.db_path is not None:
+            with database.tenant_storage(self.db_path, self.uploads_root):
+                self._load_rows(database)
+        else:
+            self._load_rows(database)
+
+    def _load_rows(self, database: Any) -> None:
+        """Read patients, sessions, and notes from the active database file."""
+
+        patients = database.execute_sql(
+            "SELECT patient_id, name, age, sex, risk_level, primary_diagnosis, "
+            "assigned_clinician, last_session_date, data_completeness_score, "
+            "open_tasks, ai_review_status FROM patients_core"
+        )
+        for row in patients.get("rows", []):
+            item = dict(row)
+            item["data_completeness_score"] = float(item.get("data_completeness_score") or 0)
+            item["open_tasks"] = int(item.get("open_tasks") or 0)
+            self.patients[item["patient_id"]] = item
+
+        sessions = database.execute_sql(
+            "SELECT session_id, patient_id, session_date AS date, uploaded_image_count, "
+            "extraction_confidence, clinician_verification AS clinician_verification_status "
+            "FROM sessions"
+        )
+        for row in sessions.get("rows", []):
+            item = dict(row)
+            item["uploaded_image_count"] = int(item.get("uploaded_image_count") or 0)
+            item["extraction_confidence"] = float(item.get("extraction_confidence") or 0)
+            item.setdefault("extracted_fields", [])
+            self.sessions[item["session_id"]] = item
+
+        notes = database.execute_sql(
+            "SELECT note_id, patient_id, note_date, note_text FROM clinical_notes"
+        )
+        for row in notes.get("rows", []):
+            self.evidence.setdefault(row["patient_id"], []).append({
+                "source_id": row["note_id"],
+                "source_type": "text",
+                "date": row["note_date"],
+                "text": row["note_text"],
+            })
 
     def reset(self) -> None:
-        """Clear session data."""
+        """Clear session data while keeping tenant storage paths."""
 
-        self.__init__()  # type: ignore[misc]
+        self.__init__(db_path=self.db_path, uploads_root=self.uploads_root)  # type: ignore[misc]
 
     def identifier(self, prefix: str) -> str:
         """Create identifier within session state."""
@@ -199,19 +323,36 @@ class RepositoryRegistry:
         self._max_count = max_count
         self._ttl_seconds = ttl_seconds
 
-    def get(self, session_id: str, tenant: str = "default") -> DemoRepository | LiveRepository:
+    @staticmethod
+    def _build(tenant: TenantConfig) -> DemoRepository | LiveRepository:
+        """Construct the repository type a tenant's requests must see.
+
+        Tenant kind is authoritative: real tenants get a LiveRepository over
+        their own database file, demo tenants get their deterministic dataset.
+        """
+
+        if tenant.kind == TenantKind.REAL:
+            return LiveRepository(
+                db_path=PROJECT_ROOT / (tenant.db_filename or "clinical.db"),
+                uploads_root=PROJECT_ROOT / (tenant.uploads_dirname or "uploads"),
+            )
+        return DemoRepository(DATASETS[tenant.dataset or "research_clinic"])
+
+    def get(self, session_id: str, tenant: TenantConfig | None = None) -> DemoRepository | LiveRepository:
         """Return existing repository or create tenant-appropriate session state."""
 
+        active = tenant or TENANTS["research-clinic"]
+        key = f"{active.id}::{session_id}"
         with self._lock:
             current = monotonic()
-            expired = [key for key, (_, touched) in self._items.items() if current - touched > self._ttl_seconds]
-            for key in expired:
-                self._items.pop(key, None)
-            if session_id in self._items:
-                repository, _ = self._items.pop(session_id)
+            expired = [item for item, (_, touched) in self._items.items() if current - touched > self._ttl_seconds]
+            for item in expired:
+                self._items.pop(item, None)
+            if key in self._items:
+                repository, _ = self._items.pop(key)
             else:
-                repository = LiveRepository() if tenant == "live" else DemoRepository()
-            self._items[session_id] = (repository, current)
+                repository = self._build(active)
+            self._items[key] = (repository, current)
             repository.session_id = session_id
             while len(self._items) > self._max_count:
                 self._items.popitem(last=False)
@@ -220,12 +361,17 @@ class RepositoryRegistry:
     def find(self, session_id: str) -> DemoRepository | LiveRepository | None:
         """Find existing session without creating state for invalid capability URLs."""
 
+        suffix = f"::{session_id}"
         with self._lock:
-            entry = self._items.get(session_id)
-            if not entry:
-                return None
-            repository, touched = entry
-            if monotonic() - touched > self._ttl_seconds:
-                self._items.pop(session_id, None)
-                return None
-            return repository
+            current = monotonic()
+            # Most-recently-used entries sit at the end of the OrderedDict, so
+            # scan in reverse to prefer the tenant the caller last touched.
+            for key in reversed(self._items):
+                if not key.endswith(suffix):
+                    continue
+                repository, touched = self._items[key]
+                if current - touched > self._ttl_seconds:
+                    self._items.pop(key, None)
+                    return None
+                return repository
+            return None

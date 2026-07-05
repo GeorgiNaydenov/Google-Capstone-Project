@@ -61,6 +61,7 @@ from .models import (
     ToolError,
     ToolResponse,
     VectorSearchInput,
+    VisualGenerationInput,
 )
 from .observability import log_clinical_event, log_tool_call
 
@@ -99,7 +100,19 @@ def _persist_extraction(
                 try:
                     fields = json.loads(validated.structured_data) if isinstance(validated.structured_data, str) else validated.structured_data
                     if isinstance(fields, dict):
-                        fields = fields.get("fields", [fields])
+                        fields = fields.get("fields", fields)
+                    if isinstance(fields, dict):
+                        # Plain {field: value} mapping from clinician review —
+                        # store one verified row per field (confidence 1.0:
+                        # a clinician explicitly approved these values).
+                        fields = [
+                            {
+                                "field_name": key,
+                                "value": value if isinstance(value, str) else json.dumps(value),
+                                "confidence": 1.0,
+                            }
+                            for key, value in fields.items()
+                        ]
                     if not isinstance(fields, list):
                         fields = [fields]
                     db_result = database.store_extraction_fields(validated.session_id, validated.patient_id, fields)
@@ -549,7 +562,7 @@ def structure_clinical_findings(vision_findings: str, patient_id: str) -> dict[s
         from .config import get_config
         config = get_config()
 
-        if config["google_api_key"] and validated.vision_findings.strip():
+        if config["gemini_enabled"] and validated.vision_findings.strip():
             from .document_processor import analyze_with_gemini
             structuring_prompt = (
                 f"Structure these clinical findings into discrete fields. "
@@ -1374,6 +1387,104 @@ def generate_chart_spec(query_results: str, question: str) -> dict[str, Any]:
     return result
 
 
+def generate_clinical_visual(description: str, patient_id: str = "", session_id: str = "") -> dict[str, Any]:
+    """Render a clinical data visual as a PNG using the Gemini image-output model.
+
+    Calls the `flash-image` tier (llm.MODEL_TIERS) with TEXT+IMAGE response
+    modalities to draw a chart, trend, or schematic that supports a clinical
+    answer. The PNG is stored under uploads/ and recorded in the documents
+    table; the returned api_url can be embedded in answers so the product UI
+    displays the image inline.
+
+    Never use this for photorealistic patient depictions — only data visuals
+    (charts, timelines, labeled schematics) derived from cited evidence.
+
+    Args:
+        description: What the visual should show, including the data values.
+        patient_id: Patient identifier for storage and audit (optional).
+        session_id: Session or run identifier for audit (optional).
+
+    Returns:
+        A dict with document_id, file_path, api_url, and the model used.
+    """
+    start = time.perf_counter()
+    try:
+        validated = VisualGenerationInput(
+            description=description, patient_id=patient_id, session_id=session_id
+        )
+        from .config import get_config
+        config = get_config()
+        if not config["gemini_enabled"]:
+            result = ToolError(
+                error_code="VISUAL_UNAVAILABLE",
+                message="Image generation requires Gemini credentials (API key or Vertex AI project)",
+            ).to_dict()
+        else:
+            from google.genai import types as genai_types
+
+            from .document_processor import _get_genai_client
+            from .llm import MODEL_TIERS
+
+            client = _get_genai_client()
+            prompt = (
+                "Create a clean, clinical data visualization (chart, timeline, or "
+                "labeled schematic) on a white background. No photorealistic people. "
+                f"Visual to draw: {validated.description}"
+            )
+            response = client.models.generate_content(
+                model=MODEL_TIERS["flash-image"],
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
+                    response_modalities=["TEXT", "IMAGE"],
+                ),
+            )
+            image_bytes = next(
+                (
+                    part.inline_data.data
+                    for candidate in (response.candidates or [])
+                    for part in (candidate.content.parts or [])
+                    if getattr(part, "inline_data", None) and part.inline_data.data
+                ),
+                None,
+            )
+            if not image_bytes:
+                result = ToolError(
+                    error_code="NO_IMAGE_PRODUCED",
+                    message="Image model returned no inline image data",
+                ).to_dict()
+            else:
+                document_id = f"VIS-{hashlib.sha256(image_bytes).hexdigest()[:16]}"
+                visual_dir = database.active_uploads_root() / (validated.patient_id or "shared") / "visuals"
+                visual_dir.mkdir(parents=True, exist_ok=True)
+                file_path = visual_dir / f"{document_id}.png"
+                file_path.write_bytes(image_bytes)
+                database.store_document(
+                    document_id=document_id,
+                    filename=f"{document_id}.png",
+                    content_type="image/png",
+                    file_path=str(file_path),
+                    raw_text=validated.description,
+                    page_count=1,
+                    patient_id=validated.patient_id,
+                )
+                result = ToolResponse(
+                    message=f"Generated clinical visual {document_id}",
+                    data={
+                        "document_id": document_id,
+                        "file_path": str(file_path),
+                        "api_url": f"/api/visuals/{document_id}",
+                        "model": MODEL_TIERS["flash-image"],
+                        "size_bytes": len(image_bytes),
+                    },
+                ).to_dict()
+    except ValidationError as e:
+        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+    except Exception as e:
+        result = ToolError(error_code="VISUAL_ERROR", message=str(e)).to_dict()
+    log_tool_call("generate_clinical_visual", {"patient_id": patient_id, "description": description[:80]}, result, (time.perf_counter() - start) * 1000)
+    return result
+
+
 def save_query_to_memory(question: str, sql: str, summary: str) -> dict[str, Any]:
     """Save a successful query pattern to long-term memory.
 
@@ -1503,7 +1614,7 @@ def _generate_comparison(per_image: list[dict], clinical_question: str = "") -> 
     from .config import get_config
     config = get_config()
 
-    if config["google_api_key"]:
+    if config["gemini_enabled"]:
         from .document_processor import analyze_with_gemini
         descriptions = []
         for i, img in enumerate(per_image, 1):

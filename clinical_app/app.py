@@ -3,25 +3,41 @@
 import csv
 import io
 import json
-import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile, APIRouter
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from time import monotonic
 
-from clinical_app.models import DatabaseRequest, OrchestrateRequest, QuestionRequest, ReviewRequest, Role, RunRequest
+# Load .env before any request handling so GOOGLE_API_KEY and Vertex settings
+# reach the environment without requiring the lazy agent import.
+load_dotenv()
+
+from clinical_app.models import (
+    DatabaseRequest, OrchestrateRequest, QuestionRequest, ReviewRequest, Role, RunRequest,
+    PatientResponse, SessionResponse, AuditEventResponse, DashboardResponse, NotificationResponse,
+    StorageResponse, AgentCatalogResponse, AgentConfigResponse, UserResponse,
+    McpToolsListResponse, McpExecuteRequest, McpExecuteResponse, A2aCardResponse, V2HealthResponse,
+    OrchestrationPlan, ErrorResponse
+)
 from clinical_app.live_bridge import execute_live
 from clinical_app.agent_runtime import database_execution_tools, database_preview_tools, extraction_review_tools, extraction_tools, qa_tools
-from clinical_app.document import UploadPolicyError, parse_upload, validate_upload
+from clinical_app.document import UploadPolicyError, parse_knowledge_base_upload, parse_upload, validate_knowledge_base_upload, validate_upload
 from clinical_app.repository import DemoRepository, LiveRepository, RepositoryRegistry, now
+from clinical_app.tenancy import TenantConfig, TenantKind, resolve_tenant
 
 
-def patient_view(item: dict[str, Any]) -> dict[str, Any]:
-    """Map repository patient to browser contract."""
+def patient_view(item: dict[str, Any], data_sources: int | None = None) -> dict[str, Any]:
+    """Map repository patient to browser contract.
+
+    Demo tenants keep the illustrative data-source count; real tenants pass
+    the actual number of evidence sources so nothing is embellished.
+    """
 
     risks = {"high": "high", "needs_review": "medium", "stable": "low"}
     return {
@@ -34,9 +50,17 @@ def patient_view(item: dict[str, Any]) -> dict[str, Any]:
         "lastEncounter": item.get("last_session_date"),
         "assignedClinician": item.get("assigned_clinician"),
         "openIssues": item.get("open_tasks", 0),
-        "dataSources": 3 + int(item.get("open_tasks", 0) > 0),
+        "dataSources": data_sources if data_sources is not None else 3 + int(item.get("open_tasks", 0) > 0),
         "lastAiReview": item.get("last_session_date"),
     }
+
+
+def tenant_patient_view(repo: Any, item: dict[str, Any]) -> dict[str, Any]:
+    """Patient view honoring the repository's demo/real reporting rules."""
+
+    if repo.is_demo:
+        return patient_view(item)
+    return patient_view(item, data_sources=len(repo.evidence.get(item["patient_id"], [])))
 
 
 def session_view(item: dict[str, Any]) -> dict[str, Any]:
@@ -65,28 +89,82 @@ def audit_view(item: dict[str, Any]) -> dict[str, Any]:
     return {"id": item["audit_id"], "timestamp": item["timestamp"], "event": item["action"], "actor": item["actor"], "entity": entity, "result": details.get("result", "recorded")}
 
 
+
+API_DESCRIPTION = """
+## Clinical AI Command Center API & Agent Hub
+
+This API serves as the clinician-facing product backend and orchestration layer for the Clinician AI Kit, bridging the React/Vite frontend with Google ADK agent execution environments.
+
+### Core Architecture
+
+- **Agent Engine**: Managed via Google ADK (`google-adk`). Wires a root orchestrator with 22 specialist agents.
+- **Multimodal Ingest**: Supports quality inspection, OCR, vision analysis, and clinical structuring.
+- **Persistent Compliance Log**: Real Persisted SQLite persistence (`clinical.db`) under an immutable audit trail.
+- **Multi-Tenant Scoping**: Dynamic tenant switching between demo settings (`research-clinic`) and live mode (`capstone`).
+
+### Versioned Operations
+
+1. **V1 API (`/api/v1`)**: Exposes core clinical entities (Patients, Sessions, Assets, Runs, Admin settings, Audit trail).
+2. **V2 API (`/api/v2`)**: Advanced services integration, exposing MCP server tool catalogs (`/api/v2/mcp/tools`), remote agent cards (`/api/v2/a2a/card`), and system diagnostics.
+
+### 3-Layer Security Callbacks
+- **Input Guardrails**: unicode normalization, prompt injection prevention.
+- **Tool Authorization**: parameter verification, rate limits, secret token sanitization.
+- **Output Redaction**: PII detection, security leaks blocking.
+"""
+
 def create_app() -> FastAPI:
     """Build API with fresh in-memory demo session registry."""
 
-    api = FastAPI(title="Clinical AI Command Center API", version="0.3.0")
+    api = FastAPI(title="Clinical AI Command Center API", version="0.3.0", docs_url=None, redoc_url=None, description=API_DESCRIPTION)
     registry = RepositoryRegistry()
 
-    def execution_mode() -> str:
-        """Return the active agent execution backend for this process."""
+    v1_router = APIRouter()
 
-        return "live" if os.environ.get("AGENT_EXECUTION_MODE", "").casefold() == "live" else "local"
+    COMMON_RESPONSES = {
+        400: {"model": ErrorResponse, "description": "Bad Request: Parameter verification or query syntax error"},
+        401: {"model": ErrorResponse, "description": "Unauthorized: Session key invalid or authorization headers missing"},
+        403: {"model": ErrorResponse, "description": "Forbidden: User role does not possess permissions to write/read the target resource"},
+        404: {"model": ErrorResponse, "description": "Not Found: The target patient, session, database run, or image asset does not exist"},
+        422: {"model": ErrorResponse, "description": "Unprocessable Entity: Parameter validation constraints failed"},
+        500: {"model": ErrorResponse, "description": "Internal Server Error: Persisted SQLite storage connection error or agent execution crash"}
+    }
 
-    def context(
+    v2_router = APIRouter()
+
+    def effective_mode(tenant: TenantConfig) -> str:
+        """Return the execution backend a tenant's requests use.
+
+        Tenant kind is authoritative: real tenants execute live against their
+        own database, demo tenants always serve deterministic fixtures. This
+        is what keeps switching tenants switching data even when a live
+        Capstone tenant coexists with the demo tenants in one deployment.
+        """
+
+        return "live" if tenant.kind == TenantKind.REAL else "local"
+
+    async def context(
         demo_session: Annotated[str, Header(alias="X-Demo-Session")] = "public-demo",
         clinical_role: Annotated[Role | None, Header(alias="X-Clinical-Role")] = None,
         legacy_role: Annotated[Role | None, Header(alias="X-Role")] = None,
         user: Annotated[str, Header(alias="X-User")] = "demo-user",
         tenant: Annotated[str, Header(alias="X-Tenant")] = "local",
-    ) -> tuple[DemoRepository | LiveRepository, Role, str, str]:
-        active_tenant = "live" if execution_mode() == "live" else tenant
-        return registry.get(demo_session, active_tenant), clinical_role or legacy_role or "clinician", user, active_tenant
+    ):
+        active_tenant = resolve_tenant(tenant)
+        repo = registry.get(demo_session, active_tenant)
+        role = clinical_role or legacy_role or "clinician"
+        if getattr(repo, "db_path", None) is not None:
+            # Real tenants scope every database and upload access in this
+            # request — including deep inside live agent tools — to their
+            # own files via context-propagated storage state.
+            from capstone_agent import database
 
-    Context = Annotated[tuple[DemoRepository | LiveRepository, Role, str, str], Depends(context)]
+            with database.tenant_storage(repo.db_path, repo.uploads_root):
+                yield repo, role, user, active_tenant
+        else:
+            yield repo, role, user, active_tenant
+
+    Context = Annotated[tuple[DemoRepository | LiveRepository, Role, str, TenantConfig], Depends(context)]
 
     def patient_or_404(repo: DemoRepository | LiveRepository, patient_id: str) -> dict[str, Any]:
         item = repo.patients.get(patient_id)
@@ -119,11 +197,14 @@ def create_app() -> FastAPI:
         result["toolCalls"] = live_result.get("toolCalls", result.get("toolCalls", []))
 
     @api.get("/healthz")
-    @api.get("/api/health")
-    def health() -> dict[str, str]:
-        """Report liveness."""
+    def healthz() -> dict[str, str]:
+        """Report liveness for raw probes."""
+        return {"status": "ok", "mode": effective_mode(resolve_tenant(None))}
 
-        return {"status": "ok", "mode": execution_mode()}
+    @v1_router.get("/health", response_model=dict[str, str], tags=["Health"])
+    def health_v1() -> dict[str, str]:
+        """Report liveness for V1 API."""
+        return {"status": "ok", "mode": effective_mode(resolve_tenant(None))}
 
     @api.get("/readyz")
     def ready() -> dict[str, str]:
@@ -131,12 +212,12 @@ def create_app() -> FastAPI:
 
         return {"status": "ready"}
 
-    @api.get("/api/agents")
-    def agents() -> dict[str, Any]:
-        """Expose the real ADK pipeline catalog and configured execution mode."""
+    @v1_router.get("/agents", response_model=AgentCatalogResponse, tags=["Agents"], responses={200: {"description": "Expose the real ADK pipeline catalog and tenant execution mode"}, **COMMON_RESPONSES})
+    def agents(ctx: Context) -> dict[str, Any]:
+        """Expose the real ADK pipeline catalog and tenant execution mode."""
 
         return {
-            "executionMode": execution_mode(),
+            "executionMode": effective_mode(ctx[3]),
             "orchestrator": "clinical_orchestrator",
             "framework": "Google ADK",
             "pipelines": [
@@ -146,13 +227,13 @@ def create_app() -> FastAPI:
             ],
         }
 
-    @api.get("/api/notifications")
+    @v1_router.get("/notifications", response_model=list[NotificationResponse], tags=["Notifications"], responses={200: {"description": "List of unresolved notifications from agents"}, **COMMON_RESPONSES})
     def notifications(ctx: Context) -> list[dict[str, Any]]:
         """Return actionable role-aware synthetic demo notifications."""
 
         return ctx[0].notifications
 
-    @api.post("/api/notifications/{notification_id}/read")
+    @v1_router.post("/notifications/{notification_id}/read", response_model=NotificationResponse, tags=["Notifications"])
     def read_notification(notification_id: str, ctx: Context) -> dict[str, Any]:
         """Mark one notification read in the isolated demo session."""
 
@@ -163,7 +244,7 @@ def create_app() -> FastAPI:
         ctx[0].log("notification_read", ctx[2], ctx[1], notification_id=notification_id)
         return notification
 
-    @api.post("/api/demo/session", status_code=201)
+    @v1_router.post("/demo/session", response_model=dict[str, str], status_code=201, tags=["Demo"])
     def start_demo() -> dict[str, str]:
         """Create isolated demo state identifier."""
 
@@ -171,31 +252,35 @@ def create_app() -> FastAPI:
         registry.get(session_id)
         return {"sessionId": session_id}
 
-    @api.post("/api/demo/reset", status_code=204)
+    @v1_router.post("/demo/reset", status_code=204, tags=["Demo"])
     def reset(ctx: Context) -> None:
         """Reset only caller demo session."""
 
         ctx[0].reset()
 
-    @api.get("/api/dashboard")
+    @v1_router.get("/dashboard", response_model=DashboardResponse, tags=["Dashboard"], responses={200: {"description": "Retrieved global metrics and recent activity dashboard details"}, **COMMON_RESPONSES})
     def dashboard(ctx: Context, role: Role | None = None) -> dict[str, Any]:
         """Return role-aware dashboard data."""
 
         repo, header_role, _user, _tenant = ctx
         active_role = role or header_role
-        patients = [patient_view(item) for item in repo.patients.values()]
+        patients = [tenant_patient_view(repo, item) for item in repo.patients.values()]
         sessions = [session_view(item) for item in repo.sessions.values()]
         completeness = round(sum(float(p["completeness"] or 0) for p in patients) / max(1, len(patients)) * 100)
         pending = sum(p["aiStatus"] == "needs_review" for p in patients)
         persisted = sum(item["workflow"] == "extraction" and item["result"].get("persisted") for item in repo.runs.values())
         extraction_count = sum(item["workflow"] == "extraction" for item in repo.runs.values())
         sync_rate = round(persisted / extraction_count * 100) if extraction_count else 100
-        metrics: dict[str, int | str] = {"patients": len(patients), "assignedPatients": len(patients), "highRisk": sum(p["risk"] == "high" for p in patients), "pendingReview": pending, "pendingVerifications": pending, "imageExtractionsToday": len(sessions), "openAiAlerts": len([item for item in repo.notifications if not item["read"]]) + 2, "agentRuns24h": 214 + len(repo.runs), "syncRate": sync_rate, "completeness": completeness, "sessions": len(sessions)}
+        # Demo tenants show illustrative platform activity; real tenants
+        # report only what actually happened in this session.
+        alert_base = 2 if repo.is_demo else 0
+        run_base = 214 if repo.is_demo else 0
+        metrics: dict[str, int | str] = {"patients": len(patients), "assignedPatients": len(patients), "highRisk": sum(p["risk"] == "high" for p in patients), "pendingReview": pending, "pendingVerifications": pending, "imageExtractionsToday": len(sessions), "openAiAlerts": len([item for item in repo.notifications if not item["read"]]) + alert_base, "agentRuns24h": run_base + len(repo.runs), "syncRate": sync_rate, "completeness": completeness, "sessions": len(sessions)}
         if active_role == "admin":
             metrics.update({"activeUsers": 2, "agentRuns": len(repo.runs), "reviewSla": "4m", "auditEvents": len(repo.audit), "storedAssets": len(repo.uploads)})
         return {"metrics": metrics, "patients": patients[:8], "sessions": sessions[:8], "activity": [audit_view(item) for item in reversed(repo.audit[-8:])]}
 
-    @api.get("/api/patients")
+    @v1_router.get("/patients", response_model=list[PatientResponse], tags=["Patients"], responses={200: {"description": "List of matched patient profiles according to criteria"}, **COMMON_RESPONSES})
     def patients(ctx: Context, query: str = "", q: str = "", risk: str | None = None) -> list[dict[str, Any]]:
         """Search patients by identifier, name, diagnosis, or risk."""
 
@@ -204,30 +289,30 @@ def create_app() -> FastAPI:
         rows = list(repo.patients.values())
         if needle:
             rows = [p for p in rows if needle in " ".join((p["patient_id"], p["name"], p["primary_diagnosis"])).casefold()]
-        views = [patient_view(item) for item in rows]
+        views = [tenant_patient_view(repo, item) for item in rows]
         return [item for item in views if not risk or item["risk"] == risk]
 
-    @api.get("/api/patients/{patient_id}")
+    @v1_router.get("/patients/{patient_id}", response_model=PatientResponse, tags=["Patients"], responses={200: {"description": "Retrieved detailed patient profile and current risk metadata by ID"}, **COMMON_RESPONSES})
     def patient(patient_id: str, ctx: Context) -> dict[str, Any]:
         """Return patient profile."""
 
-        return patient_view(patient_or_404(ctx[0], patient_id))
+        return tenant_patient_view(ctx[0], patient_or_404(ctx[0], patient_id))
 
-    @api.get("/api/sessions")
+    @v1_router.get("/sessions", response_model=list[SessionResponse], tags=["Sessions"], responses={200: {"description": "List of recent clinical extraction sessions"}, **COMMON_RESPONSES})
     def sessions(ctx: Context, patient_id: str | None = None) -> list[dict[str, Any]]:
         """List clinical sessions, optionally for one patient."""
 
         rows = ctx[0].sessions.values()
         return [session_view(item) for item in rows if not patient_id or item["patient_id"] == patient_id]
 
-    @api.get("/api/patients/{patient_id}/sessions")
+    @v1_router.get("/patients/{patient_id}/sessions", response_model=list[SessionResponse], tags=["Sessions"], include_in_schema=False)
     def patient_sessions(patient_id: str, ctx: Context) -> list[dict[str, Any]]:
         """Compatibility route for patient sessions."""
 
         patient_or_404(ctx[0], patient_id)
         return sessions(ctx, patient_id)
 
-    @api.get("/api/sessions/{session_id}")
+    @v1_router.get("/sessions/{session_id}", response_model=SessionResponse, tags=["Sessions"], responses={200: {"description": "Retrieved detailed session status and confidence scores"}, **COMMON_RESPONSES})
     def session(session_id: str, ctx: Context) -> dict[str, Any]:
         """Return one clinical session."""
 
@@ -236,7 +321,7 @@ def create_app() -> FastAPI:
             raise HTTPException(404, "Session not found")
         return session_view(item)
 
-    @api.post("/api/assets", status_code=201)
+    @v1_router.post("/assets", status_code=201, tags=["Assets"], responses={201: {"description": "Asset uploaded and recorded successfully"}, **COMMON_RESPONSES})
     async def create_asset(ctx: Context, file: UploadFile = File(...), patient_id: str = Form(...)) -> dict[str, Any]:
         """Store uploaded bytes inside caller demo session."""
 
@@ -261,7 +346,41 @@ def create_app() -> FastAPI:
         repo.log("asset_uploaded", user, role, patient_id=patient_id, asset_id=asset_id)
         return {"assetId": asset_id, "previewUrl": preview_url, "extracted": extracted}
 
-    @api.get("/api/assets/{asset_id}")
+    @v1_router.post("/knowledge-base/assets", status_code=201, tags=["Assets"])
+    async def create_knowledge_base_asset(ctx: Context, file: UploadFile = File(...), patient_id: str = Form(...)) -> dict[str, Any]:
+        """Store a patient-scoped document as searchable Q&A knowledge-base evidence."""
+
+        repo, role, user, _tenant = ctx
+        patient_or_404(repo, patient_id)
+        contents = await file.read()
+        if not contents:
+            raise HTTPException(422, "Uploaded file is empty")
+        ct = file.content_type or "application/octet-stream"
+        fn = file.filename or "upload"
+        try:
+            upload_meta = validate_knowledge_base_upload(contents, ct, fn)
+        except UploadPolicyError as exc:
+            raise HTTPException(exc.status_code, str(exc)) from exc
+
+        ct = str(upload_meta["contentType"])
+        fn = str(upload_meta["filename"])
+        asset_id = repo.identifier("KB")
+        preview_url = f"/api/assets/{asset_id}?session={repo.session_id}"
+        extracted = parse_knowledge_base_upload(contents, ct, fn)
+        preview_text = str(extracted.get("textPreview") or "").strip()
+        if not preview_text:
+            pages = extracted.get("pages") if isinstance(extracted.get("pages"), list) else []
+            preview_text = str(pages[0].get("text", "") if pages else "").strip()
+        if not preview_text:
+            preview_text = f"{fn} indexed without local text preview."
+
+        repo.asset_contents[asset_id] = contents
+        repo.uploads[asset_id] = {"assetId": asset_id, "patientId": patient_id, "filename": fn, "contentType": ct, "sizeBytes": len(contents), "previewUrl": preview_url, "createdAt": now(), "extracted": extracted, "knowledgeBase": True}
+        repo.evidence.setdefault(patient_id, []).insert(0, {"source_id": asset_id, "source_type": "document", "date": now()[:10], "text": f"{fn}: {preview_text}", "asset_id": asset_id, "filename": fn})
+        repo.log("knowledge_base_asset_uploaded", user, role, patient_id=patient_id, asset_id=asset_id)
+        return {"assetId": asset_id, "patientId": patient_id, "previewUrl": preview_url, "evidenceId": asset_id, "extracted": extracted}
+
+    @v1_router.get("/assets/{asset_id}", tags=["Assets"])
     def asset(asset_id: str, ctx: Context, session: str | None = None) -> StreamingResponse:
         """Return uploaded asset bytes for evidence preview."""
 
@@ -276,7 +395,7 @@ def create_app() -> FastAPI:
             return StreamingResponse(iter([contents]), media_type=content_type)
         raise HTTPException(404, "Asset not found")
 
-    @api.post("/api/runs/extraction", status_code=201)
+    @v1_router.post("/runs/extraction", status_code=201, tags=["Extraction"], responses={201: {"description": "Began deterministic extraction pipeline on target report assets"}, **COMMON_RESPONSES})
     async def extraction(body: RunRequest, ctx: Context) -> dict[str, Any]:
         """Create extraction run — live agent execution or deterministic demo."""
 
@@ -309,13 +428,21 @@ def create_app() -> FastAPI:
                 )
                 fields = live_result.get("fields", {})
                 if not fields:
-                    fields = {"documentType": "Clinical evidence", "patientMatch": patient_id, "finding": live_result.get("finalResponse", "Extraction complete")}
+                    final_response = str(live_result.get("finalResponse", "")).strip()
+                    if not final_response:
+                        item["status"] = "error"
+                        item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": "Extraction produced no structured fields or narrative response", "timestamp": now()})
+                        raise HTTPException(502, "Extraction produced no structured fields. Transient model errors are retried automatically; try again or upload a clearer document.")
+                    fields = {"documentType": "Clinical evidence", "patientMatch": patient_id, "finding": final_response}
                 item["steps"] = live_steps(run_id, live_result, "Clinical Review Gate", "review")
                 item["status"] = "review"
                 item["confidence"] = live_result.get("confidence", 0.88)
                 item["result"]["fields"] = fields
                 attach_live_metadata(item["result"], live_result)
+                item["result"]["stateOutputs"] = live_result.get("stateOutputs", {})
                 item["result"]["storageReceipts"] = [{"target": t, "status": "pending"} for t in ("json", "relational", "vector")]
+            except HTTPException:
+                raise
             except Exception as exc:
                 item["status"] = "error"
                 item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": f"Execution failed: {exc}", "timestamp": now()})
@@ -330,19 +457,19 @@ def create_app() -> FastAPI:
         repo.runs[run_id] = item
         return item
 
-    @api.get("/api/runs/{run_id}")
+    @v1_router.get("/runs/{run_id}", tags=["Runs"], responses={200: {"description": "Retrieved status, confidence scores, and current stage details of an active pipeline run"}, **COMMON_RESPONSES})
     def run(run_id: str, ctx: Context) -> dict[str, Any]:
         """Poll persisted agent run."""
 
         return run_or_404(ctx[0], run_id)
 
-    @api.get("/api/runs/{run_id}/events")
+    @v1_router.get("/runs/{run_id}/events", tags=["Runs"], responses={200: {"description": "Retrieved list of completed run step execution events"}, **COMMON_RESPONSES})
     def run_events(run_id: str, ctx: Context) -> list[dict[str, Any]]:
         """Poll run steps."""
 
         return run_or_404(ctx[0], run_id).get("steps", [])
 
-    @api.get("/api/runs/{run_id}/events/stream")
+    @v1_router.get("/runs/{run_id}/events/stream", tags=["Runs"], responses={200: {"description": "Server-Sent Events (SSE) stream of run progress"}, **COMMON_RESPONSES})
     def event_stream(run_id: str, ctx: Context) -> StreamingResponse:
         """Stream run steps as server-sent events."""
 
@@ -352,7 +479,7 @@ def create_app() -> FastAPI:
                 yield f"id: {index}\nevent: step\ndata: {json.dumps(step)}\n\n"
         return StreamingResponse(generate(), media_type="text/event-stream")
 
-    @api.post("/api/runs/{run_id}/review")
+    @v1_router.post("/runs/{run_id}/review", tags=["Runs"], responses={200: {"description": "Recorded review decision to approve or reject structured extraction data"}, **COMMON_RESPONSES})
     def review(run_id: str, body: ReviewRequest, ctx: Context) -> dict[str, Any]:
         """Approve and persist extraction, or reject without persistence."""
 
@@ -365,11 +492,28 @@ def create_app() -> FastAPI:
         if body.field_updates:
             item["result"]["fields"] = body.field_updates.get("fields", body.field_updates)
         approved = body.decision == "approved"
-        item["result"]["toolCalls"].extend(extraction_review_tools(item["result"]["patientId"], run_id, body.decision, user, item["result"]["fields"], body.comment))
+        pid = item["result"]["patientId"]
+        occurred_at = datetime.now(UTC).date().isoformat()
+        session_id = repo.identifier("SES") if approved else None
+        if approved and not repo.is_demo:
+            # Live approvals write to clinical.db where foreign keys are
+            # enforced: the patient and session rows must exist before
+            # extracted fields can reference them.
+            from capstone_agent import database as clinical_db
+
+            clinical_db.ensure_patient(pid, repo.patients.get(pid, {}).get("name", ""))
+            clinical_db.store_session(session_id, pid, occurred_at, len(item["evidence"]), float(item["confidence"] or 0), "verified")
+        review_traces = extraction_review_tools(pid, run_id, body.decision, user, item["result"]["fields"], body.comment, persist_session_id=session_id)
+        item["result"]["toolCalls"].extend(review_traces)
         if approved:
-            item["result"]["storageReceipts"] = [{"target": target, "status": "synced", "receiptId": repo.identifier("RCP")} for target in ("json", "relational", "vector")]
-            item["result"]["persisted"] = True
-            pid = item["result"]["patientId"]
+            if repo.is_demo:
+                item["result"]["storageReceipts"] = [{"target": target, "status": "synced", "receiptId": repo.identifier("RCP")} for target in ("json", "relational", "vector")]
+            else:
+                # Live receipts reflect what the persistence tools actually did.
+                trace_status = {trace["tool"]: trace.get("status") for trace in review_traces}
+                receipt_tools = {"json": "store_to_gcs", "relational": "persist_extraction_relational", "vector": "persist_extraction_vector"}
+                item["result"]["storageReceipts"] = [{"target": target, "status": "synced" if trace_status.get(tool) == "success" else "failed", "receiptId": repo.identifier("RCP")} for target, tool in receipt_tools.items()]
+            item["result"]["persisted"] = all(receipt["status"] == "synced" for receipt in item["result"]["storageReceipts"])
             patient = repo.patients.get(pid)
             if not patient and not repo.is_demo:
                 patient = repo.add_patient(pid, f"Patient {pid}")
@@ -377,9 +521,7 @@ def create_app() -> FastAPI:
                 raise HTTPException(404, "Patient not found")
             patient["ai_review_status"] = "verified"
             patient["open_tasks"] = max(0, int(patient.get("open_tasks", 0)) - 1)
-            occurred_at = datetime.now(UTC).date().isoformat()
             patient["last_session_date"] = occurred_at
-            session_id = repo.identifier("SES")
             repo.sessions[session_id] = {"session_id": session_id, "patient_id": patient["patient_id"], "date": occurred_at, "uploaded_image_count": len(item["evidence"]), "extraction_confidence": item["confidence"], "clinician_verification_status": "verified", "extracted_fields": [{"field_name": key, "value": str(value), "confidence": item["confidence"]} for key, value in item["result"]["fields"].items()]}
             evidence_rows = repo.evidence.setdefault(patient["patient_id"], [])
             evidence_rows.append({"source_id": session_id, "source_type": "structured", "date": occurred_at, "text": json.dumps(item["result"]["fields"], sort_keys=True)})
@@ -393,13 +535,13 @@ def create_app() -> FastAPI:
         repo.log(f"extraction_{body.decision}", user, role, patient_id=item["result"]["patientId"], run_id=run_id, result="persisted" if approved else "not_persisted")
         return item
 
-    @api.get("/api/reviews")
+    @v1_router.get("/reviews", tags=["Runs"])
     def reviews(ctx: Context) -> list[dict[str, Any]]:
         """List extraction runs awaiting clinician review."""
 
         return [item for item in ctx[0].runs.values() if item["workflow"] == "extraction" and item["status"] == "review"]
 
-    @api.post("/api/orchestrate", status_code=201)
+    @v1_router.post("/orchestrate", response_model=OrchestrationPlan, status_code=201, tags=["Orchestration"], responses={201: {"description": "Classify user query and structure orchestrator execution route"}, **COMMON_RESPONSES})
     def orchestrate(body: OrchestrateRequest, ctx: Context) -> dict[str, Any]:
         """Classify a request and return an audited workflow execution plan."""
 
@@ -439,8 +581,8 @@ def create_app() -> FastAPI:
         repo.log("orchestration_plan_created", user, role, patient_id=body.patient_id, workflow=workflow, route=route)
         return plan
 
-    @api.post("/api/runs/qa", status_code=201)
-    @api.post("/api/qa/runs", status_code=201)
+    @v1_router.post("/runs/qa", status_code=201, tags=["QA"], responses={201: {"description": "Began patient-grounded QA retrieval pipeline execution"}, **COMMON_RESPONSES})
+    @v1_router.post("/qa/runs", status_code=201, tags=["QA"], include_in_schema=False)
     async def question(body: QuestionRequest, ctx: Context) -> dict[str, Any]:
         """Execute evidence-grounded Q&A — live agent or deterministic demo."""
 
@@ -461,11 +603,15 @@ def create_app() -> FastAPI:
                     f"Answer this clinical question for patient {body.patient_id} with evidence citations: {body.question}\n\nPatient context: {json.dumps(patient_data)}\n\nAvailable evidence:\n{evidence_text}",
                     user,
                     patient_context={"patient_id": body.patient_id, "source_types": source_types_str},
+                    # Patient-scoped session key keeps follow-up questions in the
+                    # same ADK session without leaking state across patients.
+                    session_key=f"{repo.session_id}-{body.patient_id}",
                 )
                 item["steps"] = live_steps(run_id, live_result)
                 item["status"] = "completed"
                 item["confidence"] = live_result.get("confidence", 0.85)
-                item["result"]["answer"] = live_result.get("finalResponse", "No answer generated")
+                state_outputs = live_result.get("stateOutputs", {})
+                item["result"]["answer"] = state_outputs.get("qa_answer") or live_result.get("finalResponse", "No answer generated")
                 attach_live_metadata(item["result"], live_result)
             except Exception as exc:
                 item["status"] = "error"
@@ -477,13 +623,14 @@ def create_app() -> FastAPI:
         source_filter = list(body.source_types)
         requested_source = body.filters.get("source")
         if not source_filter and requested_source not in (None, "", "all"):
-            source_filter = [{"note": "text", "structured": "structured", "image": "image"}.get(requested_source, requested_source)]
+            source_filter = [{"note": "text", "structured": "structured", "image": "image", "pdf": "document", "json": "document", "knowledge_base": "document"}.get(requested_source, requested_source)]
+        source_filter = [{"pdf": "document", "json": "document", "knowledge_base": "document"}.get(item, item) for item in source_filter]
         evidence = [e for e in repo.evidence.get(body.patient_id, []) if not source_filter or e["source_type"] in source_filter]
         date_range = body.filters.get("dateRange", "all")
         if date_range in {"30d", "1y"}:
             cutoff = datetime.now(UTC).date() - timedelta(days=30 if date_range == "30d" else 365)
             evidence = [e for e in evidence if datetime.fromisoformat(e["date"]).date() >= cutoff]
-        kind_map = {"text": "text", "image": "image", "structured": "structured", "lab": "structured"}
+        kind_map = {"text": "text", "image": "image", "structured": "structured", "lab": "structured", "document": "document"}
         evidence_views = [{"id": e["source_id"], "label": f"{e['source_type'].title()} evidence - {e['date']}", "kind": kind_map[e["source_type"]], "excerpt": e["text"], **({"sourceUrl": f"/api/assets/{e['asset_id']}?session={repo.session_id}"} if e.get("asset_id") else {})} for e in evidence[:5]]
         answer = f"{patient['name']}: {evidence[0]['text']}" if evidence else "No evidence matched selected filters."
         tool_calls = qa_tools(body.patient_id, body.question, source_filter, date_range)
@@ -492,7 +639,7 @@ def create_app() -> FastAPI:
         repo.runs[run_id] = item
         return item
 
-    @api.post("/api/runs/database/preview", status_code=201)
+    @v1_router.post("/runs/database/preview", status_code=201, tags=["Database"], responses={201: {"description": "Began database cohort preview pipeline to classify intent and compile SQL query"}, **COMMON_RESPONSES})
     async def database_preview(body: DatabaseRequest, ctx: Context) -> dict[str, Any]:
         """Generate read-only SQL preview — live agent or deterministic demo."""
 
@@ -509,22 +656,26 @@ def create_app() -> FastAPI:
                     user,
                     patient_context={"workflow": "database"},
                 )
+                from capstone_agent.clinical_schemas import validate_sql
+
                 sql = live_result.get("sql", "")
                 if not sql:
-                    response_text = live_result.get("finalResponse", "")
-                    import re
-                    sql_match = re.search(r"(SELECT\s.+?)(?:;|\Z)", response_text, re.IGNORECASE | re.DOTALL)
-                    sql = sql_match.group(1).strip() if sql_match else f"-- Agent response: {response_text[:200]}"
+                    item["status"] = "error"
+                    item["steps"].append({"id": f"{run_id}-S2", "name": "SQL Generation", "status": "error", "detail": "Agent did not return SQL for this question", "timestamp": now()})
+                    raise HTTPException(502, "Agent did not return SQL for this question. Try again or rephrase it as a population query.")
                 item["steps"] = live_steps(run_id, live_result, "SQL Approval Gate", "review")
                 item["status"] = "review"
                 item["result"]["sql"] = sql
-                item["result"]["safe"] = True
+                item["result"]["safe"] = bool(validate_sql(sql)["safe"])
                 attach_live_metadata(item["result"], live_result)
+            except HTTPException:
+                raise
             except Exception as exc:
-                item["status"] = "review"
-                item["steps"] = [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "completed", "detail": f"Live execution unavailable: {type(exc).__name__}", "timestamp": now()}, {"id": f"{run_id}-S2", "name": "SQL Approval Gate", "status": "review", "detail": "Awaiting explicit execution approval", "timestamp": now()}]
-                item["result"]["sql"] = "SELECT risk_level, COUNT(*) AS patient_count FROM patients_core GROUP BY risk_level ORDER BY patient_count DESC"
-                item["result"]["safe"] = True
+                # No canned fallback: a real tenant surfaces the failure so
+                # the clinician never approves SQL the agent did not write.
+                item["status"] = "error"
+                item["steps"] = [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "error", "detail": f"SQL generation failed: {type(exc).__name__}: {exc}", "timestamp": now()}]
+                raise HTTPException(502, f"SQL generation failed: {exc}. Transient model errors are retried automatically; try again or rephrase the question.")
             return item
 
         sql = "SELECT risk_level, COUNT(*) AS patient_count FROM patients_core GROUP BY risk_level ORDER BY patient_count DESC"
@@ -533,64 +684,56 @@ def create_app() -> FastAPI:
         repo.runs[run_id] = item
         return item
 
-    @api.post("/api/runs/database/{run_id}/execute")
+    @v1_router.post("/runs/database/{run_id}/execute", tags=["Database"], responses={200: {"description": "Executed approved SQL query and saved result table and charts"}, **COMMON_RESPONSES})
     async def database_execute(run_id: str, ctx: Context) -> dict[str, Any]:
-        """Execute reviewed database preview using the real ADK agent."""
+        """Execute reviewed database preview with a server-side safety gate."""
 
         repo, role, user, _tenant = ctx
         item = run_or_404(repo, run_id)
         if item["workflow"] != "database" or item["status"] != "review":
             raise HTTPException(409, "Database run is not awaiting execution")
-            
+
+        from capstone_agent import clinical_schemas
+
+        # The agent validates SQL inside its own pipeline, but agent-generated
+        # SQL must be re-gated here before touching the database.
         sql = item["result"].get("sql", "")
-        
+        verdict = clinical_schemas.validate_sql(sql)
+        if not verdict["safe"]:
+            item["steps"].append({"id": f"{run_id}-S{len(item['steps']) + 1}", "name": "Query execution", "status": "error", "detail": f"SQL rejected: {verdict['reason']}", "timestamp": now()})
+            raise HTTPException(400, f"SQL rejected: {verdict['reason']}")
+
         item["status"] = "running"
-        item["steps"].append({"id": f"{run_id}-S4", "name": "Query execution", "status": "running", "detail": "Executing approved SQL via agent", "timestamp": now()})
-        
-        try:
-            from capstone_agent import clinical_schemas
+        item["steps"].append({"id": f"{run_id}-S{len(item['steps']) + 1}", "name": "Query execution", "status": "running", "detail": "Executing approved read-only SQL", "timestamp": now()})
 
-            live_result: dict[str, Any] | None = None
-            if not repo.is_demo:
-                live_result = await execute_live(
-                    f"Execute this SQL query against the database and return the results as JSON: {sql}",
-                    user,
-                    patient_context={"workflow": "database_execute", "sql": sql},
-                )
-
-            res = clinical_schemas.execute_query(sql)
-            rows = res.get("rows", [])
-            columns = res.get("columns", [])
-            if not rows:
-                raise ValueError("No rows returned from query execution")
-
-            item["status"] = "completed"
-            item["result"].update({
-                "columns": columns,
-                "rows": rows,
-                "chart": {"type": "bar", "x": columns[0], "y": columns[1]} if len(columns) >= 2 else None,
-            })
-            if live_result is None:
-                item["result"]["toolCalls"].extend(database_execution_tools(item["result"].get("question", ""), sql, rows, user))
-            else:
-                attach_live_metadata(item["result"], live_result)
-            item["steps"].append({"id": f"{run_id}-S5", "name": "Query execution", "status": "completed", "detail": f"Returned {len(rows)} rows", "timestamp": now()})
-        except Exception as exc:
+        res = clinical_schemas.execute_query(sql)
+        if res.get("error"):
             item["status"] = "review"
-            item["steps"].append({"id": f"{run_id}-S5", "name": "Query execution", "status": "review", "detail": f"Execution failed: {exc}", "timestamp": now()})
-            raise HTTPException(500, f"Failed to execute query: {exc}") from exc
-            
+            item["steps"].append({"id": f"{run_id}-S{len(item['steps']) + 1}", "name": "Query execution", "status": "review", "detail": f"Execution failed: {res['error']}", "timestamp": now()})
+            raise HTTPException(422, f"Failed to execute query: {res['error']}")
+
+        rows = res.get("rows", [])
+        columns = res.get("columns", [])
+        item["status"] = "completed"
+        item["result"].update({
+            "columns": columns,
+            "rows": rows,
+            "chart": {"type": "bar", "x": columns[0], "y": columns[1]} if rows and len(columns) >= 2 else None,
+        })
+        item["result"]["toolCalls"].extend(database_execution_tools(item["result"].get("question", ""), sql, rows, user))
+        item["steps"].append({"id": f"{run_id}-S{len(item['steps']) + 1}", "name": "Query execution", "status": "completed", "detail": f"Returned {len(rows)} rows", "timestamp": now()})
+
         repo.query_history.append(item)
         repo.log("database_query_executed", user, role, run_id=run_id)
         return item
 
-    @api.get("/api/database/history")
+    @v1_router.get("/database/history", response_model=list[dict[str, Any]], tags=["Database"], responses={200: {"description": "Retrieved database cohort run history"}, **COMMON_RESPONSES})
     def history(ctx: Context) -> list[dict[str, Any]]:
         """Return completed database runs."""
 
         return ctx[0].query_history
 
-    @api.get("/api/database/queries/{run_id}/csv")
+    @v1_router.get("/database/queries/{run_id}/csv", tags=["Database"], responses={200: {"description": "Retrieved query results exported as a CSV stream"}, **COMMON_RESPONSES})
     def export_csv(run_id: str, ctx: Context) -> StreamingResponse:
         """Export database run rows as CSV."""
 
@@ -603,7 +746,7 @@ def create_app() -> FastAPI:
         writer.writeheader(); writer.writerows(rows)
         return StreamingResponse(iter([output.getvalue()]), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{run_id}.csv"'})
 
-    @api.get("/api/storage")
+    @v1_router.get("/storage", response_model=StorageResponse, tags=["Storage"], responses={200: {"description": "Retrieved storage system metrics and totals"}, **COMMON_RESPONSES})
     def storage(ctx: Context) -> dict[str, Any]:
         """Return uploaded assets and approved storage receipts."""
 
@@ -611,7 +754,7 @@ def create_app() -> FastAPI:
         persisted = [{"runId": item["id"], "receipts": item["result"]["storageReceipts"]} for item in repo.runs.values() if item["workflow"] == "extraction" and item["result"].get("persisted")]
         return {"assets": list(repo.uploads.values()), "persistedExtractions": persisted, "assetCount": len(repo.uploads), "persistedCount": len(persisted), "cloudCount": len(repo.uploads), "jsonCount": len(persisted), "sqlCount": len(persisted), "vectorCount": len(persisted), "auditCount": len(repo.audit)}
 
-    @api.get("/api/users")
+    @v1_router.get("/users", response_model=list[UserResponse], tags=["Admin"], responses={200: {"description": "Retrieved corporate user directory"}, **COMMON_RESPONSES})
     def users(ctx: Context) -> list[dict[str, Any]]:
         """Return deterministic user and role directory."""
 
@@ -619,7 +762,7 @@ def create_app() -> FastAPI:
             raise HTTPException(403, "Admin role required")
         return [{"id": "USR-001", "name": "Dr. Sarah Chen", "email": "sarah.chen@example.demo", "roles": ["clinician", "reviewer"], "scope": "Assigned patients", "status": "Active"}, {"id": "USR-002", "name": "Clinical Platform Admin", "email": "admin@example.demo", "roles": ["admin", "clinician"], "scope": "All demo patients and platform settings", "status": "Active"}]
 
-    @api.get("/api/agent-config")
+    @v1_router.get("/agent-config", response_model=AgentConfigResponse, tags=["Admin"], responses={200: {"description": "Retrieved current agent validation thresholds and concurrent limits"}, **COMMON_RESPONSES})
     def agent_config(ctx: Context) -> dict[str, Any]:
         """Return current session-scoped agent configuration."""
 
@@ -627,7 +770,7 @@ def create_app() -> FastAPI:
             raise HTTPException(403, "Admin role required")
         return ctx[0].agent_config
 
-    @api.put("/api/agent-config")
+    @v1_router.put("/agent-config", response_model=AgentConfigResponse, tags=["Admin"], responses={200: {"description": "Updated and persisted new agent thresholds configuration"}, **COMMON_RESPONSES})
     def save_agent_config(config: dict[str, Any], ctx: Context) -> dict[str, Any]:
         """Validate and save session-scoped agent configuration."""
 
@@ -643,7 +786,27 @@ def create_app() -> FastAPI:
         repo.log("agent_config_saved", user, role, version=repo.agent_config["version"])
         return repo.agent_config
 
-    @api.get("/api/audit")
+    @v1_router.get("/visuals/{document_id}", tags=["Storage"], responses={200: {"description": "Serve patient structured visual image binary data"}, **COMMON_RESPONSES})
+    def visual(document_id: str, ctx: Context) -> FileResponse:
+        """Serve an agent-generated visual recorded in the documents table.
+
+        Only image documents whose stored path resolves inside the tenant's
+        uploads directory are served, so a forged document row cannot read
+        arbitrary files.
+        """
+
+        from capstone_agent import database as clinical_db
+
+        doc = clinical_db.get_document(document_id)
+        if not doc or not str(doc.get("content_type", "")).startswith("image/"):
+            raise HTTPException(404, "Visual not found")
+        uploads_root = Path(clinical_db.active_uploads_root()).resolve()
+        candidate = Path(doc.get("file_path") or "").resolve()
+        if not candidate.is_file() or uploads_root not in candidate.parents:
+            raise HTTPException(404, "Visual not found")
+        return FileResponse(candidate, media_type=doc["content_type"])
+
+    @v1_router.get("/audit", response_model=list[AuditEventResponse], tags=["Admin"], responses={200: {"description": "Immutable compliance activity and security log history"}, **COMMON_RESPONSES})
     def audit(ctx: Context, patient_id: str | None = None) -> list[dict[str, Any]]:
         """Return camelCase-compatible audit trail."""
 
@@ -652,6 +815,347 @@ def create_app() -> FastAPI:
             return [audit_view(item) for item in reversed(repo.audit)]
         rows = [item for item in repo.audit if not patient_id or item["details"].get("patient_id") == patient_id]
         return [audit_view(item) for item in reversed(rows)]
+
+
+    # --- V2 Service & Developer Console Endpoints ---
+
+    @v2_router.get("/health", response_model=V2HealthResponse, tags=["System V2"], responses={200: {"description": "Retrieve health diagnostic metrics including database connection check"}, **COMMON_RESPONSES})
+    def v2_health(ctx: Context) -> dict[str, Any]:
+        """Report extended V2 health, including DB connectivity."""
+        repo = ctx[0]
+        db_connected = False
+        if getattr(repo, "db_path", None) is not None:
+            try:
+                from capstone_agent import database as db
+                res = db.execute_sql("SELECT 1")
+                db_connected = bool(res.get("rows"))
+            except Exception:
+                pass
+        else:
+            db_connected = True  # demo repository has no file database but is healthy
+        
+        uploads_accessible = True
+        if getattr(repo, "uploads_root", None) is not None:
+            try:
+                uploads_accessible = Path(repo.uploads_root).exists()
+            except Exception:
+                uploads_accessible = False
+
+        return {
+            "status": "ok",
+            "mode": effective_mode(ctx[3]),
+            "timestamp": now(),
+            "databaseConnected": db_connected,
+            "storageAccessible": uploads_accessible,
+        }
+
+    @v2_router.get("/mcp/tools", response_model=McpToolsListResponse, tags=["MCP V2"], responses={200: {"description": "Expose all database tools available over MCP"}, **COMMON_RESPONSES})
+    async def list_mcp_tools() -> dict[str, Any]:
+        """List all dynamic tools registered on the FastMCP clinical server."""
+        try:
+            from mcp_server.server import mcp
+            tools_list = await mcp.list_tools()
+            formatted = []
+            for t in tools_list:
+                formatted.append({
+                    "name": t.name,
+                    "description": t.description,
+                    "inputSchema": t.inputSchema,
+                    "outputSchema": t.outputSchema,
+                })
+            return {"tools": formatted, "total": len(formatted)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to list MCP tools: {e}")
+
+    @v2_router.post("/mcp/execute", response_model=McpExecuteResponse, tags=["MCP V2"], responses={200: {"description": "Gated dynamic execution of an MCP tool"}, **COMMON_RESPONSES})
+    async def execute_mcp_tool(body: McpExecuteRequest, ctx: Context) -> dict[str, Any]:
+        """Run an MCP tool on the clinical server on behalf of the user/session."""
+        repo, role, user, _tenant = ctx
+        start_time = monotonic()
+        try:
+            from mcp_server.server import mcp
+            if body.tool_name == "query_clinical_database":
+                sql_query = body.arguments.get("sql", "")
+                from capstone_agent.clinical_schemas import validate_sql
+                safety = validate_sql(sql_query)
+                if not safety["safe"]:
+                    raise HTTPException(status_code=400, detail=f"SQL Blocked: {safety['reason']}")
+
+            res = await mcp.call_tool(body.tool_name, body.arguments)
+            duration = (monotonic() - start_time) * 1000.0
+            
+            repo.log(
+                action=f"mcp_tool_execution_{body.tool_name}",
+                actor=user,
+                role=role,
+                details={"arguments": body.arguments, "duration_ms": duration}
+            )
+            
+            return {
+                "status": "success",
+                "result": res,
+                "durationMs": duration,
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"MCP execution failed: {e}")
+
+    @v2_router.get("/a2a/card", response_model=A2aCardResponse, tags=["A2A V2"], responses={200: {"description": "Expose the Agent Card metadata for Agent-to-Agent discovery"}, **COMMON_RESPONSES})
+    def a2a_card() -> dict[str, Any]:
+        """Expose the Agent Card metadata for Agent-to-Agent discovery."""
+        try:
+            from capstone_agent.agent import root_agent
+            pipelines_list = [p.name for p in root_agent.sub_agents]
+            tools_list = []
+            for t in root_agent.tools:
+                if hasattr(t, "name"):
+                    tools_list.append(t.name)
+                elif hasattr(t, "tool_name"):
+                    tools_list.append(t.tool_name)
+                else:
+                    tools_list.append(str(t))
+            return {
+                "name": root_agent.name,
+                "description": root_agent.description,
+                "instruction": root_agent.instruction[:500] + "..." if root_agent.instruction else None,
+                "pipelines": pipelines_list,
+                "tools": tools_list,
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to retrieve A2A card: {e}")
+
+    # Register routers on api app instance
+    api.include_router(v1_router, prefix="/api/v1")
+    api.include_router(v2_router, prefix="/api/v2")
+    api.include_router(v1_router, prefix="/api", include_in_schema=False)
+
+    @api.get("/docs", include_in_schema=False)
+    async def custom_swagger_ui_html():
+        from fastapi.openapi.docs import get_swagger_ui_html
+        from fastapi.responses import HTMLResponse
+        
+        response = get_swagger_ui_html(
+            openapi_url=api.openapi_url,
+            title="Clinician AI Kit - API & Swagger Console",
+            oauth2_redirect_url=api.swagger_ui_oauth2_redirect_url,
+        )
+        
+        custom_css = """
+        body {
+            background-color: #0b0f19 !important;
+            color: #f3f4f6 !important;
+            font-family: 'Outfit', 'Inter', sans-serif !important;
+            margin: 0;
+            padding: 0;
+        }
+        .swagger-ui {
+            background-color: #0b0f19 !important;
+            color: #f3f4f6 !important;
+        }
+        .swagger-ui .info .title {
+            color: #f3f4f6 !important;
+            font-size: 2.2em !important;
+            font-weight: 800 !important;
+        }
+        .swagger-ui .info p, .swagger-ui .info li, .swagger-ui .info td, .swagger-ui .info th {
+            color: #9ca3af !important;
+            font-size: 1.05em !important;
+            line-height: 1.6 !important;
+        }
+        .swagger-ui .info a {
+            color: #3b82f6 !important;
+            text-decoration: none !important;
+        }
+        .swagger-ui .info a:hover {
+            text-decoration: underline !important;
+        }
+        .swagger-ui .scheme-container {
+            background-color: #111827 !important;
+            border: 1px solid #1f2937 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+            border-radius: 12px !important;
+            margin: 20px 0 !important;
+            padding: 20px !important;
+        }
+        .swagger-ui select {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+            border: 1px solid #374151 !important;
+            border-radius: 6px !important;
+            padding: 8px !important;
+        }
+        .swagger-ui input[type=text] {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+            border: 1px solid #374151 !important;
+            border-radius: 6px !important;
+            padding: 8px !important;
+        }
+        .swagger-ui .opblock {
+            border-radius: 10px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            border: 1px solid #1f2937 !important;
+            margin-bottom: 12px !important;
+            overflow: hidden !important;
+        }
+        .swagger-ui .opblock .opblock-summary {
+            padding: 12px 20px !important;
+        }
+        .swagger-ui .opblock.opblock-get {
+            background-color: rgba(59, 130, 246, 0.08) !important;
+            border-color: rgba(59, 130, 246, 0.3) !important;
+        }
+        .swagger-ui .opblock.opblock-get .opblock-summary-method {
+            background-color: #3b82f6 !important;
+            color: #fff !important;
+            border-radius: 6px !important;
+            font-weight: 700 !important;
+        }
+        .swagger-ui .opblock.opblock-post {
+            background-color: rgba(16, 185, 129, 0.08) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+        }
+        .swagger-ui .opblock.opblock-post .opblock-summary-method {
+            background-color: #10b981 !important;
+            color: #fff !important;
+            border-radius: 6px !important;
+            font-weight: 700 !important;
+        }
+        .swagger-ui .opblock.opblock-put {
+            background-color: rgba(245, 158, 11, 0.08) !important;
+            border-color: rgba(245, 158, 11, 0.3) !important;
+        }
+        .swagger-ui .opblock.opblock-put .opblock-summary-method {
+            background-color: #f59e0b !important;
+            color: #fff !important;
+            border-radius: 6px !important;
+            font-weight: 700 !important;
+        }
+        .swagger-ui .opblock .opblock-section-header {
+            background-color: #111827 !important;
+            border-bottom: 1px solid #1f2937 !important;
+            padding: 10px 20px !important;
+        }
+        .swagger-ui .opblock .opblock-section-header h4 {
+            color: #f3f4f6 !important;
+        }
+        .swagger-ui .tabli button {
+            color: #9ca3af !important;
+            font-weight: 600 !important;
+        }
+        .swagger-ui .tabli.active button {
+            color: #f3f4f6 !important;
+            border-bottom: 2px solid #3b82f6 !important;
+        }
+        .swagger-ui .responses-inner h4, .swagger-ui .responses-inner h5 {
+            color: #f3f4f6 !important;
+        }
+        .swagger-ui .response-col_status {
+            color: #f3f4f6 !important;
+            font-weight: 700 !important;
+        }
+        .swagger-ui .response-col_description {
+            color: #9ca3af !important;
+        }
+        .swagger-ui .parameter__name {
+            color: #f3f4f6 !important;
+            font-weight: 600 !important;
+        }
+        .swagger-ui .parameter__type {
+            color: #9ca3af !important;
+        }
+        .swagger-ui .parameter__in {
+            color: #6b7280 !important;
+            font-style: italic !important;
+        }
+        .swagger-ui .model-box {
+            background-color: #111827 !important;
+            border: 1px solid #1f2937 !important;
+            border-radius: 8px !important;
+            padding: 10px !important;
+        }
+        .swagger-ui .model {
+            color: #f3f4f6 !important;
+        }
+        .swagger-ui .model-title {
+            color: #3b82f6 !important;
+            font-weight: 700 !important;
+        }
+        .swagger-ui .opblock-summary-path {
+            color: #f3f4f6 !important;
+            font-weight: 600 !important;
+            font-size: 1.1em !important;
+        }
+        .swagger-ui .opblock-summary-description {
+            color: #9ca3af !important;
+        }
+        .swagger-ui .btn.execute {
+            background-color: #3b82f6 !important;
+            border-color: #2563eb !important;
+            color: #fff !important;
+            border-radius: 6px !important;
+            font-weight: 700 !important;
+            padding: 8px 24px !important;
+            transition: all 0.2s ease !important;
+        }
+        .swagger-ui .btn.execute:hover {
+            background-color: #2563eb !important;
+        }
+        .swagger-ui .btn {
+            border-radius: 6px !important;
+            color: #9ca3af !important;
+            border-color: #374151 !important;
+            background-color: #1f2937 !important;
+        }
+        .swagger-ui .btn:hover {
+            color: #f3f4f6 !important;
+            background-color: #374151 !important;
+        }
+        .swagger-ui .model-toggle:after {
+            filter: invert(1) !important;
+        }
+        .swagger-ui .dialog-ux .modal-ux {
+            background-color: #111827 !important;
+            border: 1px solid #1f2937 !important;
+            border-radius: 12px !important;
+        }
+        .swagger-ui .dialog-ux .modal-ux-header h3 {
+            color: #f3f4f6 !important;
+        }
+        .swagger-ui .dialog-ux .modal-ux-content {
+            color: #9ca3af !important;
+        }
+        .swagger-ui table thead tr td, .swagger-ui table thead tr th {
+            border-bottom: 1px solid #1f2937 !important;
+            color: #f3f4f6 !important;
+            font-weight: 700 !important;
+        }
+        .swagger-ui .servers-title {
+            color: #f3f4f6 !important;
+        }
+        .swagger-ui section.models {
+            border: 1px solid #1f2937 !important;
+            border-radius: 12px !important;
+            background-color: #111827 !important;
+        }
+        .swagger-ui section.models h4 {
+            color: #f3f4f6 !important;
+            border-bottom: 1px solid #1f2937 !important;
+            padding: 15px 20px !important;
+        }
+        """
+        html = response.body.decode("utf-8")
+        html_with_style = html.replace("</head>", f"<style>{custom_css}</style></head>")
+        return HTMLResponse(content=html_with_style, status_code=200)
+
+    @api.get("/redoc", include_in_schema=False)
+    async def custom_redoc_html():
+        from fastapi.openapi.docs import get_redoc_html
+        return get_redoc_html(
+            openapi_url=api.openapi_url,
+            title="Clinician AI Kit - ReDoc Specification"
+        )
 
     dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
     if dist.is_dir():
@@ -663,7 +1167,7 @@ def create_app() -> FastAPI:
         def spa(path: str) -> FileResponse:
             """Serve built frontend and fall back to SPA entry point."""
 
-            if path == "api" or path.startswith("api/"):
+            if path in ("api", "docs", "redoc", "openapi.json") or path.startswith("api/") or path.startswith("docs/") or path.startswith("redoc/"):
                 raise HTTPException(404, "API route not found")
             candidate = (dist / path).resolve()
             if candidate.is_file() and dist.resolve() in candidate.parents:

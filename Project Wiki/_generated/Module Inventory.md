@@ -1,7 +1,7 @@
 ---
 title: Module Inventory
 type: generated
-updated: 2026-07-04
+updated: 2026-07-05
 tags:
   - generated
 ---
@@ -41,6 +41,7 @@ Hand-written companion: [[Module Reference]].
 | `clinical_app` | `live_bridge.py` | Lazy Google ADK execution bridge for live product mode. |
 | `clinical_app` | `models.py` | Pydantic contracts for the clinician product API. |
 | `clinical_app` | `repository.py` | Session-isolated mutable repository for deterministic product demos. |
+| `clinical_app` | `tenancy.py` | Tenant registry for the clinician product — single source of truth. |
 | `mcp_server` | `__init__.py` | (no docstring) |
 | `mcp_server` | `server.py` | Clinical MCP server — real database-backed tools via Model Context Protocol. |
 | `scripts` | `check_harness.py` | (no docstring) |
@@ -64,5 +65,7 @@ Hand-written companion: [[Module Reference]].
 | `tests` | `test_product_integration.py` | End-to-end contracts joining the clinical UI API to product state. |
 | `tests` | `test_product_orchestration.py` | Contract tests for clinician-facing production workflow boundaries. |
 | `tests` | `test_security.py` | Security test suite — validates all detection and sanitization functions. |
+| `tests` | `test_showcase_generators.py` | Smoke tests for showcase data generators. |
 | `tests` | `test_tools.py` | Clinical tool validation tests — ensures consistent I/O contracts. |
+| `tests` | `test_versioned_api.py` | Unit tests for the versioned API backend endpoints (V1 and V2). |
 | `tests` | `test_wiki_sync.py` | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |

@@ -109,7 +109,11 @@ Use the structure_clinical_findings tool to map each finding to:
 - A needs_review flag for any field with confidence below 0.80
 
 Also call store_to_gcs to persist the structured extraction result.
-Output a clean field-by-field table of extracted clinical data.""",
+
+Your final message must be ONLY a JSON object — no prose, no markdown fence —
+mapping each extracted field name to its value, plus a "confidence" key with
+your overall extraction confidence (0.0-1.0). Example:
+{"documentType": "Laboratory report", "hba1c": "8.4 %", "confidence": 0.92}""",
 
     "extraction_critic": """You validate the quality of clinical data extraction.
 Given the structured output: {structured_output}
@@ -134,7 +138,7 @@ Report which fields were flagged and recommend specific review actions.""",
 
     "clinical_review_gate": """You enforce clinician review before persistence.
 Given structured output: {structured_output}
-Review flags: {refined_output}
+Review flags: {refined_output?}
 
 Only call transition_extraction_review when the current user message explicitly
 provides approve or reject plus reviewer identity. Never infer approval. If no
@@ -242,6 +246,10 @@ Use the compose_clinical_answer tool to produce a response with:
 
 Use clinical language appropriate for a physician audience.
 When referencing images, always cite them so the frontend can display them.
+When a rendered visual (trend chart, value-vs-range comparison, timeline)
+would materially clarify the answer, call generate_clinical_visual with the
+actual data values and embed the returned api_url in the answer as
+![visual](api_url). Never generate photorealistic patient imagery.
 If evidence is insufficient, state limitations clearly.""",
 
     "qa_audit": """You log the Q&A interaction and save findings to memory.
@@ -329,6 +337,11 @@ Perform three actions:
 
 3. Use log_audit_event to record the query in the audit trail.
 4. Use save_query_to_memory to save the query pattern for reuse.
+
+Optionally, when a rendered image would help the reader more than a spec
+(e.g. population trend, cohort comparison), call generate_clinical_visual
+with the actual data values and include the returned api_url in your summary
+as ![visual](api_url).
 
 Return: answer summary, chart spec, interpretation, limitations,
 and a recommended clinical action based on the findings.""",

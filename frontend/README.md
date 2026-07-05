@@ -28,6 +28,7 @@ src/
 ├── components.tsx        # Shared UI components
 ├── styles.css            # Global styles and clinical design tokens
 ├── OrchestrationPanel.tsx # Agent orchestration visualization
+├── Onboarding.tsx        # First-run guided onboarding tour (full-takeover modal)
 ├── plotly.d.ts           # Plotly type declarations
 ├── screens/
 │   ├── EntryScreens.tsx  # Landing, role selection, demo entry
@@ -61,6 +62,14 @@ src/
 - Real-time visualization of agent pipeline execution
 - Step-by-step progress with tool calls and timing
 - Confidence indicators and evidence display
+
+### Guided Onboarding Tour
+- Full-takeover modal shown the first time a user enters the workspace (`/app/*`), with the real application dimmed behind it
+- 9 clinician-voiced steps that navigate the actual screens: dashboard triage, patient record, the three AI workflows (multimodal extraction, cited Q&A, database intelligence), human-in-the-loop governance, and the Ctrl+K orchestrator
+- Deterministic in-modal simulations (agent pipeline, cited answer, SQL-to-chart) — zero API calls, works without a backend
+- Skippable at any step (button or Escape); arrow keys navigate; completion and skip both persist to `localStorage` (`clinicalOnboardingV1`)
+- Replayable via the "Replay product tour" button in the topbar
+- Tests must seed `localStorage.setItem("clinicalOnboardingV1", "done")` before rendering `/app` routes unless they exercise the tour itself
 
 ---
 

@@ -3,8 +3,9 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "./api";
 import { Icon, RoleSwitcher, StatusBadge } from "./components";
 import { useClinical } from "./context";
+import { ONBOARDING_KEY, OnboardingTour } from "./Onboarding";
 import { OrchestrationPanel } from "./OrchestrationPanel";
-import type { ClinicalNotification, Patient } from "./types";
+import { TENANTS, type ClinicalNotification, type Patient, type TenantId } from "./types";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
@@ -49,6 +50,9 @@ const adminGroups: NavGroup[] = [
     { to: "/app/admin?view=health", icon: "pulse", label: "System Health" },
     { to: "/app/configuration?view=settings", icon: "settings", label: "Settings" },
   ]},
+  { label: "Developer Tools", items: [
+    { to: "/app/console", icon: "sliders", label: "API Console" },
+  ]},
 ];
 
 function routeTitle(pathname: string) {
@@ -57,13 +61,14 @@ function routeTitle(pathname: string) {
 }
 
 export function Shell() {
-  const { role, setRole, patient, setPatient } = useClinical();
+  const { role, setRole, patient, setPatient, tenant, setTenant } = useClinical();
   const navigate = useNavigate();
   const location = useLocation();
   const searchRef = useRef<HTMLInputElement>(null);
   const [commandOpen, setCommandOpen] = useState(false);
   const [initialCommand, setInitialCommand] = useState("");
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(() => localStorage.getItem(ONBOARDING_KEY) !== "done" && location.pathname !== "/app/console");
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [matches, setMatches] = useState<Patient[]>([]);
@@ -72,7 +77,14 @@ export function Shell() {
   const unread = notifications.filter(item => !item.read).length;
   const title = routeTitle(location.pathname);
 
-  useEffect(() => { void api.notifications().then(setNotifications).catch(() => setNotifications([])); }, []);
+  useEffect(() => {
+    if (location.pathname === "/app/console") {
+      setTourOpen(false);
+      localStorage.setItem(ONBOARDING_KEY, "done");
+    }
+  }, [location.pathname]);
+
+  useEffect(() => { void api.notifications().then(setNotifications).catch(() => setNotifications([])); }, [tenant.id]);
   useEffect(() => {
     if (search.trim().length < 2) { setMatches([]); return; }
     const timer = window.setTimeout(() => { void api.patients(search).then(setMatches).catch(() => setMatches([])); }, 180);
@@ -134,7 +146,9 @@ export function Shell() {
       <div className="workspace-title"><strong>{title}</strong><RoleSwitcher role={role} onChange={switchRole}/></div>
       <form className="unified-search" onSubmit={submitSearch}><Icon name="search" size={16}/><input ref={searchRef} aria-label="Global patient search and orchestrator" value={search} onFocus={() => setSearchOpen(true)} onChange={event => { setSearch(event.target.value); setSearchOpen(true); }} placeholder="Search patients, IDs, or ask orchestrator"/><kbd>{isMac ? "Cmd K" : "Ctrl K"}</kbd></form>
       <div className="topbar-tools">
-        {role === "admin" && <select className="organization-select" aria-label="Organization"><option>Northstar Health</option><option>Research Clinic</option></select>}
+        <select className="organization-select" aria-label="Organization" value={tenant.id} onChange={event => setTenant(event.target.value as TenantId)}>{TENANTS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        <StatusBadge tone={tenant.kind === "real" ? "risk-high" : "risk-low"}>{tenant.kind === "real" ? "Live" : "Demo"}</StatusBadge>
+        <button className="utility-button" aria-label="Replay product tour" onClick={() => setTourOpen(true)}><Icon name="agent" size={18}/></button>
         <button className="utility-button" aria-label="Notifications" onClick={() => setNoticeOpen(value => !value)}><Icon name="bell" size={18}/>{unread > 0 && <b>{unread}</b>}</button>
         <button className="utility-button" aria-label="Settings" onClick={() => navigate("/app/configuration?view=settings")}><Icon name="settings" size={18}/></button>
       </div>
@@ -143,7 +157,8 @@ export function Shell() {
     </header>
 
     {patient && <div className="patient-context-strip"><span>Active patient</span><button onClick={() => navigate(`/app/patient/${patient.id}`)}><strong>{patient.name}</strong><small>{patient.id} - {patient.condition}</small></button><StatusBadge tone={`risk-${patient.risk}`}>{patient.risk} risk</StatusBadge><button aria-label="Clear active patient" onClick={() => setPatient(null)}>x</button></div>}
-    <main className={patient ? "clinical-main has-context" : "clinical-main"}><Outlet/></main>
+    <main key={tenant.id} className={patient ? "clinical-main has-context" : "clinical-main"}><Outlet/></main>
     <OrchestrationPanel open={commandOpen} initialQuery={initialCommand} onClose={() => setCommandOpen(false)}/>
+    <OnboardingTour open={tourOpen} onClose={() => setTourOpen(false)}/>
   </div>;
 }

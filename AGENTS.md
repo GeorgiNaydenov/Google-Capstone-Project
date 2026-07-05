@@ -49,6 +49,7 @@ clinical_app/
   live_bridge.py            # Lazy Google ADK execution bridge for live product mode.
   models.py                 # Pydantic contracts for the clinician product API.
   repository.py             # Session-isolated mutable repository for deterministic product demos.
+  tenancy.py                # Tenant registry for the clinician product — single source of truth.
 mcp_server/
   server.py                 # Clinical MCP server — real database-backed tools via Model Context Protocol.
 scripts/
@@ -73,7 +74,9 @@ tests/
   test_product_integration.py # End-to-end contracts joining the clinical UI API to product state.
   test_product_orchestration.py # Contract tests for clinician-facing production workflow boundaries.
   test_security.py          # Security test suite — validates all detection and sanitization functions.
+  test_showcase_generators.py # Smoke tests for showcase data generators.
   test_tools.py             # Clinical tool validation tests — ensures consistent I/O contracts.
+  test_versioned_api.py     # Unit tests for the versioned API backend endpoints (V1 and V2).
   test_wiki_sync.py         # Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py).
 frontend/                   # React/Vite/TypeScript clinical UI (16 routes)
 eval/                       # ADK evaluation suite (evalset + scoring config)
@@ -236,6 +239,7 @@ This harness controls and validates agent executions.
 | `.agents/skills/json-canvas/SKILL.md` | Create and edit JSON Canvas files |
 | `.agents/skills/obsidian-bases/SKILL.md` | Create and edit Obsidian Bases |
 | `.agents/skills/obsidian-cli/SKILL.md` | Interact with vaults via Obsidian CLI |
+| `.agents/skills/drawio/SKILL.md` | Generate .drawio diagrams (architecture, ERD, UML, flowcharts, network) and export PNG/SVG/PDF via draw.io CLI |
 
 ### Commands
 

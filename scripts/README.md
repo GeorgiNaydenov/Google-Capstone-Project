@@ -1,38 +1,38 @@
-# scripts — Harness Management Utilities
+# scripts - Harness Management Utilities
 
 Maintenance and showcase scripts for the project harness and clinical demo data.
-
----
 
 ## Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `check_harness.py` | Validates harness integrity — checks required directories, root indexes (`CLAUDE.md`, `AGENTS.md`), rule files, and configuration consistency. Used as a pre-tool-use hook in `.claude/settings.json` |
-| `sync_harness.py` | Mirrors `.claude/` directory to `.agents/` and `CLAUDE.md` to `AGENTS.md` — keeps the Antigravity-compatible harness in sync with the Claude Code harness |
-| `generate_database_showcase.py` | Generates synthetic database intelligence showcase data — SQL queries, results, charts, and insights for demo mode |
-| `generate_extraction_showcase.py` | Generates synthetic image extraction showcase data — clinical images, OCR results, structured fields, and confidence scores |
-| `generate_multimodal_patient_showcase.py` | Generates synthetic multimodal patient Q&A showcase data — questions, evidence, citations, and answers |
-
----
+| `check_harness.py` | Validates harness integrity: required directories, root indexes, rule files, and configuration consistency. |
+| `sync_harness.py` | Mirrors `.claude/` to `.agents/` and `CLAUDE.md` to `AGENTS.md`. |
+| `generate_extraction_showcase.py` | Generates uploadable PNG clinical sheets with patient data, OCR targets, structured fields, and embedded visualizations. |
+| `generate_multimodal_patient_showcase.py` | Generates Q&A bundles with uploadable PDFs, mixed DOCX/PDF/MD/TXT/JSON knowledge-base files, citations, tables, charts, and prompts. |
+| `generate_database_showcase.py` | Generates a 10,000-patient default SQLite cohort across 4 years with SQL examples, textual insights, Plotly specs, and Matplotlib charts. |
 
 ## Usage
 
 ```powershell
-# Validate harness (also runs automatically as a Claude Code hook)
+# Validate harness
 python scripts/check_harness.py
 
 # Sync harness files
 python scripts/sync_harness.py
 
-# Generate showcase data
-python scripts/generate_database_showcase.py
+# Generate full showcase data
 python scripts/generate_extraction_showcase.py
 python scripts/generate_multimodal_patient_showcase.py
+python scripts/generate_database_showcase.py --replace
+
+# Smaller smoke runs
+python scripts/generate_multimodal_patient_showcase.py --bundle-count 1 --pdfs-per-bundle 12 --kb-docs-per-bundle 10
+python scripts/generate_database_showcase.py --patient-count 1000 --replace
 ```
 
----
+Full-scale defaults:
 
-## Harness Hook
-
-`check_harness.py` is configured as a `PreToolUse` hook in `.claude/settings.json`. It runs automatically before every tool call to verify the project structure hasn't drifted. This ensures consistency between the harness configuration and the actual file layout.
+- Extraction: 48 uploadable PNG clinical sheets.
+- Multimodal Q&A: 12 patient bundles, 432 PDFs, 300 mixed knowledge-base documents.
+- Database intelligence: 10,000 patients across 4 years plus SQL, insight, Plotly, and Matplotlib artifacts.

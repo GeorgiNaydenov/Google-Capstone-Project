@@ -1,15 +1,20 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App, primaryRoutes } from "./App";
+import { ONBOARDING_KEY } from "./Onboarding";
 
 describe("clinical product shell", () => {
-  afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); });
+  beforeEach(() => { localStorage.setItem(ONBOARDING_KEY, "done"); });
+  afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); sessionStorage.clear(); });
   it("declares exactly sixteen primary screens", () => { expect(primaryRoutes).toHaveLength(16); });
   it("renders public synthetic demo landing", () => {
     render(<MemoryRouter initialEntries={["/"]}><App/></MemoryRouter>);
     expect(screen.getByRole("heading", { name: /turn fragmented clinical evidence/i })).toBeInTheDocument();
     expect(screen.getByText(/synthetic clinical data/i)).toBeInTheDocument();
+    expect(screen.getByText(/architecture diagram atlas/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /system architecture/i })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: /open system architecture image/i })).toBeInTheDocument();
   });
   it("uses a real upload input", () => {
     render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
@@ -71,5 +76,29 @@ describe("clinical product shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
     fireEvent.click(await screen.findByRole("button", { name: /verification required/i }));
     expect(await screen.findByRole("heading", { name: "Clinical inbox" })).toBeInTheDocument();
+  });
+  it("switches tenants, refetches with the new header, and flags the real tenant", async () => {
+    localStorage.setItem("clinicalRole", "clinician");
+    sessionStorage.removeItem("tenant");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      const json = (value: unknown) => new Response(JSON.stringify(value), { status: 200, headers: { "Content-Type": "application/json" } });
+      if (url.endsWith("/agents")) return json({ executionMode: "local", orchestrator: "clinical_orchestrator", framework: "Google ADK", pipelines: [] });
+      return json([]);
+    });
+    render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
+    const select = screen.getByLabelText("Organization") as HTMLSelectElement;
+    expect([...select.options].map(option => option.value)).toEqual(["research-clinic", "northstar-health", "capstone"]);
+    expect(select.value).toBe("research-clinic");
+    expect(screen.getByText("Demo")).toBeInTheDocument();
+    fetchMock.mockClear();
+    fireEvent.change(select, { target: { value: "northstar-health" } });
+    expect(sessionStorage.getItem("tenant")).toBe("northstar-health");
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const tenants = fetchMock.mock.calls.map(([, init]) => new Headers(init?.headers).get("X-Tenant"));
+    expect(tenants).toContain("northstar-health");
+    fireEvent.change(select, { target: { value: "capstone" } });
+    expect(sessionStorage.getItem("tenant")).toBe("capstone");
+    expect(await screen.findByText("Live")).toBeInTheDocument();
   });
 });

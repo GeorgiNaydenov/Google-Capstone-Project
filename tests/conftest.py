@@ -20,6 +20,15 @@ APP_NAME = "capstone_agent_test"
 USER_ID = "test_user"
 
 
+@pytest.fixture(autouse=True)
+def _demo_execution_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep tests deterministic regardless of AGENT_EXECUTION_MODE in .env.
+
+    Tests that exercise live mode opt back in with monkeypatch.setenv.
+    """
+    monkeypatch.delenv("AGENT_EXECUTION_MODE", raising=False)
+
+
 @pytest.fixture
 def session_service():
     """Fresh in-memory session service for each test."""

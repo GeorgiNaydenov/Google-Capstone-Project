@@ -9,7 +9,8 @@ Test categories:
    before_model callback short-circuits before any model call)
 3. Multi-turn tests — does conversation context persist? (needs a model)
 
-Tests that invoke the model are skipped unless GOOGLE_API_KEY is set, so the
+Tests that invoke the model are skipped unless Gemini credentials are present
+(GOOGLE_API_KEY, or Vertex AI via GOOGLE_GENAI_USE_VERTEXAI + project), so the
 suite stays green in CI without credentials.
 """
 
@@ -19,9 +20,17 @@ import pytest
 
 from tests.conftest import APP_NAME, USER_ID, get_agent_response
 
+_HAS_GEMINI = bool(
+    os.getenv("GOOGLE_API_KEY")
+    or (
+        os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").upper() == "TRUE"
+        and os.getenv("GOOGLE_CLOUD_PROJECT")
+    )
+)
+
 requires_model = pytest.mark.skipif(
-    not os.getenv("GOOGLE_API_KEY"),
-    reason="GOOGLE_API_KEY required to invoke the model",
+    not _HAS_GEMINI,
+    reason="Gemini credentials (API key or Vertex AI project) required to invoke the model",
 )
 
 
@@ -55,18 +64,30 @@ async def test_security_blocks_prompt_injection(runner, session_service, session
 
 @requires_model
 async def test_multi_turn_context(runner, session_service, session_id):
-    """Agent should maintain context across multiple turns in a session."""
+    """Session must accumulate both turns and keep answering (system contract).
+
+    Per testing rules, pytest asserts system contracts only — semantic recall
+    quality ("did it remember the name?") is scored by the adk eval set, not
+    here, because content assertions on LLM output flake.
+    """
     await session_service.create_session(
         app_name=APP_NAME, user_id=USER_ID, session_id=session_id
     )
     # First turn: introduce a topic
-    await get_agent_response(
+    first = await get_agent_response(
         runner, USER_ID, session_id, "My name is Alex and I need help with project planning."
     )
+    assert first, "First turn should produce a response"
     # Second turn: reference the topic without restating
     response = await get_agent_response(
         runner, USER_ID, session_id, "What was my name again?"
     )
-    assert "alex" in response.lower(), (
-        "Agent should remember the user's name within the same session"
+    assert response, "Second turn should produce a response in the same session"
+    session = await session_service.get_session(
+        app_name=APP_NAME, user_id=USER_ID, session_id=session_id
     )
+    user_turns = [
+        event for event in (session.events or [])
+        if getattr(event, "author", "") == "user"
+    ]
+    assert len(user_turns) >= 2, "Both user turns must persist in the session"

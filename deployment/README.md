@@ -10,12 +10,32 @@ as a non-root user, and serves the clinical product on Cloud Run's `PORT`.
 ADK Web remains a local developer surface. Deploy via Cloud Build:
 
 ```bash
-# One-time: store the API key in Secret Manager
-echo -n "YOUR_GEMINI_KEY" | gcloud secrets create GOOGLE_API_KEY --data-file=-
+# One-time: let the Cloud Run runtime service account call Vertex AI
+gcloud projects add-iam-policy-binding PROJECT_ID \
+    --member="serviceAccount:<cloud-run-runtime-sa>" --role="roles/aiplatform.user"
 
 # Build + push + deploy
 gcloud builds submit --config deployment/cloudbuild.yaml .
 ```
+
+Live-mode environment (set by `cloudbuild.yaml`):
+
+| Variable | Value | Why |
+|---|---|---|
+| `AGENT_EXECUTION_MODE` | `live` | Product API routes through real ADK agents |
+| `GOOGLE_GENAI_USE_VERTEXAI` | `TRUE` | Gemini via Vertex AI with the runtime SA's ADC — no API key |
+| `GOOGLE_CLOUD_LOCATION` | `global` | Gemini 3.1 models are only served from the global endpoint |
+| `HIPAA_MODE` | `TRUE` | Forces PHI redaction on all output paths |
+
+Constraints to respect until the storage layer moves off-instance:
+
+- **`--max-instances=1` is mandatory.** Browser demo/live session state lives in
+  process memory (`RepositoryRegistry`) and clinical data in a local SQLite
+  file; a second instance would serve divergent data.
+- The live bridge intentionally uses in-memory ADK sessions per instance;
+  `SESSION_BACKEND=database` applies to the `adk run` / Agent Engine path only.
+- Q&A follow-up continuity therefore survives requests but not restarts or
+  redeploys.
 
 The generic ADK CLI deployment below exposes the ADK developer UI rather than
 the Nexus product and is retained only for agent-runtime troubleshooting:

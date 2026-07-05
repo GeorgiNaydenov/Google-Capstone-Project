@@ -79,6 +79,13 @@ def get_config() -> dict:
     if config["hipaa_compliance_mode"] and not config["phi_redaction_enabled"]:
         config["phi_redaction_enabled"] = True
 
+    # Derived: Gemini is reachable through either auth path — a direct API
+    # key or Vertex AI with a project (ADC supplies the credentials there).
+    # Tools must gate real-model calls on this, never on the API key alone.
+    config["gemini_enabled"] = bool(
+        config["google_api_key"] or (config["use_vertex_ai"] and config["gcp_project"])
+    )
+
     return config
 
 

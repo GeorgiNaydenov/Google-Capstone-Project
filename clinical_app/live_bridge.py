@@ -1,10 +1,50 @@
 """Lazy Google ADK execution bridge for live product mode."""
 
-import base64
+import asyncio
 import json
 import re
 from typing import Any
 from uuid import uuid4
+
+# Shared across requests so a caller-supplied session_key can resume prior
+# turns (Q&A follow-ups) and saved memories survive between requests. Created
+# lazily inside execute_live so demo tenant sessions never import ADK.
+_session_service: Any = None
+_memory_service: Any = None
+
+# Pipeline output_key values surfaced to the product API (see
+# capstone_agent/orchestration.py). SequentialAgent final responses come from
+# the last stage (audit narration), so structured results must be read from
+# session state, not the final text.
+_STATE_OUTPUT_KEYS = (
+    "structured_output",
+    "refined_output",
+    "review_decision",
+    "qa_answer",
+    "cited_sources",
+    "generated_sql",
+    "validated_sql",
+    "query_results",
+    "insight_summary",
+)
+
+
+# Stream-level failure signatures worth one retry. HTTP-level retries are
+# already handled by llm.build_model's HttpRetryOptions; this catches aborts
+# surfaced mid-stream after the connection succeeded.
+# gRPC status codes are matched case-sensitively: a lowercase "unavailable"
+# usually describes a missing local runtime, not a retryable server error.
+_TRANSIENT_PATTERN = re.compile(r"429|RESOURCE_EXHAUSTED|UNAVAILABLE|503|DEADLINE|[Oo]verloaded")
+
+
+def _is_transient(text: str) -> bool:
+    """Return True when an error message indicates a retryable model failure.
+
+    Credential, import, and validation errors never match, so a misconfigured
+    runtime fails immediately instead of burning retry attempts.
+    """
+
+    return bool(_TRANSIENT_PATTERN.search(text))
 
 
 async def execute_live(
@@ -13,12 +53,47 @@ async def execute_live(
     file_bytes: bytes | None = None,
     file_mime: str | None = None,
     patient_context: dict[str, Any] | None = None,
+    session_key: str | None = None,
+    max_attempts: int = 2,
+) -> dict[str, Any]:
+    """Invoke the root agent with a bounded retry on transient model errors.
+
+    Only stream-level failures matching _TRANSIENT_PATTERN are retried; any
+    other exception (missing ADK, bad credentials, agent bugs) is raised
+    immediately so the caller can surface an honest error.
+    """
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return await _execute_once(
+                query, user_id,
+                file_bytes=file_bytes, file_mime=file_mime,
+                patient_context=patient_context, session_key=session_key,
+            )
+        except Exception as exc:
+            if attempt >= max_attempts or not _is_transient(str(exc)):
+                raise
+            await asyncio.sleep(1.5 * attempt)
+    raise RuntimeError("unreachable")  # loop always returns or raises
+
+
+async def _execute_once(
+    query: str,
+    user_id: str,
+    file_bytes: bytes | None = None,
+    file_mime: str | None = None,
+    patient_context: dict[str, Any] | None = None,
+    session_key: str | None = None,
 ) -> dict[str, Any]:
     """Invoke the root agent with optional multimodal content and return structured results.
 
     Imports stay inside this function so demo tenant sessions have no model,
-    key, network, or ADK graph dependency.
+    key, network, or ADK graph dependency. When session_key is provided, the
+    same ADK session is reused across requests so follow-up questions keep
+    conversational context.
     """
+
+    global _session_service, _memory_service
 
     try:
         from google.adk.runners import Runner
@@ -27,26 +102,47 @@ async def execute_live(
 
         from capstone_agent.agent import root_agent
         from capstone_agent.config import redact_secrets
+        from capstone_agent.memory import create_memory_service
         from capstone_agent.security import redact_pii
     except (ImportError, KeyError) as error:
         raise RuntimeError(f"Live ADK runtime unavailable: {error}") from error
 
     app_name = "clinical_product_live"
-    session_id = f"live-{uuid4().hex}"
-    session_service = InMemorySessionService()
-    session = await session_service.create_session(
+    if _session_service is None:
+        _session_service = InMemorySessionService()
+    if _memory_service is None:
+        # The Q&A pipeline carries load_memory/search_past_conversations and
+        # the root agent auto-saves sessions; a Runner without a memory
+        # service makes any of those calls fail the whole run.
+        _memory_service = create_memory_service()
+    session_service = _session_service
+    session_id = f"live-{session_key}" if session_key else f"live-{uuid4().hex}"
+    session = await session_service.get_session(
         app_name=app_name, user_id=user_id, session_id=session_id,
     )
-    if patient_context:
-        for key, value in patient_context.items():
-            session.state[key] = value
+    if session is None:
+        # State must be passed at creation: create_session returns a copy, so
+        # post-hoc session.state mutations never reach the stored session.
+        session = await session_service.create_session(
+            app_name=app_name, user_id=user_id, session_id=session_id,
+            state=dict(patient_context or {}),
+        )
+    # Snapshot so only keys written by THIS run surface as outputs. Resumed
+    # sessions keep prior pipeline state (e.g. qa_answer), and returning it
+    # again would mask a fresh answer produced outside that pipeline.
+    baseline_state = dict(session.state or {})
 
     parts: list[types.Part] = [types.Part(text=query)]
     if file_bytes and file_mime:
         parts.append(types.Part(inline_data=types.Blob(mime_type=file_mime, data=file_bytes)))
 
     content = types.Content(role="user", parts=parts)
-    runner = Runner(agent=root_agent, app_name=app_name, session_service=session_service)
+    runner = Runner(
+        agent=root_agent,
+        app_name=app_name,
+        session_service=session_service,
+        memory_service=_memory_service,
+    )
 
     final_text = ""
     author_steps: list[dict[str, Any]] = []
@@ -57,40 +153,60 @@ async def execute_live(
         if not author_steps or author_steps[-1]["author"] != author:
             author_steps.append({"author": author, "eventId": getattr(event, "id", None)})
 
-        if hasattr(event, "function_calls") and event.function_calls:
-            for fc in event.function_calls:
-                tool_calls.append({
-                    "tool": getattr(fc, "name", "unknown"),
-                    "status": "success",
-                    "args": _safe_json(getattr(fc, "args", {})),
-                })
+        for fc in event.get_function_calls():
+            tool_calls.append({
+                "tool": getattr(fc, "name", "unknown"),
+                "status": "success",
+                "args": _safe_json(getattr(fc, "args", {})),
+            })
 
-        if hasattr(event, "function_responses") and event.function_responses:
-            for fr in event.function_responses:
-                for tc in reversed(tool_calls):
-                    if tc["tool"] == getattr(fr, "name", ""):
-                        tc["output"] = _safe_json(getattr(fr, "response", {}))
-                        break
+        for fr in event.get_function_responses():
+            for tc in reversed(tool_calls):
+                if tc["tool"] == getattr(fr, "name", ""):
+                    tc["output"] = _safe_json(getattr(fr, "response", {}))
+                    break
 
         if event.is_final_response() and event.content and event.content.parts:
             final_text = "".join(
                 part.text or "" for part in event.content.parts if getattr(part, "text", None)
             )
 
+    final_session = await session_service.get_session(
+        app_name=app_name, user_id=user_id, session_id=session_id,
+    )
+    state = dict(final_session.state) if final_session else {}
+    state_outputs: dict[str, Any] = {}
+    for key in _STATE_OUTPUT_KEYS:
+        if key in state and state[key] != baseline_state.get(key):
+            value = state[key]
+            state_outputs[key] = redact_pii(redact_secrets(value)) if isinstance(value, str) else value
+
     safe_text = redact_pii(redact_secrets(final_text))
 
-    fields = _extract_fields(safe_text)
-    confidence = _extract_confidence(safe_text)
-    sql = _extract_sql(safe_text)
+    fields_source = _string_source(state_outputs, ("structured_output", "refined_output")) or safe_text
+    sql_source = _string_source(state_outputs, ("validated_sql", "generated_sql")) or safe_text
 
     return {
         "finalResponse": safe_text,
         "authorSteps": author_steps,
         "toolCalls": tool_calls,
-        "fields": fields,
-        "confidence": confidence,
-        "sql": sql,
+        "stateOutputs": state_outputs,
+        "fields": _extract_fields(fields_source),
+        "confidence": _extract_confidence(safe_text),
+        "sql": _extract_sql(sql_source),
     }
+
+
+def _string_source(state_outputs: dict[str, Any], keys: tuple[str, ...]) -> str:
+    """Return the first non-empty state output as text, preferring earlier keys."""
+
+    for key in keys:
+        value = state_outputs.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+        if isinstance(value, (dict, list)) and value:
+            return json.dumps(value)
+    return ""
 
 
 def _safe_json(obj: Any) -> Any:
@@ -104,25 +220,46 @@ def _safe_json(obj: Any) -> Any:
         return str(obj)
 
 
+def _parse_json_object(text: str) -> Any:
+    """Parse the first JSON object found in text, tolerating nesting and code fences."""
+
+    stripped = text.strip()
+    candidates = [stripped]
+    fence = re.search(r"```(?:json)?\s*(.*?)```", stripped, re.DOTALL)
+    if fence:
+        candidates.insert(0, fence.group(1).strip())
+    decoder = json.JSONDecoder()
+    for candidate in candidates:
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            start = candidate.find("{")
+            if start < 0:
+                continue
+            try:
+                value, _ = decoder.raw_decode(candidate[start:])
+                return value
+            except json.JSONDecodeError:
+                continue
+    return None
+
+
 def _extract_fields(text: str) -> dict[str, str]:
-    """Best-effort extraction of structured fields from agent response text."""
+    """Best-effort extraction of structured fields from agent output text."""
 
     fields: dict[str, str] = {}
-    json_match = re.search(r"\{[^{}]*\}", text, re.DOTALL)
-    if json_match:
-        try:
-            parsed = json.loads(json_match.group())
-            if isinstance(parsed, dict):
-                fields = {str(k): str(v) for k, v in parsed.items()}
-        except json.JSONDecodeError:
-            pass
+    parsed = _parse_json_object(text)
+    if isinstance(parsed, dict):
+        fields = {str(k): v if isinstance(v, str) else json.dumps(v) for k, v in parsed.items()}
     if not fields:
         for line in text.split("\n"):
-            if ":" in line and not line.strip().startswith("#"):
+            # Markdown table rows and separators produce garbage keys — the
+            # line fallback only understands "key: value" prose lines.
+            if ":" in line and not line.strip().startswith(("#", "|", "-|", ":")):
                 key, _, value = line.partition(":")
                 key = key.strip().strip("-*").strip()
                 value = value.strip()
-                if key and value and len(key) < 60:
+                if key and value and len(key) < 60 and "|" not in key:
                     fields[key] = value
     return fields
 
@@ -138,7 +275,7 @@ def _extract_confidence(text: str) -> float:
 
 
 def _extract_sql(text: str) -> str:
-    """Extract SQL statement from agent response if present."""
+    """Extract SQL statement from agent output if present."""
 
     match = re.search(r"(SELECT\s.+?)(?:;|\Z)", text, re.IGNORECASE | re.DOTALL)
     return match.group(1).strip() if match else ""

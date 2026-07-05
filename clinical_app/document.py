@@ -5,6 +5,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import io
+import json
+import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +25,20 @@ EXTENSION_MIME_TYPES = {
     ".jpeg": "image/jpeg",
     ".png": "image/png",
     ".webp": "image/webp",
+}
+SUPPORTED_KNOWLEDGE_BASE_TYPES = {
+    "application/pdf": "PDF",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DOCX",
+    "text/markdown": "Markdown",
+    "text/plain": "Plain text",
+    "application/json": "JSON",
+}
+KNOWLEDGE_BASE_EXTENSION_MIME_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".md": "text/markdown",
+    ".txt": "text/plain",
+    ".json": "application/json",
 }
 
 
@@ -76,6 +93,45 @@ def validate_upload(contents: bytes, content_type: str, filename: str) -> dict[s
     }
 
 
+def validate_knowledge_base_upload(contents: bytes, content_type: str, filename: str) -> dict[str, str | int]:
+    """Validate a searchable knowledge-base document without widening extraction uploads."""
+
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise UploadTooLargeError("Uploaded file exceeds 10 MB")
+
+    extension = Path(filename or "").suffix.lower()
+    expected_type = KNOWLEDGE_BASE_EXTENSION_MIME_TYPES.get(extension)
+    if expected_type is None:
+        raise UnsupportedUploadTypeError("Knowledge-base uploads support DOCX, PDF, MD, TXT, and JSON files up to 10 MB")
+
+    normalized_type = _normalize_content_type(content_type)
+    declared_type = _coerce_knowledge_base_type(normalized_type, expected_type)
+    if declared_type != expected_type:
+        raise UploadPolicyError("File extension does not match the declared content type")
+
+    if expected_type == "application/pdf" and not contents.startswith(b"%PDF"):
+        raise UploadPolicyError("PDF signature could not be verified")
+    if expected_type.endswith("wordprocessingml.document") and not _looks_like_docx(contents):
+        raise UploadPolicyError("DOCX package could not be verified")
+    if expected_type == "application/json":
+        try:
+            json.loads(_decode_text(contents))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise UploadPolicyError("JSON document could not be parsed") from exc
+    if expected_type in {"text/markdown", "text/plain"}:
+        try:
+            _decode_text(contents)
+        except UnicodeDecodeError as exc:
+            raise UploadPolicyError("Text document could not be decoded as UTF-8") from exc
+
+    return {
+        "filename": filename or f"upload{extension}",
+        "contentType": expected_type,
+        "sizeBytes": len(contents),
+        "kind": SUPPORTED_KNOWLEDGE_BASE_TYPES[expected_type],
+    }
+
+
 def parse_upload(contents: bytes, content_type: str, filename: str) -> dict[str, Any]:
     """Extract text, image, table, and provenance metadata from clinical evidence."""
 
@@ -87,6 +143,37 @@ def parse_upload(contents: bytes, content_type: str, filename: str) -> dict[str,
         return _parse_image(contents, metadata)
     metadata["type"] = "unsupported"
     metadata["warnings"].append("unsupported_file_type")
+    return metadata
+
+
+def parse_knowledge_base_upload(contents: bytes, content_type: str, filename: str) -> dict[str, Any]:
+    """Extract searchable text from DOCX, PDF, Markdown, TXT, and JSON uploads."""
+
+    metadata = _base_metadata(contents, content_type, filename)
+    metadata["knowledgeBase"] = True
+    extension = Path(filename or "").suffix.lower()
+    if extension == ".pdf":
+        parsed = _parse_pdf(contents, metadata)
+        parsed["knowledgeBase"] = True
+        return parsed
+    if extension == ".docx":
+        text = _extract_docx_text(contents, metadata["warnings"])
+        source_type = "docx"
+    elif extension == ".json":
+        text = json.dumps(json.loads(_decode_text(contents)), indent=2, sort_keys=True)
+        source_type = "json"
+    else:
+        text = _decode_text(contents)
+        source_type = "markdown" if extension == ".md" else "text"
+
+    metadata.update(
+        {
+            "type": source_type,
+            "pageCount": 1,
+            "textPreview": text[:1000],
+            "pages": [{"pageNumber": 1, "text": text[:4000], "textBlocks": [{"text": block} for block in _paragraph_blocks(text)]}],
+        }
+    )
     return metadata
 
 
@@ -194,6 +281,60 @@ def _parse_image(contents: bytes, metadata: dict[str, Any]) -> dict[str, Any]:
         metadata["textPreview"] = "Image accepted; local metadata extraction failed."
         metadata["warnings"].append(f"image_parse_failed:{type(exc).__name__}")
     return metadata
+
+
+def _coerce_knowledge_base_type(normalized_type: str, expected_type: str) -> str:
+    if normalized_type in {"", "application/octet-stream"}:
+        return expected_type
+    if expected_type == "text/markdown" and normalized_type == "text/plain":
+        return expected_type
+    if expected_type == "application/json" and normalized_type in {"text/plain", "application/octet-stream"}:
+        return expected_type
+    if expected_type.endswith("wordprocessingml.document") and normalized_type in {"application/zip", "application/octet-stream"}:
+        return expected_type
+    return normalized_type
+
+
+def _decode_text(contents: bytes) -> str:
+    return contents.decode("utf-8-sig")
+
+
+def _paragraph_blocks(text: str) -> list[str]:
+    return [block.strip()[:500] for block in text.splitlines() if block.strip()][:20]
+
+
+def _looks_like_docx(contents: bytes) -> bool:
+    try:
+        with zipfile.ZipFile(io.BytesIO(contents)) as archive:
+            names = set(archive.namelist())
+            return "[Content_Types].xml" in names and "word/document.xml" in names
+    except zipfile.BadZipFile:
+        return False
+
+
+def _extract_docx_text(contents: bytes, warnings: list[str]) -> str:
+    try:
+        with zipfile.ZipFile(io.BytesIO(contents)) as archive:
+            document = archive.read("word/document.xml")
+    except (KeyError, zipfile.BadZipFile) as exc:
+        warnings.append(f"docx_parse_failed:{type(exc).__name__}")
+        return ""
+
+    try:
+        root = ET.fromstring(document)
+    except ET.ParseError as exc:
+        warnings.append(f"docx_xml_parse_failed:{type(exc).__name__}")
+        return ""
+
+    namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    paragraphs: list[str] = []
+    for paragraph in root.iter(f"{namespace}p"):
+        text = "".join(node.text or "" for node in paragraph.iter(f"{namespace}t")).strip()
+        if text:
+            paragraphs.append(text)
+    if not paragraphs:
+        warnings.append("docx_has_no_extractable_text")
+    return "\n".join(paragraphs)
 
 
 def _extract_text_blocks(page: Any) -> list[dict[str, Any]]:

@@ -1,7 +1,7 @@
 ---
 title: Harness Index
 type: generated
-updated: 2026-07-04
+updated: 2026-07-05
 tags:
   - generated
 ---
@@ -34,6 +34,8 @@ Hand-written companion: [[Claude Harness]].
 
 - `.claude/skills/defuddle/SKILL.md`
 - `.claude/skills/deployment/SKILL.md`
+- `.claude/skills/drawio/SKILL.md`
+- `.claude/skills/drawio-skill/SKILL.md`
 - `.claude/skills/grill-me/SKILL.md`
 - `.claude/skills/grill-with-docs/SKILL.md`
 - `.claude/skills/json-canvas/SKILL.md`

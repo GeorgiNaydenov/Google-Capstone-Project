@@ -11,7 +11,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!(init?.body instanceof FormData)) headers.set("Content-Type", "application/json");
   headers.set("X-Demo-Session", sessionStorage.getItem("demoSession") ?? "public-demo");
   headers.set("X-Clinical-Role", localStorage.getItem("clinicalRole") ?? "clinician");
-  headers.set("X-Tenant", sessionStorage.getItem("tenant") ?? "local");
+  headers.set("X-Tenant", sessionStorage.getItem("tenant") ?? "research-clinic");
   const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (!response.ok) {
     const body = await response.json().catch(() => ({})) as { detail?: string };
@@ -36,8 +36,12 @@ export const api = {
     const body = new FormData(); body.append("file", file); body.append("patient_id", patientId);
     return request<{ assetId: string; previewUrl?: string; extracted?: Record<string, unknown> }>("/assets", { method: "POST", body });
   },
+  uploadKnowledgeBase: (file: File, patientId: string) => {
+    const body = new FormData(); body.append("file", file); body.append("patient_id", patientId);
+    return request<{ assetId: string; previewUrl?: string; evidenceId: string; extracted?: Record<string, unknown> }>("/knowledge-base/assets", { method: "POST", body });
+  },
   runExtraction: (assetId: string, patientId: string) => request<AgentRun>("/runs/extraction", { method: "POST", body: JSON.stringify({ assetId, patientId }) }),
-  runQa: (payload: { patientId: string; question: string; source_types: Array<"text" | "image" | "lab">; filters: { dateRange: string; session?: string } }) => request<AgentRun>("/runs/qa", { method: "POST", body: JSON.stringify(payload) }),
+  runQa: (payload: { patientId: string; question: string; source_types: Array<"text" | "image" | "lab" | "document" | "pdf" | "json" | "knowledge_base">; filters: { dateRange: string; session?: string } }) => request<AgentRun>("/runs/qa", { method: "POST", body: JSON.stringify(payload) }),
   generateSql: (question: string) => request<AgentRun>("/runs/database/preview", { method: "POST", body: JSON.stringify({ question }) }),
   executeSql: (runId: string) => request<AgentRun>(`/runs/database/${runId}/execute`, { method: "POST" }),
   run: (id: string) => request<AgentRun>(`/runs/${id}`),
@@ -49,4 +53,12 @@ export const api = {
   agents: () => request<AgentCatalog>("/agents"),
   notifications: () => request<ClinicalNotification[]>("/notifications"),
   readNotification: (id: string) => request<ClinicalNotification>(`/notifications/${id}/read`, { method: "POST" }),
+  v2Health: () => request<any>("/v2/health"),
+  mcpTools: () => request<{ tools: any[]; total: number }>("/v2/mcp/tools"),
+  executeMcpTool: (toolName: string, args: Record<string, any>) => request<any>("/v2/mcp/execute", { method: "POST", body: JSON.stringify({ toolName, arguments: args }) }),
+  a2aCard: () => request<any>("/v2/a2a/card"),
+  getOpenApiSchema: () => fetch("/openapi.json").then(r => {
+    if (!r.ok) throw new Error(`Failed to fetch OpenAPI schema (${r.status})`);
+    return r.json();
+  }),
 };

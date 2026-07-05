@@ -95,17 +95,24 @@ def content_safety_callback(
 # --- Layer 2: Tool Authorization (before_tool_callback) ---
 
 def tool_authorization_callback(
-    callback_context: CallbackContext,
-    tool_name: str,
-    tool_args: dict,
+    tool,
+    args: dict,
+    tool_context,
 ) -> Optional[dict]:
     """Validate tool calls before execution.
+
+    Signature matches ADK's before_tool_callback convention, which invokes
+    ``callback(tool=tool, args=function_args, tool_context=tool_context)``
+    with keyword arguments — see google.adk.flows.llm_flows.functions.
 
     Enforces:
     - Non-empty arguments for tools that require them
     - Per-tool rate limiting via temp: session state
     - Secret scanning on tool arguments
     """
+    tool_name = getattr(tool, "name", str(tool))
+    tool_args = args
+
     # Check for empty arguments
     if not tool_args:
         log_security_event("tool_blocked", {
@@ -116,7 +123,7 @@ def tool_authorization_callback(
 
     # Rate limiting: track call count in temp: state
     rate_key = f"temp:tool_calls_{tool_name}"
-    call_count = callback_context.state.get(rate_key, 0)
+    call_count = tool_context.state.get(rate_key, 0)
     if call_count >= TOOL_RATE_LIMIT:
         log_security_event("tool_rate_limited", {
             "tool": tool_name,
@@ -126,7 +133,7 @@ def tool_authorization_callback(
             "status": "error",
             "message": f"Tool '{tool_name}' rate limit exceeded ({TOOL_RATE_LIMIT} calls).",
         }
-    callback_context.state[rate_key] = call_count + 1
+    tool_context.state[rate_key] = call_count + 1
 
     # Scan tool args for injected secrets
     args_text = " ".join(str(v) for v in tool_args.values())

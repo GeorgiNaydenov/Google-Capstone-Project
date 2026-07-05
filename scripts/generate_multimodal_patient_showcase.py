@@ -1,8 +1,8 @@
 """Generate multimodal patient bundles for the Q&A agent.
 
 Each bundle contains one dense patient record, many comparator patients,
-evidence citations, Plotly visualization specs, Matplotlib chart images, and
-ready-to-run Q&A prompts.
+uploadable PDF evidence documents, evidence citations, Plotly visualization
+specs, Matplotlib chart images, and ready-to-run Q&A prompts.
 """
 
 from __future__ import annotations
@@ -10,17 +10,23 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import zipfile
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import escape as xml_escape
 
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 DEFAULT_OUTPUT = Path("showcase_data/multimodal")
+DEFAULT_PDFS_PER_BUNDLE = 36
+DEFAULT_KB_DOCS_PER_BUNDLE = 25
+KB_EXTENSIONS = (".pdf", ".docx", ".md", ".txt", ".json")
 DIAGNOSES = (
     "Metastatic NSCLC",
     "Heart failure with reduced EF",
@@ -31,6 +37,23 @@ DIAGNOSES = (
 METRICS = ("tumor_size_cm", "cea_ng_ml", "bnp_pg_ml", "egfr", "hba1c_pct", "crp_mg_l")
 MODALITIES = ("CT chest", "CT abdomen", "MRI brain", "X-Ray chest", "Fundoscopy", "Clinical photo")
 CLINICIANS = ("Dr. Sarah Miller", "Dr. Elena Park", "Dr. James Patel", "Dr. Priya Rao")
+
+
+def _wrap(text: str, width: int = 88) -> list[str]:
+    """Split text into short display lines for generated PDF pages."""
+
+    words = text.split()
+    lines: list[str] = []
+    current: list[str] = []
+    for word in words:
+        if sum(len(item) for item in current) + len(current) + len(word) > width:
+            lines.append(" ".join(current))
+            current = [word]
+        else:
+            current.append(word)
+    if current:
+        lines.append(" ".join(current))
+    return lines
 
 
 def _trend(start: float, drift: float, count: int, rng: random.Random, minimum: float = 0.1) -> list[float]:
@@ -245,7 +268,216 @@ def _write_charts(bundle_dir: Path, patient_id: str, labs: list[dict[str, Any]],
     return chart_paths
 
 
-def build_bundle(bundle_index: int, output: Path, rng: random.Random, days: int, comparators: int) -> dict[str, Any]:
+def _write_pdf_corpus(
+    bundle_dir: Path,
+    patient: dict[str, Any],
+    labs: list[dict[str, Any]],
+    images: list[dict[str, Any]],
+    notes: list[dict[str, Any]],
+    timeline: list[dict[str, Any]],
+    pdf_count: int,
+) -> list[dict[str, Any]]:
+    """Render uploadable PDF evidence files with text, table, and visual panels."""
+
+    document_dir = bundle_dir / "documents"
+    document_dir.mkdir(exist_ok=True)
+    patient_id = patient["patient_id"]
+    documents = []
+    metric_order = ("tumor_size_cm", "cea_ng_ml", "egfr")
+    for index in range(1, pdf_count + 1):
+        note = notes[(index - 1) % len(notes)]
+        image = images[(index - 1) % len(images)]
+        event = timeline[(index - 1) % len(timeline)]
+        metric = metric_order[(index - 1) % len(metric_order)]
+        metric_rows = [row for row in labs if row["metric"] == metric]
+        window_start = ((index - 1) * 7) % max(1, len(metric_rows) - 8)
+        trend_rows = metric_rows[window_start : window_start + 8]
+        table_rows = [
+            [row["date"], row["metric"], row["value"], row["unit"], row["flag"]]
+            for row in trend_rows[:6]
+        ]
+        document_id = f"PDF-{patient_id}-{index:03d}"
+        path = document_dir / f"{document_id}.pdf"
+        with PdfPages(path) as pdf:
+            fig = plt.figure(figsize=(8.5, 11))
+            page = fig.add_axes([0, 0, 1, 1])
+            page.axis("off")
+            page.text(0.08, 0.94, "Nexus Multimodal Evidence Packet", fontsize=16, weight="bold")
+            page.text(0.08, 0.90, f"{document_id} | {patient_id} | {note['date']}", fontsize=10)
+            page.text(0.08, 0.86, f"Diagnosis: {patient['primary_diagnosis']} | Risk: {patient['risk_level']}", fontsize=10)
+            page.text(0.08, 0.82, f"Clinician: {note['author']} | Source: {note['note_type']}", fontsize=10)
+
+            y = 0.76
+            for line in _wrap(note["text"] + " " + event["summary"], 92)[:5]:
+                page.text(0.08, y, line, fontsize=9)
+                y -= 0.035
+
+            page.text(0.08, 0.56, "Structured evidence table", fontsize=11, weight="bold")
+            table = page.table(
+                cellText=table_rows,
+                colLabels=["Date", "Metric", "Value", "Unit", "Flag"],
+                bbox=[0.08, 0.36, 0.84, 0.17],
+            )
+            table.auto_set_font_size(False)
+            table.set_fontsize(7)
+
+            page.text(0.08, 0.30, "Image evidence summary", fontsize=11, weight="bold")
+            page.text(0.08, 0.265, f"{image['modality']} | {image['date']} | quality {image['quality_score']}", fontsize=9)
+            page.text(0.08, 0.235, ", ".join(image["visual_findings"]), fontsize=9)
+
+            chart = fig.add_axes([0.12, 0.06, 0.76, 0.14])
+            chart.plot([row["date"] for row in trend_rows], [row["value"] for row in trend_rows], marker="o")
+            chart.set_title(f"{metric} trend")
+            chart.tick_params(axis="x", rotation=35, labelsize=6)
+            chart.tick_params(axis="y", labelsize=7)
+            chart.grid(alpha=0.25)
+            fig.savefig(pdf, format="pdf")
+            plt.close(fig)
+
+        documents.append(
+            {
+                "document_id": document_id,
+                "path": str(path),
+                "content_type": "application/pdf",
+                "patient_id": patient_id,
+                "date": note["date"],
+                "page_count": 1,
+                "contains": ["clinical_text", "structured_table", "trend_chart", "image_evidence_summary"],
+                "source_note_id": note["note_id"],
+                "source_image_id": image["image_id"],
+            }
+        )
+    return documents
+
+
+def _write_minimal_docx(path: Path, paragraphs: list[str]) -> None:
+    """Create a small valid DOCX package without external dependencies."""
+
+    body = "".join(
+        f"<w:p><w:r><w:t>{xml_escape(paragraph)}</w:t></w:r></w:p>"
+        for paragraph in paragraphs
+    )
+    document_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        f"<w:body>{body}<w:sectPr/></w:body></w:document>"
+    )
+    content_types = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+        "</Types>"
+    )
+    relationships = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+        "</Relationships>"
+    )
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", content_types)
+        archive.writestr("_rels/.rels", relationships)
+        archive.writestr("word/document.xml", document_xml)
+
+
+def _kb_paragraphs(patient: dict[str, Any], note: dict[str, Any], event: dict[str, Any], table_rows: list[dict[str, Any]]) -> list[str]:
+    """Build reusable knowledge-base text across file formats."""
+
+    rows = "; ".join(f"{row['date']} {row['metric']}={row['value']} {row['unit']} ({row['flag']})" for row in table_rows[:5])
+    return [
+        f"Patient {patient['patient_id']} knowledge-base evidence",
+        f"Diagnosis: {patient['primary_diagnosis']}. Risk level: {patient['risk_level']}.",
+        f"Clinical note: {note['text']}",
+        f"Timeline event: {event['summary']}",
+        f"Structured table rows: {rows}",
+        "Expected Q&A output: concise text answer, evidence table, and visual trend reference.",
+    ]
+
+
+def _write_kb_pdf(path: Path, document_id: str, paragraphs: list[str], table_rows: list[dict[str, Any]]) -> None:
+    """Render one compact PDF for the mixed-format knowledge base."""
+
+    with PdfPages(path) as pdf:
+        fig = plt.figure(figsize=(8.5, 11))
+        page = fig.add_axes([0, 0, 1, 1])
+        page.axis("off")
+        page.text(0.08, 0.94, document_id, fontsize=16, weight="bold")
+        y = 0.88
+        for paragraph in paragraphs[:5]:
+            for line in _wrap(paragraph, 88)[:3]:
+                page.text(0.08, y, line, fontsize=9)
+                y -= 0.032
+        table = page.table(
+            cellText=[[row["date"], row["metric"], row["value"], row["flag"]] for row in table_rows[:6]],
+            colLabels=["Date", "Metric", "Value", "Flag"],
+            bbox=[0.08, 0.18, 0.84, 0.20],
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        chart = fig.add_axes([0.14, 0.48, 0.70, 0.18])
+        chart.plot([row["date"] for row in table_rows], [row["value"] for row in table_rows], marker="o")
+        chart.tick_params(axis="x", rotation=30, labelsize=6)
+        chart.set_title("Knowledge-base trend")
+        fig.savefig(pdf, format="pdf")
+        plt.close(fig)
+
+
+def _write_knowledge_base_corpus(
+    bundle_dir: Path,
+    patient: dict[str, Any],
+    labs: list[dict[str, Any]],
+    notes: list[dict[str, Any]],
+    timeline: list[dict[str, Any]],
+    doc_count: int,
+) -> list[dict[str, Any]]:
+    """Create mixed DOCX/PDF/Markdown/TXT/JSON files for Q&A knowledge-base upload."""
+
+    kb_dir = bundle_dir / "knowledge_base"
+    kb_dir.mkdir(exist_ok=True)
+    patient_id = patient["patient_id"]
+    documents = []
+    metric_rows = [row for row in labs if row["metric"] in {"tumor_size_cm", "cea_ng_ml", "egfr"}]
+    for index in range(1, doc_count + 1):
+        extension = KB_EXTENSIONS[(index - 1) % len(KB_EXTENSIONS)]
+        note = notes[(index - 1) % len(notes)]
+        event = timeline[(index - 1) % len(timeline)]
+        start = ((index - 1) * 9) % max(1, len(metric_rows) - 8)
+        rows = metric_rows[start : start + 8]
+        document_id = f"KB-{patient_id}-{index:03d}"
+        path = kb_dir / f"{document_id}{extension}"
+        paragraphs = _kb_paragraphs(patient, note, event, rows)
+        if extension == ".pdf":
+            _write_kb_pdf(path, document_id, paragraphs, rows)
+            content_type = "application/pdf"
+        elif extension == ".docx":
+            _write_minimal_docx(path, paragraphs)
+            content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif extension == ".json":
+            path.write_text(json.dumps({"document_id": document_id, "patient": patient, "note": note, "timeline_event": event, "table": rows, "answer_requires": ["text", "table", "visual"]}, indent=2), encoding="utf-8")
+            content_type = "application/json"
+        elif extension == ".md":
+            path.write_text("# " + paragraphs[0] + "\n\n" + "\n\n".join(paragraphs[1:]), encoding="utf-8")
+            content_type = "text/markdown"
+        else:
+            path.write_text("\n\n".join(paragraphs), encoding="utf-8")
+            content_type = "text/plain"
+        documents.append(
+            {
+                "document_id": document_id,
+                "path": str(path),
+                "extension": extension,
+                "content_type": content_type,
+                "patient_id": patient_id,
+                "expected_ingestion": {"api": "/api/knowledge-base/assets", "adk_tool": "upload_document"},
+                "expected_retrieval": {"route": "/api/runs/qa", "source_types": ["document"]},
+            }
+        )
+    return documents
+
+
+def build_bundle(bundle_index: int, output: Path, rng: random.Random, days: int, comparators: int, pdfs_per_bundle: int, kb_docs_per_bundle: int) -> dict[str, Any]:
     """Build one complete multimodal Q&A bundle."""
 
     patient_id = f"PT-M{bundle_index:04d}"
@@ -259,7 +491,15 @@ def build_bundle(bundle_index: int, output: Path, rng: random.Random, days: int,
     comparator_rows = _comparators(bundle_index, comparators, rng)
     plotly = _plotly_specs(patient_id, labs, images, comparator_rows)
     chart_paths = _write_charts(bundle_dir, patient_id, labs, comparator_rows)
+    pdf_documents = _write_pdf_corpus(bundle_dir, patient, labs, images, notes, timeline, pdfs_per_bundle)
+    knowledge_base_documents = _write_knowledge_base_corpus(bundle_dir, patient, labs, notes, timeline, kb_docs_per_bundle)
     citations = [
+        {"citation_id": document["document_id"], "source_id": document["path"], "kind": "document", "excerpt": "Knowledge-base upload file with searchable patient evidence."}
+        for document in knowledge_base_documents[:16]
+    ] + [
+        {"citation_id": document["document_id"], "source_id": document["path"], "kind": "pdf", "excerpt": "Uploadable PDF packet with clinical text, evidence table, and embedded trend chart."}
+        for document in pdf_documents[:16]
+    ] + [
         {"citation_id": note["vector_chunk_id"], "source_id": note["note_id"], "kind": "text", "excerpt": note["text"]}
         for note in notes[:20]
     ] + [
@@ -271,6 +511,16 @@ def build_bundle(bundle_index: int, output: Path, rng: random.Random, days: int,
             "question": "What changed across the last 90 days and which evidence supports it?",
             "expected_sources": ["metric_trends", "clinical_notes", "image_modalities"],
             "expected_output": "Narrative answer with cited trend, note, and image evidence.",
+        },
+        {
+            "question": "Use the uploaded PDFs to answer with a short summary, a table, and one visual trend.",
+            "expected_sources": ["pdf_documents", "metric_trends", "citations"],
+            "expected_output": "Multimodal answer containing text, tabular evidence, and chart/image evidence.",
+        },
+        {
+            "question": "Search the uploaded knowledge base and answer using DOCX, PDF, Markdown, TXT, and JSON sources.",
+            "expected_sources": ["knowledge_base_documents", "citations", "metric_trends"],
+            "expected_output": "Evidence-grounded answer from mixed document formats with citations.",
         },
         {
             "question": "Compare this patient against similar high-risk patients and show visual evidence.",
@@ -288,6 +538,8 @@ def build_bundle(bundle_index: int, output: Path, rng: random.Random, days: int,
         "row_counts": {
             "labs": len(labs),
             "images": len(images),
+            "pdf_documents": len(pdf_documents),
+            "knowledge_base_documents": len(knowledge_base_documents),
             "notes": len(notes),
             "timeline": len(timeline),
             "comparators": len(comparator_rows),
@@ -295,6 +547,8 @@ def build_bundle(bundle_index: int, output: Path, rng: random.Random, days: int,
         },
         "labs": labs,
         "images": images,
+        "pdf_documents": pdf_documents,
+        "knowledge_base_documents": knowledge_base_documents,
         "notes": notes,
         "timeline": timeline,
         "comparator_cohort": comparator_rows,
@@ -302,27 +556,41 @@ def build_bundle(bundle_index: int, output: Path, rng: random.Random, days: int,
         "plotly": plotly,
         "matplotlib_pngs": chart_paths,
         "qa_prompts": prompts,
-        "backend_contract": {"route": "/api/runs/qa", "requiredBody": {"patientId": patient_id, "question": "...", "source_types": ["text", "image", "lab"]}},
+        "backend_contract": {"route": "/api/runs/qa", "requiredBody": {"patientId": patient_id, "question": "...", "source_types": ["document", "pdf", "text", "image", "lab"]}},
     }
     (bundle_dir / "bundle.json").write_text(json.dumps(bundle, indent=2), encoding="utf-8")
     (bundle_dir / "qa_prompts.json").write_text(json.dumps(prompts, indent=2), encoding="utf-8")
     (bundle_dir / "plotly_specs.json").write_text(json.dumps(plotly, indent=2), encoding="utf-8")
-    return {"patient_id": patient_id, "path": str(bundle_dir / "bundle.json"), "row_counts": bundle["row_counts"]}
+    return {"patient_id": patient_id, "path": str(bundle_dir / "bundle.json"), "pdf_directory": str(bundle_dir / "documents"), "knowledge_base_directory": str(bundle_dir / "knowledge_base"), "row_counts": bundle["row_counts"]}
 
 
-def generate(output: Path, bundle_count: int, days: int, comparators: int, seed: int) -> dict[str, Any]:
+def generate(output: Path, bundle_count: int, days: int, comparators: int, seed: int, pdfs_per_bundle: int = DEFAULT_PDFS_PER_BUNDLE, kb_docs_per_bundle: int = DEFAULT_KB_DOCS_PER_BUNDLE) -> dict[str, Any]:
     """Generate all multimodal bundles."""
 
     rng = random.Random(seed)
     output.mkdir(parents=True, exist_ok=True)
-    bundles = [build_bundle(index, output, rng, days, comparators) for index in range(1, bundle_count + 1)]
+    bundles = [build_bundle(index, output, rng, days, comparators, pdfs_per_bundle, kb_docs_per_bundle) for index in range(1, bundle_count + 1)]
     manifest = {
         "module": "multimodal_patient_qa",
         "bundle_count": len(bundles),
+        "pdf_count": sum(bundle["row_counts"]["pdf_documents"] for bundle in bundles),
+        "knowledge_base_document_count": sum(bundle["row_counts"]["knowledge_base_documents"] for bundle in bundles),
         "bundles": bundles,
+        "upload_contract": {
+            "route": "/api/assets",
+            "contentType": "application/pdf",
+            "batchPattern": "Upload files from each bundle documents/ directory, then ask one patient-scoped Q&A prompt.",
+        },
+        "knowledge_base_contract": {
+            "route": "/api/knowledge-base/assets",
+            "extensions": list(KB_EXTENSIONS),
+            "contentTypes": ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/markdown", "text/plain", "application/json"],
+            "followupRoute": "/api/runs/qa",
+            "sourceTypes": ["document"],
+        },
         "frontend_contract": {
             "views": ["Patient profile", "Multimodal patient Q&A", "Evidence citations", "Chart builder"],
-            "needs": ["dense patient detail", "source viewer", "multiple Plotly panels", "citation table"],
+            "needs": ["dense patient detail", "PDF source viewer", "multiple Plotly panels", "citation table"],
         },
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
@@ -337,10 +605,12 @@ def main() -> None:
     parser.add_argument("--bundle-count", type=int, default=12)
     parser.add_argument("--days", type=int, default=365)
     parser.add_argument("--comparators", type=int, default=420)
+    parser.add_argument("--pdfs-per-bundle", type=int, default=DEFAULT_PDFS_PER_BUNDLE)
+    parser.add_argument("--kb-docs-per-bundle", type=int, default=DEFAULT_KB_DOCS_PER_BUNDLE)
     parser.add_argument("--seed", type=int, default=240624)
     args = parser.parse_args()
-    manifest = generate(args.output, args.bundle_count, args.days, args.comparators, args.seed)
-    print(json.dumps({"output": str(args.output), "bundle_count": manifest["bundle_count"]}, indent=2))
+    manifest = generate(args.output, args.bundle_count, args.days, args.comparators, args.seed, args.pdfs_per_bundle, args.kb_docs_per_bundle)
+    print(json.dumps({"output": str(args.output), "bundle_count": manifest["bundle_count"], "pdf_count": manifest["pdf_count"], "knowledge_base_document_count": manifest["knowledge_base_document_count"]}, indent=2))
 
 
 if __name__ == "__main__":

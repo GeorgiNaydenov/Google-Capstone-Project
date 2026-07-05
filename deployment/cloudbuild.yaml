@@ -2,11 +2,15 @@
 # Trigger this from the repo root:
 #   gcloud builds submit --config deployment/cloudbuild.yaml .
 #
-# Secrets: the API key is read from Secret Manager at deploy time, never baked
-# into the image or printed in build logs. Create it once:
-#   echo -n "YOUR_KEY" | gcloud secrets create GOOGLE_API_KEY --data-file=-
-#   gcloud secrets add-iam-policy-binding GOOGLE_API_KEY \
-#     --member="serviceAccount:<cloud-run-runtime-sa>" --role="roles/secretmanager.secretAccessor"
+# Authentication: the service uses Vertex AI through the Cloud Run runtime
+# service account (Application Default Credentials) — no API key required.
+# Grant the runtime SA access once:
+#   gcloud projects add-iam-policy-binding $PROJECT_ID \
+#     --member="serviceAccount:<cloud-run-runtime-sa>" --role="roles/aiplatform.user"
+#
+# Alternative (API key instead of Vertex): store the key in Secret Manager and
+# add this flag to the deploy step, plus set GOOGLE_GENAI_USE_VERTEXAI=FALSE:
+#   --update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest
 
 steps:
   # Build the Docker image.
@@ -17,8 +21,14 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/clinical-ai-command-center']
 
-  # Deploy to Cloud Run. --update-secrets injects GOOGLE_API_KEY from Secret
-  # Manager into the running container's environment (not the build).
+  # Deploy to Cloud Run.
+  # --max-instances=1 is required: the product server keeps per-browser demo
+  # state in process memory and persists to a local SQLite file, so multiple
+  # instances would see divergent data. Scale beyond one instance only after
+  # moving sessions to a shared database (SESSION_BACKEND=database) and the
+  # clinical store to Cloud SQL.
+  # GOOGLE_CLOUD_LOCATION=global: Gemini 3.1 models are served from the
+  # global Vertex endpoint (regional endpoints 404 for these model ids).
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -30,7 +40,9 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--port=8080'
-      - '--update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest'
+      - '--memory=1Gi'
+      - '--max-instances=1'
+      - '--set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,HIPAA_MODE=TRUE'
 
 images:
   - 'gcr.io/$PROJECT_ID/clinical-ai-command-center'

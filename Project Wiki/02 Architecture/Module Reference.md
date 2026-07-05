@@ -75,4 +75,3 @@ Every Python module currently in the repository, with its purpose (taken from mo
 | `tests/` | pytest + async test suite ([[Testing & Eval]]) |
 | `deployment/` | Dockerfile, cloudbuild.yaml, Agent Engine config ([[Deployment]]) |
 | `docs/` | Architecture and product documentation |
-| `clinical-ai-command-center/` | Design system and visual prototype |

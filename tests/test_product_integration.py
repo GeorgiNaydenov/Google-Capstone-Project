@@ -308,8 +308,143 @@ def test_upload_rejects_mismatched_content_type(api: TestClient) -> None:
     assert api.get("/api/storage", headers=headers(session="mismatch-upload")).json()["assetCount"] == 0
 
 
-def test_live_execution_mode_invokes_lazy_agent_bridge(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Live mode delegates to ADK bridge while tests make no model call."""
+def test_knowledge_base_upload_indexes_document_for_qa(api: TestClient) -> None:
+    """Knowledge-base documents become patient-scoped Q&A evidence."""
+
+    request_headers = headers(session="kb-upload")
+    uploaded = api.post(
+        "/api/knowledge-base/assets",
+        headers=request_headers,
+        data={"patient_id": PATIENT_ID},
+        files={"file": ("care-plan.md", b"# Care plan\nBNP rising; repeat echo recommended.", "text/markdown")},
+    )
+    assert uploaded.status_code == 201
+    assert uploaded.json()["evidenceId"].startswith("KB-")
+
+    qa = api.post(
+        "/api/runs/qa",
+        headers=request_headers,
+        json={"patientId": PATIENT_ID, "question": "What does the uploaded knowledge base say about BNP?", "source_types": ["document"], "filters": {}},
+    )
+
+    assert qa.status_code == 201
+    assert any(item["kind"] == "document" and "BNP rising" in item["excerpt"] for item in qa.json()["evidence"])
+
+
+def test_database_execute_rejects_unsafe_agent_sql(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Agent-generated SQL must be re-validated server-side before execution."""
+
+    async def fake_execute_live(query: str, user_id: str, **_: Any) -> dict[str, Any]:
+        return {
+            "finalResponse": "DELETE FROM patients_core",
+            "authorSteps": [],
+            "toolCalls": [],
+            "stateOutputs": {},
+            "fields": {},
+            "confidence": 0.9,
+            "sql": "DELETE FROM patients_core",
+        }
+
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(product_app, "execute_live", fake_execute_live)
+    live_api = TestClient(product_app.create_app())
+    request_headers = {**headers(session="unsafe-sql"), "X-Tenant": "capstone"}
+    preview = live_api.post(
+        "/api/runs/database/preview",
+        headers=request_headers,
+        json={"question": "Delete all patient rows"},
+    )
+    assert preview.status_code == 201
+    preview_body = preview.json()
+    assert preview_body["result"]["safe"] is False
+
+    executed = live_api.post(
+        f"/api/runs/database/{preview_body['id']}/execute", headers=request_headers
+    )
+    assert executed.status_code == 400
+    run = live_api.get(f"/api/runs/{preview_body['id']}", headers=request_headers).json()
+    assert run["status"] == "review"
+    assert "rows" not in run["result"]
+
+
+def test_database_execute_completes_with_empty_result(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Zero-row result sets are valid completions, not execution failures."""
+
+    request_headers = headers("clinician", "empty-result")
+    preview = api.post(
+        "/api/runs/database/preview",
+        headers=request_headers,
+        json={"question": "Count patients with an unmatched diagnosis"},
+    )
+    assert preview.status_code == 201
+    monkeypatch.setattr(
+        "capstone_agent.clinical_schemas.execute_query",
+        lambda sql: {"columns": ["risk_level", "patient_count"], "rows": [], "row_count": 0, "table": "query_result"},
+    )
+    executed = api.post(
+        f"/api/runs/database/{preview.json()['id']}/execute", headers=request_headers
+    )
+    assert executed.status_code == 200
+    body = executed.json()
+    assert body["status"] == "completed"
+    assert body["result"]["rows"] == []
+    assert body["result"]["chart"] is None
+
+
+def test_database_execute_surfaces_sql_errors(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Database errors return an actionable failure and re-open the review gate."""
+
+    request_headers = headers("clinician", "sql-error")
+    preview = api.post(
+        "/api/runs/database/preview",
+        headers=request_headers,
+        json={"question": "Count patients by risk"},
+    )
+    assert preview.status_code == 201
+    monkeypatch.setattr(
+        "capstone_agent.clinical_schemas.execute_query",
+        lambda sql: {"columns": [], "rows": [], "row_count": 0, "error": "no such column: nope"},
+    )
+    executed = api.post(
+        f"/api/runs/database/{preview.json()['id']}/execute", headers=request_headers
+    )
+    assert executed.status_code == 422
+    run = api.get(f"/api/runs/{preview.json()['id']}", headers=request_headers).json()
+    assert run["status"] == "review"
+
+
+def test_visuals_route_rejects_unknown_document(api: TestClient) -> None:
+    """Unknown visual ids must 404 without leaking storage details."""
+
+    response = api.get("/api/visuals/VIS-does-not-exist")
+    assert response.status_code == 404
+
+
+def test_visuals_route_rejects_paths_outside_uploads(api: TestClient, tmp_path) -> None:
+    """A forged document row must not let the API serve arbitrary files."""
+
+    from capstone_agent import database
+
+    outside = tmp_path / "secret.png"
+    outside.write_bytes(b"\x89PNG\r\n\x1a\nfake")
+    database.store_document(
+        document_id="VIS-test-outside-uploads",
+        filename="secret.png",
+        content_type="image/png",
+        file_path=str(outside),
+        raw_text="",
+        page_count=1,
+    )
+    response = api.get("/api/visuals/VIS-test-outside-uploads")
+    assert response.status_code == 404
+
+
+def test_live_execution_mode_invokes_lazy_agent_bridge(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The real (Capstone) tenant delegates to the ADK bridge, no model call."""
 
     calls: list[tuple[str, str]] = []
 
@@ -320,12 +455,12 @@ def test_live_execution_mode_invokes_lazy_agent_bridge(monkeypatch: pytest.Monke
             "authorSteps": [{"author": "patient_qa_pipeline", "eventId": "event-1"}],
         }
 
-    monkeypatch.setenv("AGENT_EXECUTION_MODE", "live")
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(product_app, "execute_live", fake_execute_live)
     live_api = TestClient(product_app.create_app())
     response = live_api.post(
         "/api/runs/qa",
-        headers=headers(session="live-bridge"),
+        headers={**headers(session="live-bridge"), "X-Tenant": "capstone"},
         json={"patientId": PATIENT_ID, "question": "What changed?", "filters": {}},
     )
     assert response.status_code == 201
@@ -336,3 +471,89 @@ def test_live_execution_mode_invokes_lazy_agent_bridge(monkeypatch: pytest.Monke
         {"author": "patient_qa_pipeline", "eventId": "event-1"}
     ]
     assert any(step["name"] == "Patient Qa Pipeline" for step in response.json()["steps"])
+
+
+def capstone_headers(session: str = "capstone-int") -> dict[str, str]:
+    """Build headers targeting the real Capstone tenant."""
+
+    return {
+        "X-Demo-Session": session,
+        "X-Clinical-Role": "clinician",
+        "X-User": "Integration Tester",
+        "X-Tenant": "capstone",
+    }
+
+
+def test_capstone_tenant_starts_empty(api: TestClient, tmp_path, monkeypatch) -> None:
+    """The real tenant serves zero seeded data and a schema-only database."""
+
+    import sqlite3
+
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
+    request_headers = capstone_headers("capstone-empty")
+    assert api.get("/api/patients", headers=request_headers).json() == []
+    assert api.get("/api/sessions", headers=request_headers).json() == []
+    assert api.get("/api/notifications", headers=request_headers).json() == []
+    dashboard = api.get("/api/dashboard", headers=request_headers).json()
+    assert dashboard["metrics"]["patients"] == 0
+    assert dashboard["metrics"]["agentRuns24h"] == 0
+    assert dashboard["metrics"]["openAiAlerts"] == 0
+    db_file = tmp_path / "capstone.db"
+    assert db_file.exists()
+    with sqlite3.connect(db_file) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM patients_core").fetchone()[0] == 0
+
+
+def test_capstone_writes_isolated_from_clinical_db(tmp_path) -> None:
+    """Writes scoped by tenant_storage never reach the default clinical.db."""
+
+    from uuid import uuid4
+
+    from capstone_agent import database
+
+    probe_id = f"PT-ISO-{uuid4().hex[:8]}"
+    with database.tenant_storage(tmp_path / "capstone.db", tmp_path / "uploads"):
+        database.ensure_patient(probe_id, "Isolation Probe")
+        assert database.get_patient(probe_id) is not None
+    assert database.get_patient(probe_id) is None
+
+
+def test_capstone_database_preview_has_no_static_fallback(api: TestClient, tmp_path, monkeypatch) -> None:
+    """A live SQL failure surfaces a 502 instead of canned fallback SQL."""
+
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
+
+    async def failing_execute_live(*_: Any, **__: Any) -> dict[str, Any]:
+        raise RuntimeError("model unavailable")
+
+    monkeypatch.setattr(product_app, "execute_live", failing_execute_live)
+    response = api.post(
+        "/api/runs/database/preview",
+        headers=capstone_headers("capstone-fallback"),
+        json={"question": "How many patients per risk level?"},
+    )
+    assert response.status_code == 502
+    assert "SQL generation failed" in response.json()["detail"]
+    assert "SELECT risk_level" not in response.text
+
+
+def test_capstone_preview_rejects_empty_sql(api: TestClient, tmp_path, monkeypatch) -> None:
+    """An agent response without SQL is a surfaced error, not comment SQL."""
+
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
+
+    async def sqlless_execute_live(*_: Any, **__: Any) -> dict[str, Any]:
+        return {
+            "finalResponse": "I could not derive a query.",
+            "authorSteps": [], "toolCalls": [], "stateOutputs": {},
+            "fields": {}, "confidence": 0.9, "sql": "",
+        }
+
+    monkeypatch.setattr(product_app, "execute_live", sqlless_execute_live)
+    response = api.post(
+        "/api/runs/database/preview",
+        headers=capstone_headers("capstone-empty-sql"),
+        json={"question": "How many patients per risk level?"},
+    )
+    assert response.status_code == 502
+    assert "did not return SQL" in response.json()["detail"]

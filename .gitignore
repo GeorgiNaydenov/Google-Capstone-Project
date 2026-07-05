@@ -107,6 +107,12 @@ capstone_agent/.adk/
 .codex/
 .run-logs/
 
+# drawio skill: upstream clone (embedded git repo) + local symlink into it.
+# The committed copy of the skill lives at .agents/skills/drawio/.
+.claude/skills/drawio-skill/
+.agents/skills/drawio-skill/
+.claude/skills/drawio
+
 # =============================================================================
 # Generated showcase data — reproducible via scripts/generate_*_showcase.py
 # =============================================================================

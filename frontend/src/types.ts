@@ -1,6 +1,23 @@
 export type Role = "clinician" | "admin";
 export type RunStatus = "queued" | "running" | "review" | "completed" | "failed";
 
+export type TenantId = "research-clinic" | "northstar-health" | "capstone";
+
+export interface Tenant {
+  id: TenantId;
+  name: string;
+  kind: "demo" | "real";
+}
+
+// Static mirror of the backend registry (clinical_app/tenancy.py). The
+// backend tolerates unknown values by falling back to the default demo
+// tenant, so drift here is safe.
+export const TENANTS: Tenant[] = [
+  { id: "research-clinic", name: "Research Clinic", kind: "demo" },
+  { id: "northstar-health", name: "Northstar Health", kind: "demo" },
+  { id: "capstone", name: "Capstone", kind: "real" },
+];
+
 export interface Patient {
   id: string;
   name: string;
@@ -52,7 +69,7 @@ export interface AgentStep {
 export interface Evidence {
   id: string;
   label: string;
-  kind: "text" | "image" | "structured";
+  kind: "text" | "image" | "structured" | "document";
   excerpt?: string;
   sourceUrl?: string;
   page?: number;

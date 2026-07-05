@@ -57,6 +57,7 @@ from .tools import (
     approve_sql_preview,
     execute_approved_clinical_query,
     generate_chart_spec,
+    generate_clinical_visual,
     save_query_to_memory,
     # Shared
     log_audit_event,
@@ -276,7 +277,7 @@ def build_patient_qa_pipeline() -> SequentialAgent:
         name="answer_synthesis_agent",
         description="Synthesizes cited clinical answers with image references.",
         instruction=CLINICAL_INSTRUCTIONS["answer_synthesis"],
-        tools=[compose_clinical_answer],
+        tools=[compose_clinical_answer, generate_clinical_visual],
         output_key="qa_answer",
     )
 
@@ -352,13 +353,16 @@ def build_db_intelligence_pipeline() -> SequentialAgent:
         output_key="sql_approval",
     )
 
+    # No code_executor here: Gemini rejects mixing built-in code execution
+    # with function declarations (AFC gets disabled and every tool call
+    # fails in a retry loop). Code execution lives on the root agent's
+    # code_executor_tool instead.
     query_executor = LlmAgent(
         model=build_model("flash-lite"),
         name="query_executor_agent",
         description="Executes validated SQL queries.",
         instruction=CLINICAL_INSTRUCTIONS["query_executor"],
         tools=[execute_approved_clinical_query],
-        code_executor=BuiltInCodeExecutor(),
         output_key="query_results",
     )
 
@@ -367,7 +371,7 @@ def build_db_intelligence_pipeline() -> SequentialAgent:
         name="insight_chart_agent",
         description="Generates insights and charts from query results.",
         instruction=CLINICAL_INSTRUCTIONS["insight_chart"],
-        tools=[generate_chart_spec, log_audit_event, save_query_to_memory],
+        tools=[generate_chart_spec, generate_clinical_visual, log_audit_event, save_query_to_memory],
         output_key="insight_summary",
     )
 

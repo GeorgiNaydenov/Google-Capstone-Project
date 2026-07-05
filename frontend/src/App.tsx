@@ -6,12 +6,13 @@ import { AdminDashboard, AgentConfiguration, DataStorage, UsersRoles } from "./s
 import { ClinicalInbox, ClinicianDashboard, PatientOverview, PatientProfile, PatientSearch, SessionDetail } from "./screens/ClinicalScreens";
 import { Landing, RoleSelection } from "./screens/EntryScreens";
 import { DatabaseIntelligence, Extraction, PatientQa } from "./screens/WorkflowScreens";
+import { DeveloperConsole } from "./screens/DeveloperConsole";
 import type { Role } from "./types";
 
 export const primaryRoutes = [
   "/", "/roles", "/app/patients", "/app/overview", "/app/dashboard", "/app/queue",
   "/app/patient/:patientId", "/app/session/:sessionId", "/app/extraction", "/app/qa",
-  "/app/database", "/app/inbox", "/app/admin", "/app/users", "/app/storage", "/app/configuration",
+  "/app/database", "/app/inbox", "/app/admin", "/app/users", "/app/storage", "/app/configuration", "/app/console",
 ] as const;
 
 function RequireRole({ allow, fallback, children }: { allow: Role; fallback: string; children: ReactNode }) {
@@ -34,6 +35,7 @@ export function App() {
       <Route path="users" element={<RequireRole allow="admin" fallback="/app/dashboard"><UsersRoles/></RequireRole>}/>
       <Route path="storage" element={<RequireRole allow="admin" fallback="/app/dashboard"><DataStorage/></RequireRole>}/>
       <Route path="configuration" element={<RequireRole allow="admin" fallback="/app/dashboard"><AgentConfiguration/></RequireRole>}/>
+      <Route path="console" element={<RequireRole allow="admin" fallback="/app/dashboard"><DeveloperConsole/></RequireRole>}/>
     </Route><Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes></ClinicalProvider>;
 }

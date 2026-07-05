@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="A2A Communication">
+    <mxGraphModel dx="1300" dy="850" grid="1" gridSize="10" page="1" pageWidth="1340" pageHeight="820">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Agent2Agent (A2A) Communication (capstone_agent/a2a_server.py)" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="10" width="700" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lane" value="This system (capstone_agent)" style="swimlane;startSize=30;fillColor=#f0f6ff;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="560" height="580" as="geometry" />
+        </mxCell>
+        <mxCell id="root" value="root_agent&#xa;clinical_orchestrator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="lane">
+          <mxGeometry x="140" y="60" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="toa2a" value="to_a2a()&#xa;builds a Starlette ASGI app around the root agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane">
+          <mxGeometry x="140" y="180" width="280" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="srv" value="uvicorn server on port 8001&#xa;serves the agent card at&#xa;/.well-known/agent-card.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="lane">
+          <mxGeometry x="120" y="310" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="proxy" value="RemoteA2aAgent proxy&#xa;wraps a remote agent card as a local sub agent&#xa;(orchestration.build_remote_a2a_agent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane">
+          <mxGeometry x="120" y="460" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="rlane" value="Remote agent ecosystem (any language or framework)" style="swimlane;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="80" width="440" height="580" as="geometry" />
+        </mxCell>
+        <mxCell id="consumer" value="Remote consumer agent&#xa;discovers this agent through its card and delegates tasks to it" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="rlane">
+          <mxGeometry x="70" y="130" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="provider" value="Remote provider agent&#xa;publishes its own agent card that this system can consume" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="rlane">
+          <mxGeometry x="70" y="400" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="iso" value="Context isolation boundary&#xa;only task relevant, non sensitive data crosses; A2A context is never persisted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;dashed=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="620" y="690" width="640" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bnd" value="" style="endArrow=none;dashed=1;strokeColor=#9673a6;strokeWidth=2;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="730" y="90" as="sourcePoint" />
+            <mxPoint x="730" y="670" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="w1" value="is wrapped by" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="root" target="toa2a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="w2" value="mounts the app" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="toa2a" target="srv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="w3" value="fetches the agent card over HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.25;entryX=1;entryY=0.25;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="consumer" target="srv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="w4" value="sends a task and receives the result" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;entryX=1;entryY=0.75;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="consumer" target="srv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="w5" value="routes to remote sub agents" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="root" target="proxy">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="110" y="170" />
+              <mxPoint x="110" y="585" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="w6" value="calls the remote agent through its card" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="proxy" target="provider">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

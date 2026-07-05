@@ -12,11 +12,14 @@ downstream search, citation building, and Q&A.
 
 import base64
 import hashlib
+import json
 import logging
 import os
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+import xml.etree.ElementTree as ET
 
 from .config import get_config
 
@@ -46,8 +49,10 @@ def detect_content_type(file_path: str) -> str:
         ".tif": "image/tiff",
         ".bmp": "image/bmp",
         ".txt": "text/plain",
+        ".md": "text/markdown",
         ".csv": "text/csv",
         ".json": "application/json",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }
     return type_map.get(ext, "application/octet-stream")
 
@@ -187,6 +192,41 @@ def extract_text_from_plaintext(file_path: str) -> dict[str, Any]:
     }
 
 
+def extract_text_from_json(file_path: str) -> dict[str, Any]:
+    """Read JSON files as deterministic, searchable text."""
+
+    with open(file_path, "r", encoding="utf-8-sig") as f:
+        data = json.load(f)
+    text = json.dumps(data, indent=2, sort_keys=True)
+    return {
+        "text": text,
+        "pages": [{"page_number": 1, "text": text}],
+        "page_count": 1,
+        "total_chars": len(text),
+    }
+
+
+def extract_text_from_docx(file_path: str) -> dict[str, Any]:
+    """Extract paragraph text from a DOCX package using only stdlib XML tools."""
+
+    with zipfile.ZipFile(file_path) as archive:
+        document = archive.read("word/document.xml")
+    root = ET.fromstring(document)
+    namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    paragraphs = []
+    for paragraph in root.iter(f"{namespace}p"):
+        text = "".join(node.text or "" for node in paragraph.iter(f"{namespace}t")).strip()
+        if text:
+            paragraphs.append(text)
+    full_text = "\n".join(paragraphs)
+    return {
+        "text": full_text,
+        "pages": [{"page_number": 1, "text": full_text}],
+        "page_count": 1,
+        "total_chars": len(full_text),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Text chunking
 # ---------------------------------------------------------------------------
@@ -243,7 +283,7 @@ def analyze_with_gemini(text: str, analysis_type: str = "clinical") -> str:
     from raw extracted text. This replaces mock structuring tools.
     """
     config = get_config()
-    if not config["google_api_key"] and not config["use_vertex_ai"]:
+    if not config["gemini_enabled"]:
         return "Gemini analysis unavailable: no API key configured."
 
     client = _get_genai_client()
@@ -330,6 +370,10 @@ def process_document(file_path: str, patient_id: str = "") -> dict[str, Any]:
         extraction = extract_text_from_pdf(file_path)
     elif content_type.startswith("image/"):
         extraction = extract_text_from_image(file_path)
+    elif content_type.endswith("wordprocessingml.document"):
+        extraction = extract_text_from_docx(file_path)
+    elif content_type == "application/json":
+        extraction = extract_text_from_json(file_path)
     elif content_type.startswith("text/"):
         extraction = extract_text_from_plaintext(file_path)
     else:
@@ -341,7 +385,7 @@ def process_document(file_path: str, patient_id: str = "") -> dict[str, Any]:
     # Run Gemini clinical analysis on extracted text
     gemini_analysis = ""
     config = get_config()
-    if config["google_api_key"] and raw_text.strip():
+    if config["gemini_enabled"] and raw_text.strip():
         gemini_analysis = analyze_with_gemini(raw_text, "clinical")
 
     # Store document in database
@@ -402,7 +446,3 @@ def process_document(file_path: str, patient_id: str = "") -> dict[str, Any]:
         "status": "processed",
         "message": f"Successfully processed '{filename}': {page_count} pages, {chunk_count} chunks indexed.",
     }
-
-
-# Need json for the audit log call
-import json

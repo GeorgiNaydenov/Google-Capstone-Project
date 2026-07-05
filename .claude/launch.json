@@ -8,6 +8,13 @@
       "port": 5173,
       "cwd": "frontend",
       "autoPort": false
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "uvicorn", "clinical_app.app:app", "--port", "8000"],
+      "port": 8000,
+      "autoPort": false
     }
   ]
 }

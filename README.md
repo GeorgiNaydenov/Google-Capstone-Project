@@ -28,6 +28,7 @@ The public demo is fully deterministic and requires no model key. The live agent
 ┌──────────────────────────────────────────────────────────────┐
 │  React Frontend (frontend/)                                  │
 │  16 routes · clinician + admin views · Vite + TypeScript     │
+│  First-run guided onboarding tour (skippable, replayable)    │
 └─────────────────────────┬────────────────────────────────────┘
                           │ HTTP /api/*
 ┌─────────────────────────▼────────────────────────────────────┐
@@ -38,7 +39,7 @@ The public demo is fully deterministic and requires no model key. The live agent
                           │ ADK Runner
 ┌─────────────────────────▼────────────────────────────────────┐
 │  ADK Agent Backend (capstone_agent/)                          │
-│  16 sub-agents · 3 pipelines · 22+ tools                    │
+│  22 sub-agents · 3 pipelines · 24+ tools                    │
 │  3-layer security · 4-layer memory · HITL · observability    │
 ├──────────────────────────────────────────────────────────────┤
 │  MCP Server (mcp_server/)                                    │
@@ -46,13 +47,13 @@ The public demo is fully deterministic and requires no model key. The live agent
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### 16-Agent Pipeline Overview
+### 22-Agent Pipeline Overview
 
 | Pipeline | Agents | Model Tiers | Purpose |
 |----------|--------|-------------|---------|
-| **Image Extraction** | 5 agents (SequentialAgent) | flash-lite, pro, pro-customtools | Quality assessment → AI vision → structured extraction → validation loop → persistence |
-| **Patient Q&A** | 6 agents (SequentialAgent) | flash-lite, pro, pro-customtools | Context → retrieval → image evidence → citations → answer synthesis → audit |
-| **DB Intelligence** | 5 agents (SequentialAgent) | flash-lite, pro, pro-customtools | Schema discovery → NL-to-SQL → safety validation → execution → insights/charts |
+| **Image Extraction** | 9 agents (SequentialAgent + LoopAgent) | flash-lite, pro, pro-customtools | Quality → OCR → AI vision → structuring → critic/refiner loop → review gate → persistence → audit |
+| **Patient Q&A** | 7 agents (SequentialAgent) | flash-lite, pro, pro-customtools, flash-image | Validation → context → retrieval → image evidence → citations → answer synthesis (with generated visuals) → audit |
+| **DB Intelligence** | 6 agents (SequentialAgent) | flash-lite, pro, flash-image | Schema discovery → NL-to-SQL → safety validation → approval gate → execution → insights/charts |
 | **Orchestrator** | 1 root agent | flash-lite | Intent routing, MCP tools, memory recall, HITL approval |
 
 ---
@@ -63,8 +64,8 @@ This project covers **all 10 course notebooks** (Days 1a through 5b):
 
 | Day | Notebook | Implementation |
 |-----|----------|---------------|
-| 1a | Foundational models | `llm.py` — 3-tier model registry with retry/backoff |
-| 1b | Multi-agent systems | `orchestration.py` — 16-agent pipelines, SequentialAgent |
+| 1a | Foundational models | `llm.py` — 4-tier model registry (incl. image output) with retry/backoff |
+| 1b | Multi-agent systems | `orchestration.py` — 22-agent pipelines, SequentialAgent |
 | 2a | Agent tools & MCP | `tools.py`, `mcp_server/` — 22+ tools, FastMCP server |
 | 2b | Agent-as-tool & HITL | `orchestration.py`, `human_in_the_loop.py` — LongRunningFunctionTool |
 | 3a | Memory & state | `memory.py` — session/memory factories, state prefixes |
@@ -79,7 +80,7 @@ This project covers **all 10 course notebooks** (Days 1a through 5b):
 ## Project Structure
 
 ```
-├── capstone_agent/          # ADK agent package (16 sub-agents, 3 pipelines)
+├── capstone_agent/          # ADK agent package (22 sub-agents, 3 pipelines)
 │   ├── agent.py             # Root agent wiring — entry point
 │   ├── app.py               # App wrapper (plugins, compaction, resumability)
 │   ├── a2a_server.py        # Agent2Agent ASGI server
@@ -118,8 +119,7 @@ This project covers **all 10 course notebooks** (Days 1a through 5b):
 ├── tests/                   # pytest + async test suite
 ├── scripts/                 # Harness management utilities
 ├── deployment/              # Docker, Cloud Build, Agent Engine config
-├── docs/                    # Architecture and product documentation
-└── clinical-ai-command-center/ # Design system and visual prototype
+└── docs/                    # Architecture and product documentation
 ```
 
 ---
@@ -151,13 +151,23 @@ cd ..
 
 # Environment configuration
 Copy-Item .env.example .env
-# Edit .env and add your GOOGLE_API_KEY (optional — demo mode works without it)
+# Demo mode works with no credentials at all.
+# For LIVE agent mode, pick ONE auth path in .env:
+#   Option 1 — GOOGLE_API_KEY=<your key>
+#   Option 2 — Vertex AI via your Google Cloud account (no key):
+#       gcloud auth application-default login
+#       GOOGLE_GENAI_USE_VERTEXAI=TRUE
+#       GOOGLE_CLOUD_PROJECT=<your-project-id>
+#       GOOGLE_CLOUD_LOCATION=global   # Gemini 3.1 requires the global endpoint
+# Then enable live execution:
+#       AGENT_EXECUTION_MODE=live
 ```
 
 ### Run the Product
 
 ```powershell
-# Start the clinical application (demo mode — no API key needed)
+# Start the clinical application (demo mode by default; live mode if
+# AGENT_EXECUTION_MODE=live is set in .env)
 .venv\Scripts\python.exe -m uvicorn clinical_app.app:app --reload --port 8000
 ```
 

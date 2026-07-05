@@ -215,36 +215,80 @@ def test_upload_limit_and_repository_eviction() -> None:
     assert "sentinel" not in registry.get("first").uploads
 
 
-def test_live_mode_uses_lazy_bridge_and_persists_metadata() -> None:
-    """Live selection invokes bridge while demo remains model independent."""
+def test_live_mode_uses_lazy_bridge_and_persists_metadata(tmp_path, monkeypatch) -> None:
+    """The real (Capstone) tenant invokes the bridge while demo stays offline."""
 
     import importlib
-    import os
 
     app_module = importlib.import_module("clinical_app.app")
-
-    original_mode = os.environ.get("AGENT_EXECUTION_MODE")
-    original_bridge = app_module.execute_live
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
 
     async def fake_live(query: str, user_id: str, **_: object) -> dict[str, object]:
         assert query and user_id
         return {"finalResponse": "Safe live response", "authorSteps": [{"author": "root_agent", "eventId": "EV-1"}]}
 
+    original_bridge = app_module.execute_live
     try:
-        os.environ["AGENT_EXECUTION_MODE"] = "live"
         app_module.execute_live = fake_live
         api = TestClient(app_module.create_app())
-        assert api.get("/healthz").json()["mode"] == "live"
+        capstone = {**clinician("live"), "X-Tenant": "capstone"}
         run = api.post(
-            "/api/runs/qa", headers=clinician("live"),
+            "/api/runs/qa", headers=capstone,
             json={"patientId": "PT-9921", "question": "Summarize recent status"},
         ).json()
         assert run["result"]["liveResponse"] == "Safe live response"
         assert run["result"]["authorSteps"][0]["author"] == "root_agent"
         assert any(step["name"] == "Root Agent" for step in run["steps"])
+        # Demo tenants never touch the model even when the bridge is patched.
+        demo_run = api.post(
+            "/api/runs/qa", headers=clinician("demo-live"),
+            json={"patientId": "PT-9921", "question": "Summarize recent status"},
+        ).json()
+        assert "liveResponse" not in demo_run["result"]
     finally:
         app_module.execute_live = original_bridge
-        if original_mode is None:
-            os.environ.pop("AGENT_EXECUTION_MODE", None)
-        else:
-            os.environ["AGENT_EXECUTION_MODE"] = original_mode
+
+
+def test_tenant_header_selects_distinct_demo_datasets() -> None:
+    """Same browser session sees different data per tenant with full isolation."""
+
+    api = client()
+    research = {**clinician("tenants"), "X-Tenant": "research-clinic"}
+    northstar = {**clinician("tenants"), "X-Tenant": "northstar-health"}
+    research_patients = api.get("/api/patients", headers=research).json()
+    northstar_patients = api.get("/api/patients", headers=northstar).json()
+    assert len(research_patients) == 24 and research_patients[0]["id"] == "PT-8829"
+    assert len(northstar_patients) == 12 and northstar_patients[0]["id"] == "PT-7301"
+    assert not {p["id"] for p in research_patients} & {p["id"] for p in northstar_patients}
+    northstar_notices = api.get("/api/notifications", headers=northstar).json()
+    assert {n["id"] for n in northstar_notices} == {"NTF-N01", "NTF-N02", "NTF-N03"}
+    assert api.post("/api/notifications/NTF-001/read", headers=research).status_code == 200
+    assert sum(not n["read"] for n in api.get("/api/notifications", headers=research).json()) == 2
+    assert sum(not n["read"] for n in api.get("/api/notifications", headers=northstar).json()) == 3
+
+
+def test_legacy_tenant_values_map_to_research_clinic() -> None:
+    """Old header values and missing headers keep the original demo dataset."""
+
+    api = client()
+    for legacy in ("local", "demo", None):
+        headers = clinician(f"legacy-{legacy}")
+        if legacy is not None:
+            headers["X-Tenant"] = legacy
+        patients = api.get("/api/patients", headers=headers).json()
+        assert len(patients) == 24 and patients[0]["id"] == "PT-8829"
+
+
+def test_registry_keys_by_tenant() -> None:
+    """One session id yields separate repositories per tenant; find() resolves MRU."""
+
+    from clinical_app.repository import RepositoryRegistry
+    from clinical_app.tenancy import TENANTS
+
+    registry = RepositoryRegistry()
+    research = registry.get("shared", TENANTS["research-clinic"])
+    northstar = registry.get("shared", TENANTS["northstar-health"])
+    assert research is not northstar
+    assert registry.find("shared") is northstar
+    assert registry.get("shared", TENANTS["research-clinic"]) is research
+    assert registry.find("missing") is None

@@ -60,8 +60,14 @@ def extraction_review_tools(
     reviewer: str,
     fields: dict[str, Any],
     reason: str,
+    persist_session_id: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Run the actual review and persistence tool contracts."""
+    """Run the actual review and persistence tool contracts.
+
+    persist_session_id must reference an existing sessions row when given —
+    extracted_fields enforces that foreign key — so approvals persist under
+    the clinical session the caller created, not the transient run id.
+    """
 
     action = "approve" if decision == "approved" else "reject"
     transition = transition_extraction_review(patient_id, run_id, "needs_review", action, reviewer, reason)
@@ -69,10 +75,11 @@ def extraction_review_tools(
     receipt = transition.get("data", {}).get("review_receipt", "")
     if decision == "approved" and receipt:
         payload = json.dumps(fields, sort_keys=True)
+        target_session = persist_session_id or run_id
         traces.extend([
-            _trace("store_to_gcs", store_to_gcs(patient_id, run_id, payload)),
-            _trace("persist_extraction_relational", persist_extraction_relational(patient_id, run_id, payload, receipt)),
-            _trace("persist_extraction_vector", persist_extraction_vector(patient_id, run_id, payload, receipt)),
+            _trace("store_to_gcs", store_to_gcs(patient_id, target_session, payload)),
+            _trace("persist_extraction_relational", persist_extraction_relational(patient_id, target_session, payload, receipt)),
+            _trace("persist_extraction_vector", persist_extraction_vector(patient_id, target_session, payload, receipt)),
         ])
     traces.append(_trace("log_audit_event", log_audit_event(
         "extraction_audit_agent",

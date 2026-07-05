@@ -1,16 +1,19 @@
 """Root agent definition — entry point for `adk run capstone_agent`.
 
 Architecture: the Clinical AI Command Center orchestrator with three
-specialist pipelines (16 sub-agents total) demonstrating every principle
+specialist pipelines (22 sub-agents total) demonstrating every principle
 from the 5-day course as reusable, production-grade scaffolding.
 `root_agent` is discovered automatically by ADK via __init__.py.
 For the richer runtime (plugins, history compaction, resumable HITL)
 wrap it with the App in app.py.
 
 Clinical pipelines:
-- Image Extraction Pipeline (5 agents): quality → vision → structuring → validation loop
-- Patient Q&A Pipeline (6 agents): context → retrieval → image evidence → citations → answer → audit
-- DB Intelligence Pipeline (5 agents): schema → NL-to-SQL → validation → execution → insights
+- Image Extraction Pipeline (9 agents): quality → OCR → vision → structuring
+  → critic/refiner loop → review gate → persistence → audit
+- Patient Q&A Pipeline (7 agents): validation → context → retrieval → image
+  evidence → citations → answer synthesis → audit
+- DB Intelligence Pipeline (6 agents): schema → NL-to-SQL → validation
+  → approval gate → execution → insights
 
 Model orchestration (Day 1a + llm.py):
 - root orchestrator → flash-lite (cheap routing)
@@ -40,10 +43,14 @@ Google Cloud ecosystem integration:
 """
 
 import logging
+import sys
 
 from google.adk.agents import LlmAgent
 from google.adk.tools import LongRunningFunctionTool, load_memory
-from google.adk.tools.mcp_tool import McpToolset
+try:
+    from google.adk.tools.mcp_tool import McpToolset
+except ImportError:
+    from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from mcp import StdioServerParameters
 
@@ -99,12 +106,18 @@ db_intelligence_pipeline = build_db_intelligence_pipeline()
 
 mcp_tools = McpToolset(
     connection_params=StdioConnectionParams(
+        # sys.executable, not "python": the MCP subprocess must use the same
+        # interpreter/venv as the host process even when PATH lacks the venv
+        # (uvicorn service, Cloud Run, Windows launcher).
         server_params=StdioServerParameters(
-            command="python",
+            command=sys.executable,
             args=["-m", "mcp_server.server"],
         ),
         timeout=30,
     ),
+    # "upload_document" is intentionally absent: the root agent already has
+    # the native tools.upload_document, and Vertex AI rejects a request whose
+    # tool list declares the same function name twice (400 INVALID_ARGUMENT).
     tool_filter=[
         "get_patient_status",
         "list_patients",
@@ -113,7 +126,6 @@ mcp_tools = McpToolset(
         "store_extraction_result",
         "query_clinical_database",
         "log_clinical_audit",
-        "upload_document",
         "search_all_documents",
         "list_documents",
     ],

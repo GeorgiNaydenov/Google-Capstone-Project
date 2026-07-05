@@ -1,8 +1,9 @@
 """Generate a large governed SQLite cohort for the database agent.
 
-The script creates the project schema, inserts at least 17,000 rows by default,
-and emits reusable natural-language query examples with SQL, Plotly specs, and
-Matplotlib chart images.
+The script creates the project schema, inserts at least 10,000 patient records
+across the past four years by default, and emits reusable natural-language
+query examples with SQL, textual insights, Plotly specs, and Matplotlib chart
+images.
 """
 
 from __future__ import annotations
@@ -27,6 +28,9 @@ from capstone_agent.clinical_schemas import SCHEMA_DDL
 
 DEFAULT_OUTPUT = Path("showcase_data/database")
 DEFAULT_DB = DEFAULT_OUTPUT / "clinical_showcase.db"
+DEFAULT_ANCHOR_DATE = date(2026, 7, 5)
+DEFAULT_PATIENT_COUNT = 10000
+DEFAULT_YEARS = 4
 FIRST_NAMES = (
     "Avery",
     "Jordan",
@@ -128,11 +132,15 @@ def create_schema(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_audit_agent ON audit_log(agent_name, action)")
 
 
-def seed_database(conn: sqlite3.Connection, patient_count: int, seed: int) -> dict[str, int]:
+def seed_database(conn: sqlite3.Connection, patient_count: int, seed: int, anchor_date: date, years: int) -> dict[str, int]:
     """Insert deterministic cohort rows."""
 
     rng = random.Random(seed)
-    today = date(2026, 6, 24)
+    today = anchor_date
+    lookback_days = max(365, years * 365)
+    session_total = max(4, years)
+    lab_points = max(4, years * 2)
+    note_total = max(2, years)
     row_counts: dict[str, int] = {}
 
     patients = []
@@ -151,7 +159,7 @@ def seed_database(conn: sqlite3.Connection, patient_count: int, seed: int) -> di
                 risk,
                 diagnosis,
                 rng.choice(CLINICIANS),
-                (today - timedelta(days=rng.randint(0, 540))).isoformat(),
+                (today - timedelta(days=rng.randint(0, lookback_days))).isoformat(),
                 completeness,
                 open_tasks,
                 "needs_review" if risk != "stable" and rng.random() < 0.75 else "verified",
@@ -186,11 +194,11 @@ def seed_database(conn: sqlite3.Connection, patient_count: int, seed: int) -> di
     session_index = 0
     for patient in patients:
         patient_id, name, _age, _sex, risk, diagnosis, clinician, *_rest = patient
-        session_total = 3
         for offset in range(session_total):
             session_index += 1
             session_id = f"SES-D{session_index:06d}"
-            session_date = today - timedelta(days=offset * 45 + rng.randint(0, 20))
+            spread_days = round(offset * lookback_days / max(1, session_total - 1))
+            session_date = today - timedelta(days=min(lookback_days, spread_days + rng.randint(0, 24)))
             confidence = round(rng.uniform(0.68, 0.98), 2)
             verification = "pending" if confidence < 0.82 or risk != "stable" and rng.random() < 0.35 else "verified"
             sessions.append(
@@ -251,8 +259,9 @@ def seed_database(conn: sqlite3.Connection, patient_count: int, seed: int) -> di
                     ),
                 ]
             )
-        for note_index in range(2):
-            note_date = today - timedelta(days=note_index * 30 + rng.randint(0, 25))
+        for note_index in range(note_total):
+            spread_days = round(note_index * lookback_days / max(1, note_total - 1))
+            note_date = today - timedelta(days=min(lookback_days, spread_days + rng.randint(0, 30)))
             notes.append(
                 (
                     f"NOTE-D{len(notes) + 1:07d}",
@@ -264,9 +273,12 @@ def seed_database(conn: sqlite3.Connection, patient_count: int, seed: int) -> di
                     f"VEC-D{len(notes) + 1:07d}",
                 )
             )
-        for test, component, unit, reference in LAB_COMPONENTS:
-            value, flag = _value_for(component, rng)
-            labs.append((patient_id, today.isoformat(), test, component, value, unit, reference, flag))
+        for lab_index in range(lab_points):
+            spread_days = round(lab_index * lookback_days / max(1, lab_points - 1))
+            result_date = today - timedelta(days=min(lookback_days, spread_days + rng.randint(0, 18)))
+            for test, component, unit, reference in LAB_COMPONENTS:
+                value, flag = _value_for(component, rng)
+                labs.append((patient_id, result_date.isoformat(), test, component, value, unit, reference, flag))
 
     conn.executemany(
         """
@@ -354,6 +366,20 @@ def _plotly_spec(title: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _textual_insight(question: str, rows: list[dict[str, Any]]) -> str:
+    """Create a compact narrative answer alongside SQL and chart specs."""
+
+    if not rows:
+        return f"{question} No matching rows were returned for this synthetic cohort."
+    first = rows[0]
+    keys = list(first)
+    if len(keys) < 2:
+        return f"{question} Returned {len(rows)} rows for clinician review."
+    label = first[keys[0]]
+    value = first[keys[1]]
+    return f"{question} Top segment is {label} with {value}; review table rows and chart before using this as demo evidence."
+
+
 def write_query_showcase(conn: sqlite3.Connection, output: Path) -> list[dict[str, Any]]:
     """Write example questions, SQL, Plotly specs, and Matplotlib charts."""
 
@@ -377,6 +403,10 @@ def write_query_showcase(conn: sqlite3.Connection, output: Path) -> list[dict[st
             "sql": "SELECT component, COUNT(*) AS abnormal_results FROM lab_results WHERE flag != 'normal' GROUP BY component ORDER BY abnormal_results DESC",
         },
         {
+            "question": "Show high-risk extraction sessions by year.",
+            "sql": "SELECT strftime('%Y', session_date) AS session_year, COUNT(*) AS high_risk_sessions FROM sessions JOIN patients_core USING (patient_id) WHERE risk_level = 'high' GROUP BY session_year ORDER BY session_year",
+        },
+        {
             "question": "How many agent audit events exist by pipeline?",
             "sql": "SELECT agent_name, COUNT(*) AS event_count FROM audit_log GROUP BY agent_name ORDER BY event_count DESC",
         },
@@ -394,12 +424,12 @@ def write_query_showcase(conn: sqlite3.Connection, output: Path) -> list[dict[st
             plt.tight_layout()
             plt.savefig(chart_path)
             plt.close()
-        specs.append({**item, "rows": rows[:25], "row_count": len(rows), "plotly": _plotly_spec(item["question"], rows), "matplotlib_png": str(chart_path)})
+        specs.append({**item, "insight": _textual_insight(item["question"], rows), "rows": rows[:25], "row_count": len(rows), "plotly": _plotly_spec(item["question"], rows), "matplotlib_png": str(chart_path)})
     (output / "query_showcase.json").write_text(json.dumps(specs, indent=2), encoding="utf-8")
     return specs
 
 
-def generate(db_path: Path, output: Path, patient_count: int, seed: int, replace: bool) -> dict[str, Any]:
+def generate(db_path: Path, output: Path, patient_count: int, seed: int, replace: bool, years: int = DEFAULT_YEARS, anchor_date: date = DEFAULT_ANCHOR_DATE) -> dict[str, Any]:
     """Create database and artifacts."""
 
     output.mkdir(parents=True, exist_ok=True)
@@ -411,7 +441,7 @@ def generate(db_path: Path, output: Path, patient_count: int, seed: int, replace
 
     with sqlite3.connect(db_path) as conn:
         create_schema(conn)
-        row_counts = seed_database(conn, patient_count, seed)
+        row_counts = seed_database(conn, patient_count, seed, anchor_date, years)
         specs = write_query_showcase(conn, output)
 
     manifest = {
@@ -419,7 +449,13 @@ def generate(db_path: Path, output: Path, patient_count: int, seed: int, replace
         "db_path": str(db_path),
         "total_rows": sum(row_counts.values()),
         "row_counts": row_counts,
+        "minimum_required_patients": 10000,
         "minimum_required_rows": 17000,
+        "coverage_years": years,
+        "date_range": {
+            "start": (anchor_date - timedelta(days=max(365, years * 365))).isoformat(),
+            "end": anchor_date.isoformat(),
+        },
         "query_count": len(specs),
         "backend_contract": {
             "preview": "/api/runs/database/preview",
@@ -437,11 +473,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate large clinical SQLite showcase data.")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--db-path", type=Path, default=DEFAULT_DB)
-    parser.add_argument("--patient-count", type=int, default=2400)
+    parser.add_argument("--patient-count", type=int, default=DEFAULT_PATIENT_COUNT)
+    parser.add_argument("--years", type=int, default=DEFAULT_YEARS)
+    parser.add_argument("--anchor-date", type=date.fromisoformat, default=DEFAULT_ANCHOR_DATE)
     parser.add_argument("--seed", type=int, default=240624)
     parser.add_argument("--replace", action="store_true")
     args = parser.parse_args()
-    manifest = generate(args.db_path, args.output, args.patient_count, args.seed, args.replace)
+    manifest = generate(args.db_path, args.output, args.patient_count, args.seed, args.replace, args.years, args.anchor_date)
     print(json.dumps(manifest, indent=2))
 
 

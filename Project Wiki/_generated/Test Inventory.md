@@ -1,7 +1,7 @@
 ---
 title: Test Inventory
 type: generated
-updated: 2026-07-04
+updated: 2026-07-05
 tags:
   - generated
 ---
@@ -15,18 +15,20 @@ Hand-written companion: [[Testing & Eval]].
 |-----------|-------|--------|
 | `test_agent_eval.py` | 3 | Agent evaluation tests — validates agent behavior end-to-end. |
 | `test_callbacks.py` | 10 | Unit tests for the 3-layer security callbacks. |
-| `test_clinical_api.py` | 9 | Frontend contract tests for deterministic clinician product API. |
+| `test_clinical_api.py` | 12 | Frontend contract tests for deterministic clinician product API. |
 | `test_clinical_tools.py` | 32 | Clinical tool integration tests — mock data consistency and HITL. |
 | `test_context.py` | 5 | Tests for context engineering utilities (Day 1 working memory). |
-| `test_document_parsing.py` | 6 | Document upload policy and extraction contract tests. |
+| `test_document_parsing.py` | 8 | Document upload policy and extraction contract tests. |
 | `test_eval.py` | 1 | ADK evaluation harness test (Day 4b). |
-| `test_live_bridge.py` | 16 | Unit tests for the live-mode ADK bridge parsing helpers. |
+| `test_live_bridge.py` | 18 | Unit tests for the live-mode ADK bridge parsing helpers. |
 | `test_memory.py` | 3 | Tests for memory governance (Day 3b). |
 | `test_orchestration.py` | 6 | Tests for the orchestration building blocks (Day 1b / 2a). |
-| `test_product_integration.py` | 17 | End-to-end contracts joining the clinical UI API to product state. |
+| `test_product_integration.py` | 22 | End-to-end contracts joining the clinical UI API to product state. |
 | `test_product_orchestration.py` | 8 | Contract tests for clinician-facing production workflow boundaries. |
 | `test_security.py` | 11 | Security test suite — validates all detection and sanitization functions. |
+| `test_showcase_generators.py` | 3 | Smoke tests for showcase data generators. |
 | `test_tools.py` | 73 | Clinical tool validation tests — ensures consistent I/O contracts. |
+| `test_versioned_api.py` | 5 | Unit tests for the versioned API backend endpoints (V1 and V2). |
 | `test_wiki_sync.py` | 7 | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |
 
-**Total test functions: 207**
+**Total test functions: 227**

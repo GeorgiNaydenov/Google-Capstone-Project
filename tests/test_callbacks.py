@@ -64,14 +64,23 @@ def test_input_callback_ignores_empty_request():
 
 
 # --- Layer 2: tool authorization (before_tool_callback) ---
+# ADK invokes this callback as callback(tool=..., args=..., tool_context=...),
+# so the tests mirror that exact keyword convention with a named tool stub.
+
+def _tool(name: str = "example_search"):
+    """Minimal BaseTool stand-in: only `.name` is ever accessed."""
+    return SimpleNamespace(name=name)
+
 
 def test_tool_callback_blocks_empty_args():
-    result = tool_authorization_callback(_ctx(), "example_search", {})
+    result = tool_authorization_callback(tool=_tool(), args={}, tool_context=_ctx())
     assert result is not None and result["status"] == "error"
 
 
 def test_tool_callback_allows_valid_args():
-    result = tool_authorization_callback(_ctx(), "example_search", {"query": "python"})
+    result = tool_authorization_callback(
+        tool=_tool(), args={"query": "python"}, tool_context=_ctx()
+    )
     assert result is None
 
 
@@ -79,16 +88,18 @@ def test_tool_callback_enforces_rate_limit():
     ctx = _ctx()
     # The first TOOL_RATE_LIMIT calls are allowed (counter 0..LIMIT-1).
     for _ in range(TOOL_RATE_LIMIT):
-        assert tool_authorization_callback(ctx, "example_search", {"query": "x"}) is None
+        assert tool_authorization_callback(tool=_tool(), args={"query": "x"}, tool_context=ctx) is None
     # The next call exceeds the limit and is blocked.
-    blocked = tool_authorization_callback(ctx, "example_search", {"query": "x"})
+    blocked = tool_authorization_callback(tool=_tool(), args={"query": "x"}, tool_context=ctx)
     assert blocked is not None and blocked["status"] == "error"
     assert "rate limit" in blocked["message"].lower()
 
 
 def test_tool_callback_blocks_secrets_in_args():
     result = tool_authorization_callback(
-        _ctx(), "example_action", {"item_id": "1", "action": FAKE_SECRET}
+        tool=_tool("example_action"),
+        args={"item_id": "1", "action": FAKE_SECRET},
+        tool_context=_ctx(),
     )
     assert result is not None and result["status"] == "error"
 
