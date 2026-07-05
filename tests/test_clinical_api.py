@@ -391,3 +391,20 @@ def test_documentation_hub_served_standalone() -> None:
     obsidian_page = api.get("/documentation/project-wiki/Home.html")
     assert obsidian_page.status_code == 200
     assert "Back to main page" in obsidian_page.text
+
+
+def test_storage_records_derive_from_upload_and_approval() -> None:
+    """Storage pipeline records reflect real uploads and approved extractions."""
+
+    api = client()
+    headers = clinician("storage-records")
+    assert api.get("/api/storage", headers=headers).json()["records"] == []
+    asset_id = upload_asset(api, headers)
+    after_upload = api.get("/api/storage", headers=headers).json()["records"]
+    assert any(record["destination"] == "Object storage" and record["source"] == "scan.png" for record in after_upload)
+    run = api.post("/api/runs/extraction", headers=headers, json={"assetId": asset_id, "patientId": "PT-8829"}).json()
+    api.post(f"/api/runs/{run['id']}/review", headers=headers, json={"decision": "approved", "fields": {"documentType": "CT"}})
+    records = api.get("/api/storage", headers=headers).json()["records"]
+    destinations = {record["destination"] for record in records}
+    assert {"JSON document store", "Relational database", "Vector search index"} <= destinations
+    assert all(record["status"] == "synced" for record in records if record["source"].startswith("Extraction"))

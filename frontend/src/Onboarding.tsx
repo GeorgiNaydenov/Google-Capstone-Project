@@ -29,38 +29,6 @@ function SimPipeline() {
   </div>;
 }
 
-function SimQa() {
-  const [phase, setPhase] = useState(0);
-  useEffect(() => {
-    const timers = [window.setTimeout(() => setPhase(1), 650), window.setTimeout(() => setPhase(2), 1700)];
-    return () => timers.forEach(timer => window.clearTimeout(timer));
-  }, []);
-  return <div className="tour-sim" aria-hidden="true">
-    <p className="tour-qa-question">"What changed between Eleanor's last two sessions?"</p>
-    {phase === 1 && <p className="tour-qa-working">Validating patient scope. Retrieving notes, labs, and imaging.</p>}
-    {phase >= 2 && <>
-      <p className="tour-qa-answer">Creatinine rose from 1.4 to 1.9 mg/dL and the latest CT notes a new hepatic finding. The nephrology note recommends diuretic review before the next session.</p>
-      <div className="tour-chip-row">{["Image: CT abdomen", "Text: Nephrology note", "Lab: Metabolic panel"].map(chip => <span key={chip} className="lit cite">{chip}</span>)}</div>
-      <p>92% confidence. 3 citations. Every source opens from the answer.</p>
-    </>}
-  </div>;
-}
-
-function SimSql() {
-  const [phase, setPhase] = useState(0);
-  useEffect(() => {
-    const timers = [window.setTimeout(() => setPhase(1), 700), window.setTimeout(() => setPhase(2), 1500)];
-    return () => timers.forEach(timer => window.clearTimeout(timer));
-  }, []);
-  return <div className="tour-sim tour-sql" aria-hidden="true">
-    <code>SELECT risk_level, COUNT(*) FROM patients GROUP BY risk_level;</code>
-    {phase >= 1 && <span className="tour-safety">Safety passed. SELECT only. You approve execution.</span>}
-    {phase >= 2 && <div className="tour-bars">
-      {([["High risk", 4, 31, "critical"], ["Needs review", 7, 54, "warning"], ["Stable", 13, 100, "success"]] as const).map(([label, value, width, tone]) => <div key={label}><span>{label}</span><i className={tone} style={{ width: `${width}%` }}/><b>{value}</b></div>)}
-    </div>}
-  </div>;
-}
-
 function ChipRow({ chips, flow = false }: { chips: string[]; flow?: boolean }) {
   return <div className="tour-sim" aria-hidden="true"><div className={flow ? "tour-chip-row flow" : "tour-chip-row"}>{chips.map(chip => <span key={chip} className="lit">{chip}</span>)}</div></div>;
 }
@@ -95,16 +63,14 @@ const steps: TourStep[] = [
     visual: <SimPipeline/>,
   },
   {
-    id: "qa", route: "/app/qa", eyebrow: "AI WORKFLOW 2: MULTIMODAL Q&A", screen: "Patient Q&A",
+    id: "qa", route: `/app/qa?query=${encodeURIComponent("What changed between the last two sessions?")}`, eyebrow: "AI WORKFLOW 2: MULTIMODAL Q&A", screen: "Patient Q&A",
     title: "Ask the record a clinical question.",
-    body: "Ask in plain language and the agents retrieve across notes, labs, and images. Answers come with citations to the exact scan, note, or value, so the reasoning can be checked instead of guessed.",
-    visual: <SimQa/>,
+    body: "The question field behind this panel is already filled in. Close or step past this panel and press \"Ask Nexus agents\" to see the real agents retrieve across notes, labs, and images, with citations to the exact scan, note, or value.",
   },
   {
-    id: "database", route: "/app/database", eyebrow: "AI WORKFLOW 3: POPULATION INTELLIGENCE", screen: "Database intelligence",
+    id: "database", route: `/app/database?query=${encodeURIComponent("Count patients by risk level")}`, eyebrow: "AI WORKFLOW 3: POPULATION INTELLIGENCE", screen: "Database intelligence",
     title: "Turn a cohort question into a governed answer.",
-    body: "Population questions become read-only SQL that you can inspect before it runs. Approved results return as tables, charts, and a written insight, with the query stored in the audit trail.",
-    visual: <SimSql/>,
+    body: "The population question behind this panel is already filled in. Step past this panel and press \"Generate SQL preview\" to see the real read-only SQL, safety review, and — once you approve execution — governed results, charts, and a written insight.",
   },
   {
     id: "governance", route: "/app/inbox", eyebrow: "HUMAN-GOVERNED BY DESIGN", screen: "Clinical inbox",
