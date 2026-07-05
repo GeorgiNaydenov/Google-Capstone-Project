@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Architecture · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Agent Architecture</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Agent Architecture</h1>
+<p>A root orchestrator routes every request to one of three SequentialAgent pipelines. All agents get their model via <code>llm.build_model(tier)</code> — see <a href="../../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a> — and every interaction passes through the <a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a> callbacks.</p>
+<h2>Pipeline overview</h2>
+<table>
+<thead>
+<tr>
+<th>Pipeline</th>
+<th>Agents</th>
+<th>Model tiers</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Image Extraction</strong></td>
+<td>9 agents (SequentialAgent + LoopAgent)</td>
+<td>flash-lite, pro, pro-customtools</td>
+<td>Quality → OCR → AI vision → structuring → critic/refiner loop → review gate → persistence → audit</td>
+</tr>
+<tr>
+<td><strong>Patient Q&amp;A</strong></td>
+<td>7 agents (SequentialAgent)</td>
+<td>flash-lite, pro, pro-customtools, flash-image</td>
+<td>Validation → context → retrieval → image evidence → citations → answer synthesis (with generated visuals) → audit</td>
+</tr>
+<tr>
+<td><strong>DB Intelligence</strong></td>
+<td>6 agents (SequentialAgent)</td>
+<td>flash-lite, pro, flash-image</td>
+<td>Schema discovery → NL-to-SQL → safety validation → approval gate → execution → insights/charts</td>
+</tr>
+<tr>
+<td><strong>Orchestrator</strong></td>
+<td>1 root agent</td>
+<td>flash-lite</td>
+<td>Intent routing, MCP tools, memory recall, HITL approval</td>
+</tr>
+</tbody>
+</table>
+<h2>Root orchestrator</h2>
+<p><code>clinical_orchestrator</code> (flash-lite) routes to the three pipelines based on intent. It carries MCP tools, <code>search_past_conversations</code> (memory recall), and the HITL approval tool. Every user turn first passes <code>content_safety_callback</code> (Layer 1 input security).</p>
+<h2>Agent roster by pipeline</h2>
+<h3>Image Extraction (see <a href="../../project-wiki/03%20Processes/Image%20Extraction%20Pipeline.html">Image Extraction Pipeline</a> for the process diagram)</h3>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Tier</th>
+<th>Tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>quality_assessor_agent</code></td>
+<td>flash-lite</td>
+<td><code>assess_image_quality</code></td>
+</tr>
+<tr>
+<td><code>vision_analyzer_agent</code></td>
+<td>pro</td>
+<td><code>analyze_clinical_image</code></td>
+</tr>
+<tr>
+<td><code>clinical_structuring_agent</code></td>
+<td>pro</td>
+<td><code>structure_clinical_findings</code>, <code>store_to_gcs</code></td>
+</tr>
+<tr>
+<td><code>validation_gate</code> (LoopAgent)</td>
+<td>—</td>
+<td>wraps critic + refiner (Day 1b loop pattern)</td>
+</tr>
+<tr>
+<td><code>critic_agent</code></td>
+<td>—</td>
+<td><code>exit_loop</code> (confidence &gt;= threshold)</td>
+</tr>
+<tr>
+<td><code>refiner_agent</code></td>
+<td>—</td>
+<td><code>flag_for_review</code> (fields below 0.80)</td>
+</tr>
+<tr>
+<td>HITL review gate</td>
+<td>—</td>
+<td><code>transition_extraction_review</code>, <code>persist_extraction_relational</code>, <code>persist_extraction_vector</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Patient Q&amp;A (see <a href="../../project-wiki/03%20Processes/Patient%20QA%20Pipeline.html">Patient QA Pipeline</a>)</h3>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Tier</th>
+<th>Tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>context_assembly_agent</code></td>
+<td>flash-lite</td>
+<td><code>lookup_patient_record</code>, <code>validate_qa_request</code></td>
+</tr>
+<tr>
+<td><code>evidence_retrieval_agent</code></td>
+<td>pro-customtools</td>
+<td><code>search_clinical_notes</code>, <code>search_vector_store</code>, <code>retrieve_imaging_evidence</code></td>
+</tr>
+<tr>
+<td><code>image_evidence_agent</code></td>
+<td>pro</td>
+<td><code>analyze_evidence_images</code>, <code>fetch_image_from_gcs</code></td>
+</tr>
+<tr>
+<td><code>citation_builder_agent</code></td>
+<td>flash-lite</td>
+<td><code>build_citations</code></td>
+</tr>
+<tr>
+<td><code>answer_synthesis_agent</code></td>
+<td>pro</td>
+<td><code>compose_clinical_answer</code></td>
+</tr>
+<tr>
+<td><code>qa_audit_agent</code></td>
+<td>flash-lite</td>
+<td><code>log_audit_event</code>, <code>save_qa_to_memory</code></td>
+</tr>
+</tbody>
+</table>
+<h3>DB Intelligence (see <a href="../../project-wiki/03%20Processes/DB%20Intelligence%20Pipeline.html">DB Intelligence Pipeline</a>)</h3>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Tier</th>
+<th>Tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schema_discovery_agent</code></td>
+<td>flash-lite</td>
+<td><code>get_database_schema</code></td>
+</tr>
+<tr>
+<td><code>nl_to_sql_agent</code></td>
+<td>pro</td>
+<td><code>generate_sql</code></td>
+</tr>
+<tr>
+<td><code>sql_validator_agent</code></td>
+<td>flash-lite</td>
+<td><code>validate_sql_safety</code></td>
+</tr>
+<tr>
+<td><code>query_executor_agent</code></td>
+<td>pro-customtools</td>
+<td><code>execute_clinical_query</code> (or <code>approve_sql_preview</code> → <code>execute_approved_clinical_query</code>)</td>
+</tr>
+<tr>
+<td><code>insight_chart_agent</code></td>
+<td>flash-lite</td>
+<td><code>generate_chart_spec</code>, <code>save_query_to_memory</code></td>
+</tr>
+</tbody>
+</table>
+<h2>output_key plumbing</h2>
+<p>Each agent writes to <code>session.state</code> via its <code>output_key</code>; the next agent reads its predecessor's output from state. This creates a typed data flow through the pipeline without direct agent-to-agent coupling — Layer 2 of the <a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a>.</p>
+<blockquote>
+<p><strong>Note:</strong> Where agents are wired
+Pipeline factories live in <code>capstone_agent/orchestration.py</code>; <code>capstone_agent/agent.py</code> imports all modules and wires the root agent. Instructions live in <code>prompts.py</code> (under 60 lines each).</p>
+</blockquote>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deployment · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Deployment</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Deployment</h1>
+<blockquote>
+<p>Sources: Antigravity, 2026-07-05
+Raw: <a href="../../raw/operations/2026-07-04-deployment.html">Deployment Source</a></p>
+</blockquote>
+<h1>Deployment</h1>
+<p>Three supported targets — all read secrets from <code>.env</code> / Secret Manager at runtime, never baked into images. Full instructions in <code>deployment/README.md</code>; process diagram in [[Deployment Pipeline]].</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Command</th>
+<th>Use case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cloud Run</strong></td>
+<td><code>gcloud builds submit --config deployment/cloudbuild.yaml .</code></td>
+<td>Production clinical product</td>
+</tr>
+<tr>
+<td><strong>Vertex AI Agent Engine</strong></td>
+<td><code>adk deploy agent_engine --agent_engine_config_file=deployment/.agent_engine_config.json .</code></td>
+<td>Fully managed with autoscaling + Memory Bank</td>
+</tr>
+<tr>
+<td><strong>GKE</strong></td>
+<td>Custom K8s manifests</td>
+<td>Self-managed Kubernetes</td>
+</tr>
+</tbody>
+</table>
+<h2>Artifacts (deployment/)</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Dockerfile</code></td>
+<td>Hardened container — non-root user, healthcheck, port 8000</td>
+</tr>
+<tr>
+<td><code>cloudbuild.yaml</code></td>
+<td>Cloud Build pipeline — pulls the API key from Secret Manager</td>
+</tr>
+<tr>
+<td><code>.agent_engine_config.json</code></td>
+<td>Vertex AI Agent Engine hardware config (Day 5b)</td>
+</tr>
+<tr>
+<td><code>README.md</code></td>
+<td>Cloud Run / Agent Engine / GKE / A2A deploy guide</td>
+</tr>
+</tbody>
+</table>
+<h2>Additional serving surface</h2>
+<p>The A2A server (<code>uvicorn capstone_agent.a2a_server:app --port 8001</code>) serves the agent card for agent-to-agent calls — see [[MCP and A2A]].</p>
+<blockquote>
+<p>[!warning] Secrets
+Secrets live in <code>.env</code> locally and Secret Manager in production. Never commit API keys; never bake them into images.</p>
+</blockquote>
+<p>Related: [[System Overview]] · [[Course Concepts Map]] (Day 5b)</p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

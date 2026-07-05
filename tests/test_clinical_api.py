@@ -372,3 +372,20 @@ def test_patient_evidence_endpoint_returns_sources() -> None:
     assert rows and {"id", "kind", "date", "excerpt"} <= set(rows[0])
     assert any(row.get("sourceUrl") for row in rows)
     assert api.get("/api/patients/PT-0000/evidence", headers=clinician()).status_code == 404
+
+
+def test_documentation_hub_served_standalone() -> None:
+    """The documentation hub serves readable pages outside the SPA shell."""
+
+    api = client()
+    hub = api.get("/documentation/")
+    assert hub.status_code == 200
+    assert "Nexus documentation" in hub.text
+    assert "Enter the application" in hub.text
+    assert 'href="/roles"' in hub.text
+    wiki_page = api.get("/documentation/llm-wiki/index.html")
+    assert wiki_page.status_code == 200
+    assert "Documentation hub" in wiki_page.text
+    obsidian_page = api.get("/documentation/project-wiki/Home.html")
+    assert obsidian_page.status_code == 200
+    assert "Back to main page" in obsidian_page.text

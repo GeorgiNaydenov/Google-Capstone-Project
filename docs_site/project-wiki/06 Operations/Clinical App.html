@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinical App · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Clinical App</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Clinical App</h1>
+<p>The clinician-facing product: a React frontend served by a FastAPI server that runs in <strong>deterministic demo mode</strong> by default or bridges <strong>live</strong> to the ADK agent backend.</p>
+<h2>Components</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clinical_app/app.py</code></td>
+<td>FastAPI routes for the clinician-facing application; middleware; serves <code>frontend/dist/</code></td>
+</tr>
+<tr>
+<td><code>clinical_app/agent_runtime.py</code></td>
+<td>Deterministic product adapters for the real clinical agent tool layer</td>
+</tr>
+<tr>
+<td><code>clinical_app/live_bridge.py</code></td>
+<td>Lazy Google ADK execution bridge for live product mode</td>
+</tr>
+<tr>
+<td><code>clinical_app/repository.py</code></td>
+<td>Session-isolated mutable repository for deterministic product demos</td>
+</tr>
+<tr>
+<td><code>clinical_app/models.py</code></td>
+<td>Pydantic contracts for the clinician product API</td>
+</tr>
+<tr>
+<td><code>clinical_app/document.py</code></td>
+<td>Document parsing and upload policy for clinical evidence files</td>
+</tr>
+<tr>
+<td><code>frontend/</code></td>
+<td>React/Vite/TypeScript UI — 16 routes, clinician + admin views</td>
+</tr>
+</tbody>
+</table>
+<p>Additional frontend documentation surfaces:</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>frontend/src/diagrams.ts</code></td>
+<td>Typed diagram catalog used by the product atlas and contextual embeds</td>
+</tr>
+<tr>
+<td><code>frontend/src/components/DiagramAtlas.tsx</code></td>
+<td>Category tabs, diagram sub-tabs, viewer, and summary panel</td>
+</tr>
+<tr>
+<td><code>frontend/src/components/InlineDiagram.tsx</code></td>
+<td>Collapsible contextual architecture embed for workflow screens</td>
+</tr>
+</tbody>
+</table>
+<h2>Onboarding tour</h2>
+<p><code>frontend/src/Onboarding.tsx</code> runs a full-takeover guided tour the first time a user enters the workspace (<code>/app/*</code>). The modal is the focal point while the real screens render dimmed behind it; each of the 9 steps navigates the actual route it describes (dashboard → queue → extraction → Q&amp;A → database → inbox → orchestrator → finish) and the AI workflow steps play deterministic in-modal simulations (agent pipeline, cited answer, SQL-to-chart) with zero API calls.</p>
+<ul>
+<li>Persistence flag: <code>localStorage[&quot;clinicalOnboardingV1&quot;] = &quot;done&quot;</code> (set by both Skip and Finish)</li>
+<li>Replay: &quot;Replay product tour&quot; utility button in the Shell topbar</li>
+<li>Keyboard: Escape skips, arrow keys navigate</li>
+<li>Frontend tests that render <code>/app</code> routes must seed the flag first (see <code>frontend/src/App.test.tsx</code>); the tour's own suite is <code>frontend/src/Onboarding.test.tsx</code></li>
+</ul>
+<h2>Diagram atlas routing</h2>
+<p>The app exposes <a href="../../project-wiki/02%20Architecture/Diagram%20Atlas.html">Diagram Atlas</a> in the public landing page and inside the product shell:</p>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Visible architecture</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td>Full diagram atlas with category tabs and diagram sub-tabs</td>
+</tr>
+<tr>
+<td><code>/app/dashboard</code></td>
+<td>Compact System atlas below clinician quick actions</td>
+</tr>
+<tr>
+<td><code>/app/admin</code></td>
+<td>Compact System atlas below admin KPIs and health panels</td>
+</tr>
+<tr>
+<td><code>/app/configuration</code></td>
+<td>Agent hierarchy inline diagram on monitoring</td>
+</tr>
+<tr>
+<td><code>/app/configuration?view=settings</code></td>
+<td>Security pipeline inline diagram on safety settings</td>
+</tr>
+<tr>
+<td><code>/app/storage</code></td>
+<td>Memory architecture inline diagram in storage overview</td>
+</tr>
+<tr>
+<td><code>/app/inbox</code></td>
+<td>Human-in-the-loop BPMN inline diagram below the review workspace</td>
+</tr>
+<tr>
+<td><code>/app/extraction</code></td>
+<td>Document ingestion flow beside source controls</td>
+</tr>
+<tr>
+<td><code>/app/qa</code></td>
+<td>Chat turn sequence beside patient context and knowledge-base upload</td>
+</tr>
+<tr>
+<td><code>/app/database</code></td>
+<td>Clinical database ERD beside schema explorer</td>
+</tr>
+</tbody>
+</table>
+<h2>Tenancy</h2>
+<p>Three tenants are selectable from the organization dropdown in the Shell topbar (visible to both roles); the frontend sends the choice in the <code>X-Tenant</code> header and <code>clinical_app/tenancy.py</code> is the single registry:</p>
+<table>
+<thead>
+<tr>
+<th>Tenant</th>
+<th>Kind</th>
+<th>Data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Research Clinic (default)</td>
+<td>demo</td>
+<td>Original deterministic 24-patient dataset</td>
+</tr>
+<tr>
+<td>Northstar Health</td>
+<td>demo</td>
+<td>Distinct deterministic 12-patient dataset (<code>NORTHSTAR_*</code> fixtures in <code>repository.py</code>)</td>
+</tr>
+<tr>
+<td>Capstone</td>
+<td>real</td>
+<td>Live ADK execution over its own <code>capstone.db</code> + <code>uploads_capstone/</code>, created schema-only and empty</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Repositories are keyed by <code>tenant::session</code> in <code>RepositoryRegistry</code>, so the same browser session sees isolated state per tenant.</li>
+<li>The Capstone tenant scopes every database and upload access per request through <code>capstone_agent.database.tenant_storage()</code> (contextvar-based), so live agent tools write to <code>capstone.db</code>, never <code>clinical.db</code>.</li>
+<li>Legacy header values (<code>local</code>, <code>demo</code>) map to Research Clinic; <code>live</code> maps to Capstone; unknown values fall back to the default demo tenant.</li>
+<li>Capstone has no canned fallbacks: transient model errors (429/503/RESOURCE_EXHAUSTED/…) are retried once in <code>live_bridge.execute_live</code>, then surfaced as honest 502 errors — never fake SQL or fields.</li>
+</ul>
+<h2>Demo vs live mode</h2>
+<ul>
+<li><strong>Demo (default)</strong> — fully deterministic, no model key required. <code>repository.py</code> provides session-isolated state with full reset; <code>agent_runtime.py</code> adapts the same tool layer deterministically.</li>
+<li><strong>Live</strong> — the Capstone tenant is always live; for demo tenants, set <code>AGENT_EXECUTION_MODE=live</code> in <code>.env</code> plus one auth path (API key or Vertex ADC — see <a href="../../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a>) to force live execution over <code>clinical.db</code>. <code>live_bridge.py</code> lazily wires the ADK runner so demo mode never imports ADK.</li>
+</ul>
+<h2>Product guarantees</h2>
+<ul>
+<li>Session isolation and full reset per demo session</li>
+<li>Role-based access (clinician vs admin)</li>
+<li>Audit trail on product actions</li>
+<li>Upload validation for evidence files (<code>document.py</code>)</li>
+</ul>
+<h2>Running</h2>
+<pre><code class="language-powershell">.venv\Scripts\python.exe -m uvicorn clinical_app.app:app --reload --port 8000
+</code></pre>
+<p>FastAPI serves the frontend build at <code>http://localhost:8000</code>. During frontend development, <code>npm run dev</code> in <code>frontend/</code> proxies <code>/api</code> to port 8000.</p>
+<p>Related: <a href="../../project-wiki/02%20Architecture/System%20Overview.html">System Overview</a> · <a href="../../project-wiki/03%20Processes/End-to-End%20Request%20Flow.html">End-to-End Request Flow</a> · <a href="../../project-wiki/06%20Operations/Testing%20&amp;%20Eval.html">Testing &amp; Eval</a> · <a href="../../project-wiki/06%20Operations/REST%20API%20and%20Developer%20Console.html">REST API and Developer Console</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

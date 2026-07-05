@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REST API and Developer Console · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;REST API and Developer Console</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>REST API and Developer Console</h1>
+<blockquote>
+<p>Sources: Antigravity, 2026-07-05
+Raw: <a href="../../raw/api-operations/2026-07-05-rest-api-and-developer-console.html">REST API and Developer Console Source Note</a></p>
+</blockquote>
+<h2>Overview</h2>
+<p>The Nexus platform features a versioned, secure REST API backend built on FastAPI and a React-based interactive Developer/API Console. These systems enable developers and operators to run diagnostics, test endpoints, execute MCP tools, and discover A2A capabilities.</p>
+<h2>API Versioning and Architecture</h2>
+<p>The API endpoints are segmented into three distinct groups:</p>
+<ul>
+<li><strong>V1 Router (<code>/api/v1</code>)</strong>: Exposes core clinical entities (patients, sessions, storage assets, dashboard statistics).</li>
+<li><strong>V2 Router (<code>/api/v2</code>)</strong>: System diagnostics health checks, FastMCP tool discovery and playground, and A2A card metadata.</li>
+<li><strong>Compatibility Router (<code>/api</code>)</strong>: Re-maps core requests to the V1 router for backwards compatibility.</li>
+</ul>
+<h2>Swagger and ReDoc Customization</h2>
+<p>A customized glassmorphic dark-theme is applied to the Swagger UI page at <code>/docs</code>. Every endpoint is annotated with standard HTTP response statuses (<code>400</code>, <code>401</code>, <code>403</code>, <code>404</code>, <code>422</code>, <code>500</code>) mapped to a shared Pydantic <code>ErrorResponse</code> schema.</p>
+<h2>Interactive Developer Console</h2>
+<p>Accessible at <code>/app/console</code>, the console provides:</p>
+<ul>
+<li>An API Endpoint Runner (with customizable headers and JSON payloads).</li>
+<li>An MCP Playground to execute FastMCP database tools.</li>
+<li>An A2A Card Viewer displaying discovery metadata.</li>
+<li>An OpenAPI Specification Explorer.</li>
+</ul>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

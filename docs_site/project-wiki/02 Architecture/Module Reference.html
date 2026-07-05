@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module Reference · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Module Reference</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Module Reference</h1>
+<p>Every Python module currently in the repository, with its purpose (taken from module docstrings). The live, machine-generated version is <a href="../../project-wiki/_generated/Module%20Inventory.html">Module Inventory</a>; the import graph is <a href="../../project-wiki/02%20Architecture/Module%20Dependency%20Graph.html">Module Dependency Graph</a>.</p>
+<h2>capstone_agent/ — ADK agent backend</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent.py</code></td>
+<td>Root agent definition — entry point for <code>adk run capstone_agent</code>; imports all modules and wires the root agent + sub-agents</td>
+</tr>
+<tr>
+<td><code>app.py</code></td>
+<td>ADK <code>App</code> wrapper — plugins, compaction, resumability around the root agent</td>
+</tr>
+<tr>
+<td><code>a2a_server.py</code></td>
+<td>Expose the agent over the Agent2Agent (A2A) protocol (Day 5a)</td>
+</tr>
+<tr>
+<td><code>llm.py</code></td>
+<td>Model registry and factory — the one place model selection happens (<a href="../../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a>)</td>
+</tr>
+<tr>
+<td><code>orchestration.py</code></td>
+<td>Multi-agent orchestration building blocks — the 3 pipeline factories, agent-as-tool, code exec, remote A2A</td>
+</tr>
+<tr>
+<td><code>tools.py</code></td>
+<td>Clinical tool definitions (production) — Pydantic-validated, clinical event logging</td>
+</tr>
+<tr>
+<td><code>callbacks.py</code></td>
+<td>Security callbacks — defense in depth (<a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a>)</td>
+</tr>
+<tr>
+<td><code>security.py</code></td>
+<td>PII detection, secret scanning, input sanitization (pure functions)</td>
+</tr>
+<tr>
+<td><code>memory.py</code></td>
+<td>Memory management — Layers 2, 3, 4 (<a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a>)</td>
+</tr>
+<tr>
+<td><code>context.py</code></td>
+<td>Context engineering — token budgeting, compaction, structured assembly (Layer 1)</td>
+</tr>
+<tr>
+<td><code>observability.py</code></td>
+<td>Structured logging, tracing, and audit trail (<a href="../../project-wiki/06%20Operations/Observability.html">Observability</a>)</td>
+</tr>
+<tr>
+<td><code>plugins.py</code></td>
+<td>Observability plugins (Day 4a) — ObservabilityPlugin, ClinicalAuditPlugin, LoggingPlugin</td>
+</tr>
+<tr>
+<td><code>prompts.py</code></td>
+<td>Agent instruction templates (under 60 lines each)</td>
+</tr>
+<tr>
+<td><code>models.py</code></td>
+<td>Pydantic models for tool input/output contracts (ToolResponse, ToolError)</td>
+</tr>
+<tr>
+<td><code>config.py</code></td>
+<td>Centralized configuration and secret management (redaction, clinical governance)</td>
+</tr>
+<tr>
+<td><code>clinical_schemas.py</code></td>
+<td>Clinical database schema definitions and query engine (SQL DDL + validation)</td>
+</tr>
+<tr>
+<td><code>database.py</code></td>
+<td>SQLite database layer — real persistence for all clinical data</td>
+</tr>
+<tr>
+<td><code>document_processor.py</code></td>
+<td>Document processing — real PDF and image extraction using PyMuPDF and Gemini</td>
+</tr>
+<tr>
+<td><code>mock_data.py</code></td>
+<td>Deterministic mock data for the Clinical AI Command Center</td>
+</tr>
+<tr>
+<td><code>human_in_the_loop.py</code></td>
+<td>Human-in-the-loop / long-running operations (Day 2b)</td>
+</tr>
+</tbody>
+</table>
+<h2>clinical_app/ — FastAPI product server</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>app.py</code></td>
+<td>FastAPI routes for the clinician-facing application; serves the frontend build</td>
+</tr>
+<tr>
+<td><code>agent_runtime.py</code></td>
+<td>Deterministic product adapters for the real clinical agent tool layer</td>
+</tr>
+<tr>
+<td><code>live_bridge.py</code></td>
+<td>Lazy Google ADK execution bridge for live product mode</td>
+</tr>
+<tr>
+<td><code>repository.py</code></td>
+<td>Session-isolated mutable repository for deterministic product demos</td>
+</tr>
+<tr>
+<td><code>models.py</code></td>
+<td>Pydantic contracts for the clinician product API</td>
+</tr>
+<tr>
+<td><code>document.py</code></td>
+<td>Document parsing and upload policy for clinical evidence files</td>
+</tr>
+<tr>
+<td><code>system.py</code></td>
+<td>Real system health checks, latency monitoring, and database seeding for the real tenant</td>
+</tr>
+</tbody>
+</table>
+<h2>mcp_server/</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>server.py</code></td>
+<td>Clinical MCP server — real database-backed tools via Model Context Protocol (FastMCP)</td>
+</tr>
+</tbody>
+</table>
+<h2>scripts/ — harness and showcase utilities</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>check_harness.py</code></td>
+<td>PreToolUse hook — verifies harness integrity (<a href="../../project-wiki/07%20Harness/Claude%20Harness.html">Claude Harness</a>)</td>
+</tr>
+<tr>
+<td><code>sync_harness.py</code></td>
+<td>Mirrors <code>.claude/</code> → <code>.agents/</code> and CLAUDE.md → AGENTS.md</td>
+</tr>
+<tr>
+<td><code>sync_wiki.py</code></td>
+<td>Stop hook — deterministic wiki/harness auto-update (<a href="../../project-wiki/03%20Processes/Development%20Workflow.html">Development Workflow</a>)</td>
+</tr>
+<tr>
+<td><code>export_diagrams.py</code></td>
+<td>Export Project Wiki draw.io diagrams into frontend public assets</td>
+</tr>
+<tr>
+<td><code>generate_database_showcase.py</code></td>
+<td>Generate a large governed SQLite cohort for the database agent</td>
+</tr>
+<tr>
+<td><code>generate_extraction_showcase.py</code></td>
+<td>Generate synthetic extraction assets for the image extraction agent</td>
+</tr>
+<tr>
+<td><code>generate_multimodal_patient_showcase.py</code></td>
+<td>Generate multimodal patient bundles for the Q&amp;A agent</td>
+</tr>
+</tbody>
+</table>
+<h2>Other top-level areas</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>frontend/</code></td>
+<td>React/Vite/TypeScript clinical UI — 16 routes; <code>dist/</code> served by FastAPI</td>
+</tr>
+<tr>
+<td><code>eval/</code></td>
+<td>ADK evaluation suite — <code>capstone.evalset.json</code> + <code>test_config.json</code> (<a href="../../project-wiki/06%20Operations/Testing%20&amp;%20Eval.html">Testing &amp; Eval</a>)</td>
+</tr>
+<tr>
+<td><code>tests/</code></td>
+<td>pytest + async test suite (<a href="../../project-wiki/06%20Operations/Testing%20&amp;%20Eval.html">Testing &amp; Eval</a>)</td>
+</tr>
+<tr>
+<td><code>deployment/</code></td>
+<td>Dockerfile, cloudbuild.yaml, Agent Engine config (<a href="../../project-wiki/06%20Operations/Deployment.html">Deployment</a>)</td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td>Architecture and product documentation</td>
+</tr>
+</tbody>
+</table>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

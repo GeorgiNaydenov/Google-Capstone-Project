@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model Registry · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Model Registry</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Model Registry</h1>
+<p><code>capstone_agent/llm.py</code> is the single place model selection happens. Every agent gets a <code>Gemini</code> built with <code>HttpRetryOptions</code> (exponential backoff) via <code>build_model(tier)</code> — <strong>never a bare model-id string</strong>.</p>
+<h2>Tiers</h2>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Model</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>flash-lite</code> (default)</td>
+<td><code>gemini-3.1-flash-lite</code></td>
+<td>Orchestrator routing, validation, audit, simple stages</td>
+</tr>
+<tr>
+<td><code>pro</code></td>
+<td><code>gemini-3.1-pro-preview</code></td>
+<td>Reasoning-heavy: SQL generation, answer synthesis, vision analysis</td>
+</tr>
+<tr>
+<td><code>pro-customtools</code></td>
+<td><code>gemini-3.1-pro-preview-customtools</code></td>
+<td>Tool-heavy: evidence retrieval, query execution</td>
+</tr>
+</tbody>
+</table>
+<p>The README also references a <code>flash-image</code> tier used by the Q&amp;A and DB pipelines for generated visuals (image output).</p>
+<h2>Rules</h2>
+<blockquote>
+<p><strong>Warning:</strong> Never bypass the registry</p>
+<ul>
+<li>Never pass a bare model-id string to an ADK <code>LlmAgent</code>. Always <code>llm.build_model(tier)</code> — it adds retry/backoff and centralizes selection.</li>
+<li>Add new tiers in <code>llm.MODEL_TIERS</code>; never invent model identifiers.</li>
+<li>Gemini 3.1 on Vertex AI requires <code>GOOGLE_CLOUD_LOCATION=global</code>.</li>
+</ul>
+</blockquote>
+<h2>Auth paths (live mode)</h2>
+<p>Demo mode needs no credentials. For live agent mode, one of:</p>
+<ol>
+<li><code>GOOGLE_API_KEY=&lt;key&gt;</code> in <code>.env</code></li>
+<li>Vertex AI via ADC: <code>gcloud auth application-default login</code> + <code>GOOGLE_GENAI_USE_VERTEXAI=TRUE</code> + <code>GOOGLE_CLOUD_PROJECT</code> + <code>GOOGLE_CLOUD_LOCATION=global</code></li>
+</ol>
+<p>Then <code>AGENT_EXECUTION_MODE=live</code>. See <a href="../../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a> for how the product server switches modes.</p>
+<p>Related: <a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a> · <a href="../../project-wiki/02%20Architecture/Module%20Reference.html">Module Reference</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

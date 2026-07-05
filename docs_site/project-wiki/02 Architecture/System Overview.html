@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Overview · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;System Overview</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>System Overview</h1>
+<p>A multi-agent clinical AI platform built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and HIPAA-aligned security.</p>
+<h2>The four-layer stack</h2>
+<pre><code class="language-mermaid">flowchart TD
+    FE[&quot;React Frontend (frontend/)&lt;br/&gt;16 routes - clinician + admin views - Vite + TypeScript&quot;]
+    API[&quot;FastAPI Product Server (clinical_app/app.py)&lt;br/&gt;Demo mode (deterministic) or Live ADK bridge&lt;br/&gt;Session isolation - role-based access - audit trail&quot;]
+    ADK[&quot;ADK Agent Backend (capstone_agent/)&lt;br/&gt;22 sub-agents - 3 pipelines - 24+ tools&lt;br/&gt;3-layer security - 4-layer memory - HITL - observability&quot;]
+    MCP[&quot;MCP Server (mcp_server/server.py)&lt;br/&gt;7 clinical tools via FastMCP (JSON-RPC 2.0)&quot;]
+
+    FE -- &quot;HTTP /api/*&quot; --&gt; API
+    API -- &quot;ADK Runner&quot; --&gt; ADK
+    ADK --- MCP
+</code></pre>
+<ul>
+<li><strong>React frontend</strong> — 16-route clinical UI (Vite + TypeScript), served as a production build by FastAPI. See <a href="../../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a>.</li>
+<li><strong>FastAPI product server</strong> (<code>clinical_app/</code>) — operates in deterministic demo mode or bridges live to the ADK runner; session isolation, role-based access, audit trail. See <a href="../../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a>.</li>
+<li><strong>ADK agent backend</strong> (<code>capstone_agent/</code>) — the agent pipelines, tools, security callbacks, memory, and observability. See <a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a> and <a href="../../project-wiki/02%20Architecture/Module%20Reference.html">Module Reference</a>.</li>
+<li><strong>MCP tool server</strong> (<code>mcp_server/</code>) — real database-backed clinical tools exposed over the Model Context Protocol. See <a href="../../project-wiki/06%20Operations/MCP%20and%20A2A.html">MCP and A2A</a>.</li>
+</ul>
+<h2>Visible Architecture</h2>
+<p>The frontend now exposes <a href="../../project-wiki/02%20Architecture/Diagram%20Atlas.html">Diagram Atlas</a> as a first-class product surface. It renders six categories with sub-tabs, pan and zoom controls, SVG-first assets, PNG fallbacks, fullscreen viewing, and contextual inline diagrams beside the workflows they explain.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Product coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>System</td>
+<td>Full stack, C4 pages, module graph, route map, REST API map</td>
+</tr>
+<tr>
+<td>Agents &amp; Pipelines</td>
+<td>Agent hierarchy, A2A, MCP, execution mode, context pipeline, Gemini tiers</td>
+</tr>
+<tr>
+<td>Security &amp; Memory</td>
+<td>Memory layers, security callbacks, security block sequence, harness governance</td>
+</tr>
+<tr>
+<td>Processes</td>
+<td>Request lifecycle, HITL, ingestion, wiki sync, chat, approval, A2A delegation, animated Q&amp;A flow</td>
+</tr>
+<tr>
+<td>Data &amp; API</td>
+<td>Clinical ERD and Pydantic contracts</td>
+</tr>
+<tr>
+<td>Deployment &amp; Quality</td>
+<td>Deployment, observability, eval flywheel, rubric coverage</td>
+</tr>
+</tbody>
+</table>
+<h2>Google Cloud ecosystem mapping</h2>
+<table>
+<thead>
+<tr>
+<th>Tool / Module</th>
+<th>Cloud Service</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>store_to_gcs</code>, <code>fetch_image_from_gcs</code></td>
+<td>Cloud Storage (GCS)</td>
+<td>Clinical image and document storage</td>
+</tr>
+<tr>
+<td><code>lookup_patient_record</code></td>
+<td>Firestore</td>
+<td>Structured patient records</td>
+</tr>
+<tr>
+<td><code>search_clinical_notes</code>, <code>search_vector_store</code></td>
+<td>Vertex AI Vector Search</td>
+<td>Semantic search over embeddings</td>
+</tr>
+<tr>
+<td><code>execute_clinical_query</code></td>
+<td>Cloud SQL / BigQuery</td>
+<td>Relational clinical data queries</td>
+</tr>
+<tr>
+<td><code>analyze_clinical_image</code>, <code>analyze_evidence_images</code></td>
+<td>Vertex AI (Gemini Vision)</td>
+<td>Multimodal image analysis</td>
+</tr>
+<tr>
+<td><code>observability.py</code></td>
+<td>Cloud Trace (OTLP)</td>
+<td>Distributed tracing</td>
+</tr>
+<tr>
+<td><code>observability.py</code></td>
+<td>Cloud Logging</td>
+<td>Structured JSON logs + audit trail</td>
+</tr>
+<tr>
+<td><code>memory.py</code></td>
+<td>Vertex AI Memory Bank</td>
+<td>Long-term cross-session memory</td>
+</tr>
+<tr>
+<td><code>app.py</code> (deploy)</td>
+<td>Cloud Run / Agent Engine / GKE</td>
+<td>Production hosting</td>
+</tr>
+</tbody>
+</table>
+<p>Related: <a href="../../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a> · <a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a> · <a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a> · <a href="../../project-wiki/06%20Operations/Deployment.html">Deployment</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

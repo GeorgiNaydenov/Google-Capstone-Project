@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Problem &amp; Solution · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Problem &amp; Solution</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Problem &amp; Solution</h1>
+<h2>Problem</h2>
+<p>Clinical work spans disconnected notes, session images, structured records, historical evidence, and population databases. Clinicians need an auditable way to turn those inputs into structured findings without hiding uncertainty, evidence, or human review behind a generic chatbot.</p>
+<h2>Solution</h2>
+<p>Nexus provides a dense, role-aware command center for synthetic clinical data. The product exposes three guided AI workflows:</p>
+<ol>
+<li><strong>Session Image Extraction</strong> — OCR, field confidence, clinician review, storage receipts, timeline updates, and audit events. See <a href="../../project-wiki/03%20Processes/Image%20Extraction%20Pipeline.html">Image Extraction Pipeline</a>.</li>
+<li><strong>Patient-Scoped Multimodal Q&amp;A</strong> — evidence citations, source viewing, and multi-modal reasoning with text and images. See <a href="../../project-wiki/03%20Processes/Patient%20QA%20Pipeline.html">Patient QA Pipeline</a>.</li>
+<li><strong>Database Intelligence</strong> — natural-language SQL generation, safety approval, table/chart/CSV export, history, and audit. See <a href="../../project-wiki/03%20Processes/DB%20Intelligence%20Pipeline.html">DB Intelligence Pipeline</a>.</li>
+</ol>
+<p>The public demo is fully deterministic and requires no model key. The live agent engine in <code>capstone_agent/</code> implements the same workflows using Google ADK and Gemini when valid credentials are configured — see <a href="../../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a> for demo vs live mode.</p>
+<blockquote>
+<p><strong>Warning:</strong> Demo scope
+All patient data is synthetic — no real PHI. This capstone demo is not a medical device and is not authorized for real patient data.</p>
+</blockquote>
+<h2>Safety posture</h2>
+<ul>
+<li>Per-demo-session isolated state with full reset capability</li>
+<li>Role-aware API operations (clinician vs admin)</li>
+<li>Read-only SQL preview with explicit execution boundary (<a href="../../project-wiki/03%20Processes/DB%20Intelligence%20Pipeline.html">DB Intelligence Pipeline</a>)</li>
+<li>Human-in-the-loop review before extraction persistence (<a href="../../project-wiki/03%20Processes/Human-in-the-Loop%20Approval.html">Human-in-the-Loop Approval</a>)</li>
+<li>Structured secret/PII controls and redacted observability (<a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a>, <a href="../../project-wiki/06%20Operations/Observability.html">Observability</a>)</li>
+</ul>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

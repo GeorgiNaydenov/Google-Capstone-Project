@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REST API and Developer Console · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;REST API and Developer Console</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>REST API and Developer Console</h1>
+<p>Nexus exposes a versioned, secure REST API backend built on FastAPI and a React-based interactive Developer/API Console to assist developers in testing, auditing, and executing agent pipelines and MCP tools.</p>
+<hr />
+<h2>1. API Architecture &amp; Versioning</h2>
+<p>The FastAPI product server (<code>clinical_app/app.py</code>) serves endpoints organized under distinct routers:</p>
+<pre><code class="language-mermaid">flowchart TD
+    UI[&quot;Clinician App UI&quot;] --&gt;|HTTP /api/...| COMPAT[&quot;Compatibility Router&quot;]
+    CONSOLE[&quot;Developer Console&quot;] --&gt;|HTTP /api/v2/...| V2[&quot;V2 Router&quot;]
+    SWAGGER[&quot;Swagger/ReDoc Docs&quot;] --&gt;|HTTP /api/v1/...| V1[&quot;V1 Router&quot;]
+    
+    COMPAT --&gt;|Redirects/Aliases| V1
+    V1 --&gt;|Exposes Clinical Core| CO[&quot;Clinical Core&quot;]
+    V2 --&gt;|Exposes Dev Tools| DT[&quot;Developer Tools&quot;]
+</code></pre>
+<ol>
+<li><strong>V1 API (<code>/api/v1</code>)</strong>: Core clinical endpoints exposing dashboard metrics, patients list, sessions status, GCS storage assets, notifications, and security logs.</li>
+<li><strong>Compatibility API (<code>/api</code>)</strong>: Re-mounts the V1 router to guarantee complete backward compatibility with all legacy integration scripts and tests.</li>
+<li><strong>V2 API (<code>/api/v2</code>)</strong>: System diagnostics health checking, FastMCP server tool catalogs discovery, dynamic tool execution runner, and Agent-to-Agent card exposure.</li>
+</ol>
+<hr />
+<h2>2. API Endpoints Reference</h2>
+<h3>V1 API (Clinical Operations)</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Summary</th>
+<th>Tags</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/health</code></td>
+<td>V1 liveness check</td>
+<td><code>Health</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/agents</code></td>
+<td>Expose the real ADK pipeline catalog and execution mode</td>
+<td><code>Agents</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/notifications</code></td>
+<td>List unresolved notifications from agents</td>
+<td><code>Notifications</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/notifications/{notification_id}/read</code></td>
+<td>Mark one notification as read</td>
+<td><code>Notifications</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/system/health</code></td>
+<td>Measured component health for database, runtime, MCP, storage, model credentials, and bundle</td>
+<td><code>Health</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/agents/monitoring</code></td>
+<td>Per-agent runtime statistics for admin monitoring</td>
+<td><code>Agents</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/permissions</code></td>
+<td>Role-permission matrix</td>
+<td><code>Admin</code></td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/v1/permissions</code></td>
+<td>Persist edited role-permission matrix</td>
+<td><code>Admin</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/database/schema</code></td>
+<td>Clinical database tables parsed from governed DDL</td>
+<td><code>Database</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/summary</code></td>
+<td>Live workspace counts for navigation badges</td>
+<td><code>Dashboard</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/dashboard</code></td>
+<td>Retrieved global metrics and recent activity dashboard details</td>
+<td><code>Dashboard</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/patients</code></td>
+<td>List of matched patient profiles according to criteria</td>
+<td><code>Patients</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/patients/{patient_id}</code></td>
+<td>Detailed patient profile and current risk metadata</td>
+<td><code>Patients</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/patients/{patient_id}/evidence</code></td>
+<td>Evidence sources for one patient</td>
+<td><code>Patients</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/sessions</code></td>
+<td>List of recent clinical extraction sessions</td>
+<td><code>Sessions</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/sessions/{session_id}</code></td>
+<td>Detailed session status and confidence scores</td>
+<td><code>Sessions</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/assets</code></td>
+<td>Asset uploaded and recorded successfully</td>
+<td><code>Assets</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/knowledge-base/assets</code></td>
+<td>Upload and index a patient-scoped document for Q&amp;A retrieval</td>
+<td><code>Assets</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/assets/{asset_id}</code></td>
+<td>Serve uploaded evidence bytes for authorized preview</td>
+<td><code>Assets</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/demo/session</code></td>
+<td>Create an isolated deterministic demo session</td>
+<td><code>Demo</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/demo/reset</code></td>
+<td>Reset the caller's deterministic demo session</td>
+<td><code>Demo</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/storage</code></td>
+<td>Retrieved storage system metrics and totals</td>
+<td><code>Storage</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/visuals/{document_id}</code></td>
+<td>Serve patient structured visual image binary data</td>
+<td><code>Storage</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/agent-config</code></td>
+<td>Current agent validation thresholds and concurrent limits</td>
+<td><code>Admin</code></td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td><code>/api/v1/agent-config</code></td>
+<td>Updated and persisted new agent thresholds configuration</td>
+<td><code>Admin</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/audit</code></td>
+<td>Immutable compliance activity and security log history</td>
+<td><code>Admin</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/runs/extraction</code></td>
+<td>Began deterministic extraction pipeline on report assets</td>
+<td><code>Extraction</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/runs/{run_id}</code></td>
+<td>Poll status, confidence, and current stage of active run</td>
+<td><code>Runs</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/runs/{run_id}/events</code></td>
+<td>Retrieved list of completed run step execution events</td>
+<td><code>Runs</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/runs/{run_id}/events/stream</code></td>
+<td>Server-Sent Events (SSE) stream of run progress</td>
+<td><code>Runs</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/runs/{run_id}/review</code></td>
+<td>Recorded review decision to approve or reject extraction</td>
+<td><code>Runs</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/reviews</code></td>
+<td>List extraction runs awaiting clinician review</td>
+<td><code>Runs</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/orchestrate</code></td>
+<td>Classify user query and structure orchestrator route</td>
+<td><code>Orchestration</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/runs/qa</code></td>
+<td>Began patient-grounded QA retrieval pipeline execution</td>
+<td><code>QA</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/runs/database/preview</code></td>
+<td>Began database preview pipeline to generate SQL</td>
+<td><code>Database</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v1/runs/database/{run_id}/execute</code></td>
+<td>Executed approved SQL query and saved table/charts</td>
+<td><code>Database</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/database/history</code></td>
+<td>Retrieved database cohort run history</td>
+<td><code>Database</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/database/queries/{run_id}/csv</code></td>
+<td>Retrieved query results exported as a CSV stream</td>
+<td><code>Database</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v1/users</code></td>
+<td>Retrieved corporate user directory</td>
+<td><code>Admin</code></td>
+</tr>
+</tbody>
+</table>
+<h3>V2 API (Developer &amp; Interoperability Operations)</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Summary</th>
+<th>Tags</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v2/health</code></td>
+<td>Health diagnostic metrics including database connection check</td>
+<td><code>System V2</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v2/mcp/tools</code></td>
+<td>Expose all database tools available over MCP</td>
+<td><code>MCP V2</code></td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/v2/mcp/execute</code></td>
+<td>Gated dynamic execution of an MCP tool</td>
+<td><code>MCP V2</code></td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/v2/a2a/card</code></td>
+<td>Expose the Agent Card metadata for Agent-to-Agent discovery</td>
+<td><code>A2A V2</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>3. Swagger &amp; ReDoc Console Branding</h2>
+<p>The default Swagger page (<code>/docs</code>) has been customized to deliver a premium developer experience aligned with the Clinical Command Center style guide:</p>
+<ul>
+<li><strong>Theme</strong>: Premium custom CSS injecting a glassmorphic dark background (<code>#0b0f19</code>), rounded method blocks, consistent custom buttons, and monospace font arrays.</li>
+<li><strong>Exhaustiveness</strong>: Schema-included V1/V2 endpoints declare success descriptions and the shared structured error responses (<code>400</code>, <code>401</code>, <code>403</code>, <code>404</code>, <code>422</code>, <code>500</code>) where they are served through the clinical API.</li>
+<li><strong>Routing Isolation</strong>: The compatibility router <code>/api/...</code> endpoints are excluded from the Swagger schema (<code>include_in_schema=False</code>) to avoid duplication and clutter, highlighting only the <code>/api/v1</code> and <code>/api/v2</code> endpoints.</li>
+<li><strong>Static Asset Boundary</strong>: The Diagram Atlas SVG/PNG assets are product and wiki documentation surfaces, not OpenAPI operations; they are cataloged in <a href="../../project-wiki/02%20Architecture/Diagram%20Atlas.html">Diagram Atlas</a> and rendered by the frontend.</li>
+</ul>
+<hr />
+<h2>4. Interactive Developer Console</h2>
+<p>The Developer Console (<strong><code>/app/console</code></strong>) serves as a central hub for operators and admins:</p>
+<ol>
+<li><strong>API Endpoint Runner</strong>: A Swagger-like interactive client built natively in React. Supports setting session context headers (<code>X-Demo-Session</code>, <code>X-Clinical-Role</code>, <code>X-Tenant</code>), parameters, and request body JSON payloads with response latency audits.</li>
+<li><strong>MCP Playground</strong>: Dynamically lists registered FastMCP tools and parameters, enabling safe playground executions directly from the UI.</li>
+<li><strong>Agent Card</strong>: Visualizes the remote agent discovery descriptors (pipeline sequence lists, tools, prompt instructions) served by the A2A endpoint.</li>
+<li><strong>OpenAPI Spec Explorer</strong>: Formatted JSON explorer for inspecting the raw <code>/openapi.json</code> spec.</li>
+</ol>
+<blockquote>
+<p><strong>Tip:</strong> Onboarding Tour Bypass
+Navigating directly to the Developer Console <code>/app/console</code> automatically overrides and bypasses the frontend Onboarding Tour, marking <code>clinicalOnboardingV1</code> as <code>done</code> in <code>localStorage</code> to ensure immediate, uninterrupted developer access.</p>
+</blockquote>
+<hr />
+<p>Related: <a href="../../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a> · <a href="../../project-wiki/06%20Operations/MCP%20and%20A2A.html">MCP and A2A</a> · <a href="../../project-wiki/02%20Architecture/System%20Overview.html">System Overview</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

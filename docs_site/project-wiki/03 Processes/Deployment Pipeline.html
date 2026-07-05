@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deployment Pipeline · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Deployment Pipeline</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Deployment Pipeline</h1>
+<p>Three targets fed by one hardened build. Lanes: Developer, Cloud Build, Runtime.</p>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph LANE_DEV[&quot;Lane: Developer&quot;]
+        SUBMIT[&quot;gcloud builds submit&lt;br/&gt;--config deployment/cloudbuild.yaml&quot;]
+        ADK_DEPLOY[&quot;adk deploy agent_engine&lt;br/&gt;(.agent_engine_config.json)&quot;]
+        K8S[&quot;kubectl apply (custom manifests)&quot;]
+    end
+
+    subgraph LANE_BUILD[&quot;Lane: Cloud Build&quot;]
+        BUILD[&quot;Build hardened image&lt;br/&gt;(Dockerfile: non-root, healthcheck)&quot;]
+        SECRET[&quot;Pull GOOGLE_API_KEY&lt;br/&gt;from Secret Manager&quot;]
+    end
+
+    subgraph LANE_RUN[&quot;Lane: Runtime&quot;]
+        CR[&quot;Cloud Run :8000&lt;br/&gt;production clinical product&quot;]
+        AE[&quot;Vertex AI Agent Engine&lt;br/&gt;autoscale + Memory Bank&quot;]
+        GKE[&quot;GKE&lt;br/&gt;self-managed Kubernetes&quot;]
+        A2A[&quot;A2A server :8001&lt;br/&gt;agent card for agent-to-agent calls&quot;]
+        GEM[&quot;Gemini 3.1 API&lt;br/&gt;(LLM inference)&quot;]
+    end
+
+    SUBMIT --&gt; BUILD --&gt; SECRET --&gt; CR
+    ADK_DEPLOY --&gt; AE
+    K8S --&gt; GKE
+    CR --&gt; GEM
+    AE --&gt; GEM
+    GKE --&gt; GEM
+    CR -.-&gt; A2A
+</code></pre>
+<p>Key facts:</p>
+<ul>
+<li>Secrets come from Secret Manager at build/runtime — never baked into images (<a href="../../project-wiki/06%20Operations/Deployment.html">Deployment</a>).</li>
+<li>The Dockerfile runs as a non-root user with a healthcheck on port 8000.</li>
+<li>Agent Engine deployments use <code>deployment/.agent_engine_config.json</code> for hardware config and add managed Memory Bank (<a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a> Layer 3).</li>
+<li>The A2A server is a separate serving surface for agent-to-agent calls (<a href="../../project-wiki/06%20Operations/MCP%20and%20A2A.html">MCP and A2A</a>).</li>
+</ul>
+<p>Related: <a href="../../project-wiki/06%20Operations/Deployment.html">Deployment</a> · <a href="../../project-wiki/02%20Architecture/System%20Overview.html">System Overview</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

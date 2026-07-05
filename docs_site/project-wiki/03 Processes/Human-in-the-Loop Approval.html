@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human-in-the-Loop Approval · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Human-in-the-Loop Approval</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Human-in-the-Loop Approval</h1>
+<p>The clinical review gate (Day 2b) — a LongRunningFunctionTool pauses the pipeline until a clinician decides. This is the closest process to true BPMN: two lanes, one message flow, one exclusive gateway.</p>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph LANE_AGENT[&quot;Lane: Agent (capstone_agent)&quot;]
+        DONE[&quot;Extraction pipeline completes&quot;]
+        CONF{confidence &gt;= threshold?}
+        AUTO[&quot;Auto-approve path&quot;]
+        PAUSE[&quot;Pause: state = needs_review&lt;br/&gt;(LongRunningFunctionTool)&quot;]
+        PERSIST[&quot;persist_extraction_relational&lt;br/&gt;persist_extraction_vector&lt;br/&gt;(require approved receipt)&quot;]
+        DISCARD[&quot;Discard + reason logged&quot;]
+    end
+
+    subgraph LANE_CLIN[&quot;Lane: Clinician (Clinical Inbox UI)&quot;]
+        INBOX[&quot;Review results in Clinical Inbox&quot;]
+        DECIDE{Approve or Reject?}
+    end
+
+    DONE --&gt; CONF
+    CONF --&gt;|yes| AUTO --&gt; PERSIST
+    CONF --&gt;|no| PAUSE --&gt; INBOX --&gt; DECIDE
+    DECIDE --&gt;|approve&lt;br/&gt;transition: needs_review -&gt; approved| PERSIST
+    DECIDE --&gt;|reject&lt;br/&gt;transition: needs_review -&gt; rejected| DISCARD
+    PERSIST --&gt; END1([Stored to relational + vector stores])
+    DISCARD --&gt; END2([Audit event with rejection reason])
+</code></pre>
+<p>Key facts:</p>
+<ul>
+<li><code>transition_extraction_review</code> enforces the state machine: only <code>needs_review</code> → <code>approved</code> or <code>needs_review</code> → <code>rejected</code> are valid transitions.</li>
+<li>Persistence tools <strong>require an approved review receipt</strong> — there is no code path that stores unreviewed low-confidence extractions.</li>
+<li>The pause/resume mechanism is ADK's <code>LongRunningFunctionTool</code> (<code>human_in_the_loop.py</code>).</li>
+<li>Review decisions are clinical audit events (<a href="../../project-wiki/06%20Operations/Observability.html">Observability</a>).</li>
+</ul>
+<p>Related: <a href="../../project-wiki/03%20Processes/Image%20Extraction%20Pipeline.html">Image Extraction Pipeline</a> · <a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a> · <a href="../../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

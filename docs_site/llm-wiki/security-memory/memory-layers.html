@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Layers · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Memory Layers</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Memory Layers</h1>
+<blockquote>
+<p>Sources: Antigravity, 2026-07-05
+Raw: <a href="../../raw/security-memory/2026-07-04-memory-layers.html">Memory Layers Source</a></p>
+</blockquote>
+<h1>Memory Layers</h1>
+<p>Four-layer memory system with automatic PII/PHI redaction before anything persists.</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Module</th>
+<th>Scope</th>
+<th>Persistence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Working Memory</td>
+<td><code>context.py</code></td>
+<td>Per LLM call</td>
+<td>Never</td>
+</tr>
+<tr>
+<td>2. Session State</td>
+<td>ADK <code>session.state</code></td>
+<td>Per conversation</td>
+<td>With DB-backed service</td>
+</tr>
+<tr>
+<td>3. Long-Term Memory</td>
+<td><code>memory.py</code> → MemoryService</td>
+<td>Cross-session</td>
+<td>With Vertex AI Memory Bank</td>
+</tr>
+<tr>
+<td>4. A2A Context</td>
+<td><code>prepare_a2a_context</code> → RemoteA2aAgent</td>
+<td>Per delegation</td>
+<td>Never</td>
+</tr>
+</tbody>
+</table>
+<h2>Layer 1 — Working Memory (context engineering)</h2>
+<p><code>context.py</code> assembles the per-call context window. It never calls the LLM — compaction is rule-based (truncation + metadata preservation).</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>estimate_tokens(text)</code></td>
+<td>chars/4 heuristic for budget decisions (no tokenizer)</td>
+</tr>
+<tr>
+<td><code>build_structured_context(role, environment, task, constraints)</code></td>
+<td>XML-delimited sections so the model separates instructions from data</td>
+</tr>
+<tr>
+<td><code>compact_history(turns, keep_recent=10, max_total_tokens=8000)</code></td>
+<td>Summarizes old turns to metadata, preserves recent verbatim; append-only (returns new list)</td>
+</tr>
+<tr>
+<td><code>inject_at_boundaries(context, critical_info)</code></td>
+<td>Places critical info at start AND end (&quot;lost in the middle&quot; mitigation)</td>
+</tr>
+</tbody>
+</table>
+<p>Token pipeline: Collect → Rank → Compress → Budget → Assemble. <code>config.deterministic_json()</code> (sorted keys, compact separators) improves KV-cache hits.</p>
+<h2>Layer 2 — Session State</h2>
+<ul>
+<li><code>output_key</code> plumbing carries data between pipeline stages — see [[Agent Architecture]].</li>
+<li>State prefixes: no prefix (session), <code>user:</code> (cross-session), <code>app:</code> (global), <code>temp:</code> (invocation-only, never persisted). Layer 2 rate limiting uses <code>temp:</code> state ([[Security Layers]]).</li>
+</ul>
+<h2>Layer 3 — Long-Term Memory</h2>
+<ul>
+<li><code>InMemoryMemoryService</code> (dev) / <code>VertexAiMemoryBankService</code> (prod), selected by environment in <code>memory.py</code>.</li>
+<li>Auto-saved via <code>after_agent_callback</code> when sessions complete.</li>
+<li><strong>PHI filtered before storage</strong> (<code>detect_phi</code> + <code>redact_phi</code>).</li>
+<li>Written by pipeline audit stages: <code>save_qa_to_memory</code>, <code>save_query_to_memory</code>; recalled by the orchestrator via <code>search_past_conversations</code>.</li>
+</ul>
+<h2>Layer 4 — A2A Context</h2>
+<p>Only task-relevant, non-sensitive data crosses agent boundaries: no PII/PHI, no secrets, no <code>temp:</code>/<code>user:</code> keys. Used by <code>RemoteA2aAgent</code> delegations — see [[MCP and A2A]].</p>
+<p>Related: [[Security Layers]] · [[Testing &amp; Eval]] (test_memory.py, test_context.py)</p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

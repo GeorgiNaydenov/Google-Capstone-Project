@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testing &amp; Eval · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Testing &amp; Eval</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Testing &amp; Eval</h1>
+<p>pytest + pytest-asyncio for system contracts; ADK <code>AgentEvaluator</code> for content quality. The live, machine-generated test-count table is <a href="../../project-wiki/_generated/Test%20Inventory.html">Test Inventory</a>.</p>
+<h2>Test suite (tests/)</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conftest.py</code></td>
+<td>Shared fixtures — runner, session_service, memory_service</td>
+</tr>
+<tr>
+<td><code>test_security.py</code></td>
+<td>All detection and sanitization functions (pure, no API key)</td>
+</tr>
+<tr>
+<td><code>test_callbacks.py</code></td>
+<td>3-layer security callback wiring (<a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a>)</td>
+</tr>
+<tr>
+<td><code>test_tools.py</code></td>
+<td>Clinical tool validation — consistent I/O contracts</td>
+</tr>
+<tr>
+<td><code>test_clinical_tools.py</code></td>
+<td>Clinical tool integration — mock data consistency and HITL</td>
+</tr>
+<tr>
+<td><code>test_clinical_api.py</code></td>
+<td>Frontend contract tests for the deterministic product API</td>
+</tr>
+<tr>
+<td><code>test_product_integration.py</code></td>
+<td>End-to-end contracts joining the clinical UI API to product state</td>
+</tr>
+<tr>
+<td><code>test_product_orchestration.py</code></td>
+<td>Clinician-facing production workflow boundaries</td>
+</tr>
+<tr>
+<td><code>test_document_parsing.py</code></td>
+<td>Document upload policy and extraction contracts</td>
+</tr>
+<tr>
+<td><code>test_live_bridge.py</code></td>
+<td>Live-mode ADK bridge parsing helpers</td>
+</tr>
+<tr>
+<td><code>test_context.py</code></td>
+<td>Context engineering utilities (<a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a> Layer 1)</td>
+</tr>
+<tr>
+<td><code>test_memory.py</code></td>
+<td>Memory governance / PII redaction (Day 3b)</td>
+</tr>
+<tr>
+<td><code>test_orchestration.py</code></td>
+<td>Workflow primitive construction (Day 1b / 2a)</td>
+</tr>
+<tr>
+<td><code>test_agent_eval.py</code></td>
+<td>Agent behavior end-to-end (model tests skip without key)</td>
+</tr>
+<tr>
+<td><code>test_eval.py</code></td>
+<td>ADK evaluation harness (Day 4b, skips without key)</td>
+</tr>
+<tr>
+<td><code>test_wiki_sync.py</code></td>
+<td>Deterministic wiki sync script (<a href="../../project-wiki/03%20Processes/Development%20Workflow.html">Development Workflow</a>)</td>
+</tr>
+<tr>
+<td><code>test_showcase_generators.py</code></td>
+<td>Smoke tests for showcase data generators</td>
+</tr>
+<tr>
+<td><code>test_versioned_api.py</code></td>
+<td>Unit tests for versioned V1 and V2 API endpoints and Swagger/ReDoc customization</td>
+</tr>
+</tbody>
+</table>
+<h2>Rules</h2>
+<blockquote>
+<p><strong>Warning:</strong> LLM non-determinism constraint
+Never assert on exact semantic output or tone of the LLM in pytest — outputs are non-deterministic and such tests flake. pytest asserts system contracts, security gates, and state persistence. Content quality goes through <code>adk eval</code>.</p>
+</blockquote>
+<ul>
+<li>Runner: <code>uv run pytest</code> or <code>pytest</code>.</li>
+<li>Model-dependent tests carry <code>@requires_model</code> (checks <code>GOOGLE_API_KEY</code>) and skip cleanly so CI stays green without credentials.</li>
+</ul>
+<h2>Commands</h2>
+<pre><code class="language-powershell">pytest tests/ -v                      # full suite
+pytest tests/test_security.py -v      # pure functions, no key needed
+cd frontend; npm run typecheck; npm test; npm run build
+</code></pre>
+<h2>ADK evaluation (Day 4b, requires key)</h2>
+<p><code>eval/capstone.evalset.json</code> (cases: user_content, final_response, tool_uses) scored by <code>eval/test_config.json</code> criteria: <code>tool_trajectory_avg_score</code>, <code>response_match_score</code>.</p>
+<pre><code class="language-powershell">adk eval capstone_agent eval/capstone.evalset.json --config_file_path eval/test_config.json --print_detailed_results
+</code></pre>
+<p>Related: <a href="../../project-wiki/01%20Overview/Course%20Concepts%20Map.html">Course Concepts Map</a> · <a href="../../project-wiki/03%20Processes/Development%20Workflow.html">Development Workflow</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagram Atlas · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Diagram Atlas</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Diagram Atlas</h1>
+<p>The product now exposes the prepared architecture diagrams as an interactive atlas in the landing page, clinician dashboard, admin dashboard, and contextual workflow panels. The frontend renders SVG first and falls back to PNG when an image fails to load.</p>
+<blockquote>
+<p><strong>Info:</strong> Runtime locations
+The catalog lives in <code>frontend/src/diagrams.ts</code>. The viewer components are <code>DiagramAtlas</code>, <code>DiagramViewer</code>, and <code>InlineDiagram</code>. The export command is <code>scripts/export_diagrams.py</code>, which copies draw.io sources and PNG fallbacks into <code>frontend/public/diagrams/</code> and exports SVG files into <code>frontend/public/diagrams/svg/</code>.</p>
+</blockquote>
+<h2>Product Routes</h2>
+<table>
+<thead>
+<tr>
+<th>Product surface</th>
+<th>Component</th>
+<th>Default diagram or category</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code> landing page</td>
+<td><code>DiagramAtlas</code></td>
+<td>System category</td>
+</tr>
+<tr>
+<td><code>/app/dashboard</code></td>
+<td><code>DiagramAtlas compact</code></td>
+<td>System category</td>
+</tr>
+<tr>
+<td><code>/app/admin</code></td>
+<td><code>DiagramAtlas compact</code></td>
+<td>System category</td>
+</tr>
+<tr>
+<td><code>/app/configuration</code></td>
+<td><code>InlineDiagram</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>/app/configuration?view=settings</code></td>
+<td><code>InlineDiagram</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>/app/storage</code></td>
+<td><code>InlineDiagram</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>/app/inbox</code></td>
+<td><code>InlineDiagram</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>/app/extraction</code></td>
+<td><code>InlineDiagram</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>/app/qa</code></td>
+<td><code>InlineDiagram</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>/app/database</code></td>
+<td><code>InlineDiagram</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2>System</h2>
+<h3>01 System Architecture</h3>
+<p><code>02 Architecture/diagrams/01-system-architecture.png</code></p>
+<h3>02 C4 System Context</h3>
+<p><code>02 Architecture/diagrams/02-c4-p1.png</code></p>
+<h3>02 C4 Containers</h3>
+<p><code>02 Architecture/diagrams/02-c4-p2.png</code></p>
+<h3>02 C4 Components</h3>
+<p><code>02 Architecture/diagrams/02-c4-p3.png</code></p>
+<h3>03 Module Dependency Graph</h3>
+<p><code>02 Architecture/diagrams/03-module-dependency-graph.png</code></p>
+<h3>05 Frontend Route Map</h3>
+<p><code>02 Architecture/diagrams/05-frontend-route-map.png</code></p>
+<h3>25 REST API Map</h3>
+<p><code>02 Architecture/diagrams/25-rest-api-map.png</code></p>
+<h2>Agents And Pipelines</h2>
+<h3>06 Agent Hierarchy</h3>
+<p><code>02 Architecture/diagrams/06-agent-hierarchy.png</code></p>
+<h3>07 A2A Communication</h3>
+<p><code>02 Architecture/diagrams/07-a2a-communication.png</code></p>
+<h3>08 MCP Server Topology</h3>
+<p><code>02 Architecture/diagrams/08-mcp-server-topology.png</code></p>
+<h3>09 Execution Mode Switch</h3>
+<p><code>02 Architecture/diagrams/09-execution-mode-switch.png</code></p>
+<h3>12 Context Engineering Pipeline</h3>
+<p><code>02 Architecture/diagrams/12-context-engineering-pipeline.png</code></p>
+<h3>28 Gemini Model Tier Registry</h3>
+<p><code>02 Architecture/diagrams/28-gemini-model-tier-registry.png</code></p>
+<h2>Security And Memory</h2>
+<h3>10 Memory Architecture</h3>
+<p><code>02 Architecture/diagrams/10-memory-architecture.png</code></p>
+<h3>11 Security Pipeline</h3>
+<p><code>02 Architecture/diagrams/11-security-pipeline.png</code></p>
+<h3>22 Security Block Sequence</h3>
+<p><code>02 Architecture/diagrams/22-security-block-sequence.png</code></p>
+<h3>26 Harness Governance Map</h3>
+<p><code>02 Architecture/diagrams/26-harness-governance-map.png</code></p>
+<h2>Processes</h2>
+<h3>14 Clinical Request Lifecycle BPMN</h3>
+<p><code>02 Architecture/diagrams/14-clinical-request-lifecycle-bpmn.png</code></p>
+<h3>15 Human In The Loop BPMN</h3>
+<p><code>02 Architecture/diagrams/15-human-in-the-loop-bpmn.png</code></p>
+<h3>16 Document Ingestion Flow</h3>
+<p><code>02 Architecture/diagrams/16-document-ingestion-flow.png</code></p>
+<h3>17 Wiki Auto Sync BPMN</h3>
+<p><code>02 Architecture/diagrams/17-wiki-auto-sync-bpmn.png</code></p>
+<h3>19 Chat Turn Sequence</h3>
+<p><code>02 Architecture/diagrams/19-chat-turn-sequence.png</code></p>
+<h3>20 HITL Approval Sequence</h3>
+<p><code>02 Architecture/diagrams/20-hitl-approval-sequence.png</code></p>
+<h3>21 A2A Delegation Sequence</h3>
+<p><code>02 Architecture/diagrams/21-a2a-delegation-sequence.png</code></p>
+<h3>29 Animated Chat Flow</h3>
+<p><code>02 Architecture/diagrams/29-animated-chat-flow.svg</code></p>
+<h2>Data And API</h2>
+<h3>23 Clinical Database ERD</h3>
+<p><code>02 Architecture/diagrams/23-clinical-database-erd.png</code></p>
+<h3>24 Pydantic Contract Class</h3>
+<p><code>02 Architecture/diagrams/24-pydantic-contract-class.png</code></p>
+<h2>Deployment And Quality</h2>
+<h3>04 Deployment Topology</h3>
+<p><code>02 Architecture/diagrams/04-deployment-topology.png</code></p>
+<h3>13 Observability Pillars</h3>
+<p><code>02 Architecture/diagrams/13-observability-pillars.png</code></p>
+<h3>18 Eval Quality Flywheel</h3>
+<p><code>02 Architecture/diagrams/18-eval-quality-flywheel.png</code></p>
+<h3>27 Capstone Rubric Coverage</h3>
+<p><code>02 Architecture/diagrams/27-capstone-rubric-coverage.png</code></p>
+<h2>Export Contract</h2>
+<table>
+<thead>
+<tr>
+<th>Asset kind</th>
+<th>Location</th>
+<th style="text-align:right">Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Draw.io sources</td>
+<td><code>frontend/public/diagrams/*.drawio</code></td>
+<td style="text-align:right">28</td>
+</tr>
+<tr>
+<td>PNG fallbacks</td>
+<td><code>frontend/public/diagrams/*.png</code></td>
+<td style="text-align:right">31</td>
+</tr>
+<tr>
+<td>SVG viewer assets</td>
+<td><code>frontend/public/diagrams/svg/*.svg</code></td>
+<td style="text-align:right">31</td>
+</tr>
+</tbody>
+</table>
+<p>Related: <a href="../../project-wiki/02%20Architecture/System%20Overview.html">System Overview</a> - <a href="../../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a> - <a href="../../project-wiki/06%20Operations/REST%20API%20and%20Developer%20Console.html">REST API and Developer Console</a> - <a href="../../project-wiki/06%20Operations/MCP%20and%20A2A.html">MCP and A2A</a> - <a href="../../project-wiki/06%20Operations/Testing%20&amp;%20Eval.html">Testing &amp; Eval</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

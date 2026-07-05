@@ -114,6 +114,13 @@ This API serves as the clinician-facing product backend and orchestration layer 
 1. **V1 API (`/api/v1`)**: Exposes core clinical entities (Patients, Sessions, Assets, Runs, Admin settings, Audit trail).
 2. **V2 API (`/api/v2`)**: Advanced services integration, exposing MCP server tool catalogs (`/api/v2/mcp/tools`), remote agent cards (`/api/v2/a2a/card`), and system diagnostics.
 
+### Documentation Surfaces
+
+- **Swagger UI (`/docs`)**: styled interactive API console for `/api/v1` and `/api/v2`.
+- **ReDoc (`/redoc`)**: readable OpenAPI reference for the same schema.
+- **OpenAPI JSON (`/openapi.json`)**: raw contract consumed by the in-app Developer Console.
+- **Frontend Diagram Atlas**: architecture SVG/PNG assets are served by the frontend bundle and documented in the Project Wiki; they are intentionally not modeled as API operations.
+
 ### 3-Layer Security Callbacks
 - **Input Guardrails**: unicode normalization, prompt injection prevention.
 - **Tool Authorization**: parameter verification, rate limits, secret token sanitization.
@@ -208,7 +215,7 @@ def create_app() -> FastAPI:
         """Report liveness for raw probes."""
         return {"status": "ok", "mode": effective_mode(resolve_tenant(None))}
 
-    @v1_router.get("/health", response_model=dict[str, str], tags=["Health"])
+    @v1_router.get("/health", response_model=dict[str, str], tags=["Health"], responses={200: {"description": "Report liveness for V1 API"}, **COMMON_RESPONSES})
     def health_v1() -> dict[str, str]:
         """Report liveness for V1 API."""
         return {"status": "ok", "mode": effective_mode(resolve_tenant(None))}
@@ -319,7 +326,7 @@ def create_app() -> FastAPI:
             for item in repo.evidence.get(patient_id, [])
         ]
 
-    @v1_router.post("/notifications/{notification_id}/read", response_model=NotificationResponse, tags=["Notifications"])
+    @v1_router.post("/notifications/{notification_id}/read", response_model=NotificationResponse, tags=["Notifications"], responses={200: {"description": "Marked one notification as read"}, **COMMON_RESPONSES})
     def read_notification(notification_id: str, ctx: Context) -> dict[str, Any]:
         """Mark one notification read in the isolated demo session."""
 
@@ -330,7 +337,7 @@ def create_app() -> FastAPI:
         ctx[0].log("notification_read", ctx[2], ctx[1], notification_id=notification_id)
         return notification
 
-    @v1_router.post("/demo/session", response_model=dict[str, str], status_code=201, tags=["Demo"])
+    @v1_router.post("/demo/session", response_model=dict[str, str], status_code=201, tags=["Demo"], responses={201: {"description": "Created an isolated deterministic demo session"}, **COMMON_RESPONSES})
     def start_demo() -> dict[str, str]:
         """Create isolated demo state identifier."""
 
@@ -338,7 +345,7 @@ def create_app() -> FastAPI:
         registry.get(session_id)
         return {"sessionId": session_id}
 
-    @v1_router.post("/demo/reset", status_code=204, tags=["Demo"])
+    @v1_router.post("/demo/reset", status_code=204, tags=["Demo"], responses={204: {"description": "Reset the caller's deterministic demo session"}, **COMMON_RESPONSES})
     def reset(ctx: Context) -> None:
         """Reset only caller demo session."""
 
@@ -436,7 +443,7 @@ def create_app() -> FastAPI:
         repo.log("asset_uploaded", user, role, patient_id=patient_id, asset_id=asset_id)
         return {"assetId": asset_id, "previewUrl": preview_url, "extracted": extracted}
 
-    @v1_router.post("/knowledge-base/assets", status_code=201, tags=["Assets"])
+    @v1_router.post("/knowledge-base/assets", status_code=201, tags=["Assets"], responses={201: {"description": "Uploaded and indexed a patient-scoped knowledge-base document"}, **COMMON_RESPONSES})
     async def create_knowledge_base_asset(ctx: Context, file: UploadFile = File(...), patient_id: str = Form(...)) -> dict[str, Any]:
         """Store a patient-scoped document as searchable Q&A knowledge-base evidence."""
 
@@ -470,7 +477,7 @@ def create_app() -> FastAPI:
         repo.log("knowledge_base_asset_uploaded", user, role, patient_id=patient_id, asset_id=asset_id)
         return {"assetId": asset_id, "patientId": patient_id, "previewUrl": preview_url, "evidenceId": asset_id, "extracted": extracted}
 
-    @v1_router.get("/assets/{asset_id}", tags=["Assets"])
+    @v1_router.get("/assets/{asset_id}", tags=["Assets"], responses={200: {"description": "Serve uploaded evidence bytes for authorized preview"}, **COMMON_RESPONSES})
     def asset(asset_id: str, ctx: Context, session: str | None = None) -> StreamingResponse:
         """Return uploaded asset bytes for evidence preview."""
 
@@ -625,7 +632,7 @@ def create_app() -> FastAPI:
         repo.log(f"extraction_{body.decision}", user, role, patient_id=item["result"]["patientId"], run_id=run_id, result="persisted" if approved else "not_persisted")
         return item
 
-    @v1_router.get("/reviews", tags=["Runs"])
+    @v1_router.get("/reviews", tags=["Runs"], responses={200: {"description": "List extraction runs awaiting clinician review"}, **COMMON_RESPONSES})
     def reviews(ctx: Context) -> list[dict[str, Any]]:
         """List extraction runs awaiting clinician review."""
 
@@ -1035,6 +1042,75 @@ def create_app() -> FastAPI:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to retrieve A2A card: {e}")
 
+    @v2_router.get("/docs/list", tags=["System V2"], responses={200: {"description": "Expose a list of categories and files for both the Obsidian wiki and Karpathy LLM Wiki"}, **COMMON_RESPONSES})
+    def docs_list() -> dict[str, Any]:
+        """Expose a list of categories and files for both the Obsidian wiki and Karpathy LLM Wiki."""
+        def get_wiki_files(base_dir: str) -> list[dict[str, str]]:
+            files_list = []
+            if not os.path.exists(base_dir):
+                return files_list
+            for root, dirs, files in os.walk(base_dir):
+                if ".obsidian" in root or "_generated" in root:
+                    continue
+                for file in files:
+                    if not file.endswith(".md"):
+                        continue
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, base_dir)
+                    title = os.path.splitext(file)[0]
+                    try:
+                        with open(full_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            if content.startswith("---"):
+                                parts = content.split("---", 2)
+                                if len(parts) >= 3:
+                                    for line in parts[1].split("\n"):
+                                        if ":" in line:
+                                            k, v = line.split(":", 1)
+                                            if k.strip() == "title":
+                                                title = v.strip().strip("'\"")
+                                                break
+                    except Exception:
+                        pass
+                    files_list.append({
+                        "path": rel_path.replace("\\", "/"),
+                        "title": title
+                    })
+            return files_list
+
+        try:
+            return {
+                "obsidian": get_wiki_files("Project Wiki"),
+                "karpathy": get_wiki_files("wiki")
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to list documentation files: {e}")
+
+    @v2_router.get("/docs/file", tags=["System V2"], responses={200: {"description": "Retrieve content of an Obsidian or Karpathy wiki file"}, **COMMON_RESPONSES})
+    def docs_file(type: str, path: str) -> dict[str, Any]:
+        """Retrieve content of an Obsidian or Karpathy wiki file."""
+        if type == "obsidian":
+            base_dir = "Project Wiki"
+        elif type == "karpathy":
+            base_dir = "wiki"
+        else:
+            raise HTTPException(status_code=400, detail="Invalid doc type")
+            
+        clean_path = os.path.normpath(path).replace("..", "")
+        resolved_base = os.path.abspath(base_dir)
+        resolved_file = os.path.abspath(os.path.join(base_dir, clean_path))
+        if not resolved_file.startswith(resolved_base):
+            raise HTTPException(status_code=403, detail="Access denied")
+            
+        if not os.path.exists(resolved_file) or not os.path.isfile(resolved_file):
+            raise HTTPException(status_code=404, detail="File not found")
+            
+        try:
+            with open(resolved_file, "r", encoding="utf-8") as f:
+                return {"content": f.read()}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
     # Register routers on api app instance
     api.include_router(v1_router, prefix="/api/v1")
     api.include_router(v2_router, prefix="/api/v2")
@@ -1267,6 +1343,12 @@ def create_app() -> FastAPI:
             title="Clinician AI Kit - ReDoc Specification"
         )
 
+    docs_site = Path(__file__).resolve().parents[1] / "docs_site"
+    if docs_site.is_dir():
+        # Standalone documentation hub: readable wiki + API doc pages that
+        # share the deployed origin but load none of the application shell.
+        api.mount("/documentation", StaticFiles(directory=docs_site, html=True), name="documentation")
+
     dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
     if dist.is_dir():
         assets = dist / "assets"
@@ -1277,7 +1359,7 @@ def create_app() -> FastAPI:
         def spa(path: str) -> FileResponse:
             """Serve built frontend and fall back to SPA entry point."""
 
-            if path in ("api", "docs", "redoc", "openapi.json") or path.startswith("api/") or path.startswith("docs/") or path.startswith("redoc/"):
+            if path in ("api", "docs", "redoc", "openapi.json", "documentation") or path.startswith(("api/", "docs/", "redoc/", "documentation/")):
                 raise HTTPException(404, "API route not found")
             candidate = (dist / path).resolve()
             if candidate.is_file() and dist.resolve() in candidate.parents:

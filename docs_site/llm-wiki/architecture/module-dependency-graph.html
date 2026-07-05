@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module Dependency Graph · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Module Dependency Graph</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Module Dependency Graph</h1>
+<blockquote>
+<p>Sources: Antigravity, 2026-07-05
+Raw: <a href="../../raw/architecture/2026-07-04-module-dependency-graph.html">Module Dependency Graph Source</a></p>
+</blockquote>
+<h1>Module Dependency Graph</h1>
+<blockquote>
+<p>[!info] Auto-regenerated section
+The Mermaid graph between the AUTO markers is rewritten by <code>scripts/sync_wiki.py</code> from the actual intra-project imports on every sync. Do not hand-edit inside the markers.</p>
+</blockquote>
+<!-- AUTO:DEPGRAPH:BEGIN -->
+<pre><code class="language-mermaid">flowchart LR
+    a2a_server[a2a_server.py]
+    agent[agent.py]
+    app[app.py]
+    callbacks[callbacks.py]
+    clinical_schemas[clinical_schemas.py]
+    config[config.py]
+    context[context.py]
+    database[database.py]
+    document_processor[document_processor.py]
+    human_in_the_loop[human_in_the_loop.py]
+    llm[llm.py]
+    memory[memory.py]
+    mock_data[mock_data.py]
+    models[models.py]
+    observability[observability.py]
+    orchestration[orchestration.py]
+    plugins[plugins.py]
+    prompts[prompts.py]
+    security[security.py]
+    tools[tools.py]
+
+    agent --&gt; a2a_server
+    agent --&gt; app
+    callbacks --&gt; agent
+    callbacks --&gt; plugins
+    clinical_schemas --&gt; tools
+    config --&gt; a2a_server
+    config --&gt; agent
+    config --&gt; app
+    config --&gt; context
+    config --&gt; document_processor
+    config --&gt; llm
+    config --&gt; memory
+    config --&gt; observability
+    config --&gt; plugins
+    config --&gt; security
+    config --&gt; tools
+    context --&gt; agent
+    context --&gt; plugins
+    database --&gt; mock_data
+    document_processor --&gt; tools
+    human_in_the_loop --&gt; agent
+    llm --&gt; agent
+    llm --&gt; orchestration
+    llm --&gt; tools
+    memory --&gt; agent
+    memory --&gt; orchestration
+    models --&gt; tools
+    observability --&gt; agent
+    observability --&gt; callbacks
+    observability --&gt; human_in_the_loop
+    observability --&gt; memory
+    observability --&gt; plugins
+    observability --&gt; tools
+    orchestration --&gt; agent
+    plugins --&gt; app
+    prompts --&gt; agent
+    prompts --&gt; orchestration
+    security --&gt; callbacks
+    security --&gt; memory
+    security --&gt; plugins
+    tools --&gt; agent
+    tools --&gt; orchestration
+</code></pre>
+<!-- AUTO:DEPGRAPH:END -->
+<h2>Design property</h2>
+<p>No circular dependencies. <code>config.py</code> and <code>prompts.py</code> are standalone; everything converges on <code>agent.py</code>, which wires the root agent, then <code>app.py</code> (runtime) and <code>a2a_server.py</code> (A2A serving) consume it.</p>
+<p>Related: [[Module Reference]] · [[Agent Architecture]]</p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

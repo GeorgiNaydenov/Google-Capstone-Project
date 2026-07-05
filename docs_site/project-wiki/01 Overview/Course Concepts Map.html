@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course Concepts Map · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Course Concepts Map</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Course Concepts Map</h1>
+<p>The project covers <strong>all 10 course notebooks</strong> (Days 1a through 5b).</p>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Notebook</th>
+<th>Implementation</th>
+<th>Wiki page</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1a</td>
+<td>Foundational models</td>
+<td><code>llm.py</code> — tiered model registry with retry/backoff</td>
+<td><a href="../../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a></td>
+</tr>
+<tr>
+<td>1b</td>
+<td>Multi-agent systems</td>
+<td><code>orchestration.py</code> — SequentialAgent pipelines, LoopAgent</td>
+<td><a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a></td>
+</tr>
+<tr>
+<td>2a</td>
+<td>Agent tools &amp; MCP</td>
+<td><code>tools.py</code>, <code>mcp_server/</code> — clinical tools, FastMCP server</td>
+<td><a href="../../project-wiki/06%20Operations/MCP%20and%20A2A.html">MCP and A2A</a></td>
+</tr>
+<tr>
+<td>2b</td>
+<td>Agent-as-tool &amp; HITL</td>
+<td><code>orchestration.py</code>, <code>human_in_the_loop.py</code> — LongRunningFunctionTool</td>
+<td><a href="../../project-wiki/03%20Processes/Human-in-the-Loop%20Approval.html">Human-in-the-Loop Approval</a></td>
+</tr>
+<tr>
+<td>3a</td>
+<td>Memory &amp; state</td>
+<td><code>memory.py</code> — session/memory factories, state prefixes</td>
+<td><a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a></td>
+</tr>
+<tr>
+<td>3b</td>
+<td>Context engineering</td>
+<td><code>context.py</code> — token budgeting, compaction, boundary injection</td>
+<td><a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a></td>
+</tr>
+<tr>
+<td>4a</td>
+<td>Observability</td>
+<td><code>observability.py</code>, <code>plugins.py</code> — OpenTelemetry, Cloud Trace, structured logging</td>
+<td><a href="../../project-wiki/06%20Operations/Observability.html">Observability</a></td>
+</tr>
+<tr>
+<td>4b</td>
+<td>Evaluation</td>
+<td><code>eval/</code> — ADK EvalSet, tool trajectory + response match scoring</td>
+<td><a href="../../project-wiki/06%20Operations/Testing%20&amp;%20Eval.html">Testing &amp; Eval</a></td>
+</tr>
+<tr>
+<td>5a</td>
+<td>Agent2Agent (A2A)</td>
+<td><code>a2a_server.py</code> — ASGI A2A server with agent card</td>
+<td><a href="../../project-wiki/06%20Operations/MCP%20and%20A2A.html">MCP and A2A</a></td>
+</tr>
+<tr>
+<td>5b</td>
+<td>Deployment</td>
+<td><code>deployment/</code> — Cloud Run, Vertex AI Agent Engine, GKE</td>
+<td><a href="../../project-wiki/06%20Operations/Deployment.html">Deployment</a></td>
+</tr>
+</tbody>
+</table>
+<h2>Evaluation rubric alignment</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Points</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Technical Implementation</td>
+<td>50</td>
+<td>Multi-agent pipelines, MCP, 3-layer security, 4-layer memory, Pydantic, observability</td>
+</tr>
+<tr>
+<td>Documentation</td>
+<td>20</td>
+<td>README, inline docstrings, architecture docs, this wiki</td>
+</tr>
+<tr>
+<td>Core Concept &amp; Value</td>
+<td>10</td>
+<td>Clinical intelligence with visible agent reasoning</td>
+</tr>
+<tr>
+<td>Video Demo</td>
+<td>10</td>
+<td>End-to-end workflow demonstration</td>
+</tr>
+<tr>
+<td>Writeup</td>
+<td>10</td>
+<td>Problem-solution-architecture-journey articulation</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> Capstone requirement
+Must demonstrate at least 3 of: ADK multi-agent, MCP server, Antigravity, security, deployability, Agents CLI. Nexus demonstrates multi-agent (<a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a>), MCP (<a href="../../project-wiki/06%20Operations/MCP%20and%20A2A.html">MCP and A2A</a>), security (<a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a>), and deployability (<a href="../../project-wiki/06%20Operations/Deployment.html">Deployment</a>).</p>
+</blockquote>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

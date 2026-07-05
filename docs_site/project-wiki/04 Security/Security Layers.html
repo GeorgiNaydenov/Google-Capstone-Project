@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security Layers · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Security Layers</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Security Layers</h1>
+<p>Defense in depth — three fixed callback layers plus clinical extensions. No single point of failure. All blocks are logged via <code>observability.log_security_event()</code> (<a href="../../project-wiki/06%20Operations/Observability.html">Observability</a>).</p>
+<pre><code class="language-mermaid">flowchart TD
+    U[User input] --&gt; L1
+    subgraph L1[&quot;Layer 1 — Input Security (before_model_callback)&quot;]
+        P[&quot;15 generic injection patterns&lt;br/&gt;+ 3 HIPAA-specific: hipaa_bypass, phi_extraction, safety_disable&lt;br/&gt;Unicode NFKC normalization (anti-homoglyph)&quot;]
+    end
+    L1 --&gt;|clean| AG[Agent + LLM]
+    L1 --&gt;|blocked| B1[Blocked + logged]
+    AG --&gt; L2
+    subgraph L2[&quot;Layer 2 — Tool Security (before_tool_callback)&quot;]
+        T[&quot;Pydantic validation on all tool inputs&lt;br/&gt;Per-tool rate limiting via temp: state&lt;br/&gt;Secret scanning on tool arguments&quot;]
+    end
+    L2 --&gt;|valid| TOOLS[Tool execution]
+    L2 --&gt;|blocked| B2[Blocked + logged]
+    TOOLS --&gt; L3
+    subgraph L3[&quot;Layer 3 — Output Security (after_model_callback)&quot;]
+        O[&quot;PII detection: email, phone, SSN, credit card&lt;br/&gt;PHI detection: MRN, ICD-10, NPI, DEA, drug dosage&lt;br/&gt;Secret leak detection: API keys, tokens, passwords&quot;]
+    end
+    L3 --&gt;|clean| R[Response to user]
+    L3 --&gt;|found| RED[Redact or block + logged]
+</code></pre>
+<h2>The three callbacks (order is fixed)</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Callback</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Input</td>
+<td><code>content_safety_callback</code> (<code>before_model_callback</code>)</td>
+<td>Sanitizes unicode (NFKC), blocks 18 injection/extraction patterns — 15 generic + 3 HIPAA-specific</td>
+</tr>
+<tr>
+<td>2. Tool</td>
+<td><code>tool_authorization_callback</code> (<code>before_tool_callback</code>)</td>
+<td>Rate limits tool usage, Pydantic-validates arguments, scans arguments for secrets</td>
+</tr>
+<tr>
+<td>3. Output</td>
+<td><code>output_safety_callback</code> (<code>after_model_callback</code>)</td>
+<td>Detects leaked secrets and PII/PHI in model responses; redacts or blocks</td>
+</tr>
+</tbody>
+</table>
+<p>Security logic lives in <code>security.py</code> as pure, testable functions (<code>scan_for_secrets</code>, <code>detect_pii</code>, <code>detect_phi</code>, <code>redact_phi</code>); <code>callbacks.py</code> wires it to ADK.</p>
+<h2>Clinical extensions</h2>
+<ul>
+<li><strong>PHI detection</strong> adds clinical identifiers on top of PII: MRN, ICD-10 codes, NPI, DEA numbers, drug dosages.</li>
+<li><strong><code>ClinicalAuditPlugin</code></strong> (<code>plugins.py</code>) tracks patient-data tool access, counts PHI detections, and flushes per-turn HIPAA audit summaries via <code>log_clinical_event()</code>.</li>
+<li>PHI is filtered before anything reaches long-term memory — see <a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a>.</li>
+</ul>
+<h2>Rules</h2>
+<blockquote>
+<p><strong>Warning:</strong> Invariants</p>
+<ul>
+<li>The 3-layer callback order in <code>callbacks.py</code> is fixed and must be preserved.</li>
+<li>All loggers route strings through <code>config.redact_secrets()</code> before emission.</li>
+<li>Never write API keys or GCP credentials to long-term memory or session storage; run <code>redact_pii</code> before persisting memory layers.</li>
+<li>Store sensitive config in <code>.env</code>, never commit API keys.</li>
+</ul>
+</blockquote>
+<p>Related: <a href="../../project-wiki/03%20Processes/End-to-End%20Request%20Flow.html">End-to-End Request Flow</a> · <a href="../../project-wiki/06%20Operations/Testing%20&amp;%20Eval.html">Testing &amp; Eval</a> (test_security.py, test_callbacks.py)</p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

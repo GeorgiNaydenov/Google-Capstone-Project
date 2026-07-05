@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexus Clinical AI Command Center · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../index.html">Documentation hub</a>&nbsp;/&nbsp;Nexus Clinical AI Command Center</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Nexus Clinical AI Command Center</h1>
+<p>Clinician-facing AI platform built on Google ADK: specialist agent pipelines for image extraction, patient Q&amp;A, and database intelligence, gated by clinician review and HIPAA-aligned security. Capstone project for Kaggle's 5-Day AI Agents Intensive Course.</p>
+<blockquote>
+<p><strong>Info:</strong> Living wiki
+This vault documents only what is built in the repository. Pages in <code>_generated/</code> are machine-owned and rewritten by <code>scripts/sync_wiki.py</code> on every work session (Stop hook). Hand-edit everything else.</p>
+</blockquote>
+<h2>Overview</h2>
+<ul>
+<li><a href="../project-wiki/01%20Overview/Problem%20&amp;%20Solution.html">Problem &amp; Solution</a> — what Nexus does and why</li>
+<li><a href="../project-wiki/01%20Overview/Course%20Concepts%20Map.html">Course Concepts Map</a> — Days 1a–5b coverage and rubric alignment</li>
+</ul>
+<h2>Architecture &amp; Agent Workflows</h2>
+<ul>
+<li><a href="../project-wiki/02%20Architecture/System%20Overview.html">System Overview</a> — the four-layer stack</li>
+<li><a href="../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a> — every agent, tier, and tool</li>
+<li><a href="../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a> — the 3-tier Gemini registry</li>
+<li><a href="../project-wiki/02%20Architecture/Module%20Reference.html">Module Reference</a> — every Python module and its purpose</li>
+<li><a href="../project-wiki/02%20Architecture/Module%20Dependency%20Graph.html">Module Dependency Graph</a> — auto-regenerated import graph</li>
+<li>Architecture Board — visual system map</li>
+<li><a href="../project-wiki/03%20Processes/End-to-End%20Request%20Flow.html">End-to-End Request Flow</a> — request lifecycle sequence</li>
+<li><a href="../project-wiki/03%20Processes/Image%20Extraction%20Pipeline.html">Image Extraction Pipeline</a> — 9-agent extraction loop</li>
+<li><a href="../project-wiki/03%20Processes/Patient%20QA%20Pipeline.html">Patient QA Pipeline</a> — 7-agent grounded Q&amp;A workflow</li>
+<li><a href="../project-wiki/03%20Processes/DB%20Intelligence%20Pipeline.html">DB Intelligence Pipeline</a> — 6-agent NL-to-SQL executor</li>
+<li><a href="../project-wiki/03%20Processes/Human-in-the-Loop%20Approval.html">Human-in-the-Loop Approval</a> — human verification gates</li>
+<li><a href="../project-wiki/03%20Processes/Development%20Workflow.html">Development Workflow</a> — local build and sync cycles</li>
+<li><a href="../project-wiki/03%20Processes/Deployment%20Pipeline.html">Deployment Pipeline</a> — production topology and engines</li>
+</ul>
+<h2>Security &amp; Memory</h2>
+<ul>
+<li><a href="../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a> — 3-layer callbacks + clinical guards</li>
+<li><a href="../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a> — 4-layer memory with PII/PHI governance</li>
+</ul>
+<h2>Operations</h2>
+<ul>
+<li><a href="../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a> — FastAPI product server + React frontend</li>
+<li><a href="../project-wiki/06%20Operations/REST%20API%20and%20Developer%20Console.html">REST API and Developer Console</a> — versioned REST APIs, styled Swagger, and interactive playground console</li>
+<li><a href="../project-wiki/06%20Operations/MCP%20and%20A2A.html">MCP and A2A</a> — interoperability surfaces</li>
+<li><a href="../project-wiki/06%20Operations/Testing%20&amp;%20Eval.html">Testing &amp; Eval</a> — pytest suite + ADK evaluation</li>
+<li><a href="../project-wiki/06%20Operations/Observability.html">Observability</a> — logs, traces, clinical audit</li>
+<li><a href="../project-wiki/06%20Operations/Deployment.html">Deployment</a> — Cloud Run / Agent Engine / GKE</li>
+</ul>
+<h2>Harness</h2>
+<ul>
+<li><a href="../project-wiki/07%20Harness/Claude%20Harness.html">Claude Harness</a> — rules, skills, hooks, memory, sync scripts</li>
+</ul>
+<h2>Machine-Generated (auto-updated)</h2>
+<ul>
+<li>
+<p>Architecture Views Base - active architecture, operations, and process notes</p>
+</li>
+<li>
+<p><a href="../project-wiki/_generated/Module%20Inventory.html">Module Inventory</a> · <a href="../project-wiki/_generated/Test%20Inventory.html">Test Inventory</a> · <a href="../project-wiki/_generated/Harness%20Index.html">Harness Index</a> · <a href="../project-wiki/_generated/Changelog.html">Changelog</a> · <a href="../project-wiki/_generated/Drift%20Report.html">Drift Report</a></p>
+</li>
+</ul>
+
+<footer class="doc-footer">
+  <a href="../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

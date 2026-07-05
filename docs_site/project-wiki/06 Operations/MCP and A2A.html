@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP and A2A · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;MCP and A2A</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>MCP and A2A</h1>
+<p>Two interoperability surfaces let external clients and agents use Nexus capabilities.</p>
+<pre><code class="language-mermaid">flowchart LR
+    EXT[&quot;External client&lt;br/&gt;(Claude Desktop, other agents)&quot;] &lt;-- &quot;MCP (JSON-RPC 2.0 / stdio)&quot; --&gt; MCP[&quot;mcp_server/server.py&lt;br/&gt;7 clinical tools (FastMCP)&quot;]
+    REMOTE[&quot;Remote agent&lt;br/&gt;(any A2A client)&quot;] &lt;-- &quot;A2A protocol&lt;br/&gt;agent card + tasks&quot; --&gt; A2A[&quot;capstone_agent/a2a_server.py&lt;br/&gt;:8001&quot;]
+</code></pre>
+<h2>MCP server</h2>
+<p><code>mcp_server/server.py</code> — a clinical MCP server with <strong>real database-backed tools</strong> exposed via FastMCP (JSON-RPC 2.0 over stdio). Any MCP-compatible client (ADK, Claude Desktop, other frameworks) can discover and call the 7 clinical tools. The root orchestrator also consumes MCP tools directly (<a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a>).</p>
+<h2>A2A server</h2>
+<p><code>capstone_agent/a2a_server.py</code> — <code>to_a2a(root_agent)</code> ASGI app (guarded import). Serves the agent card at <code>/.well-known/agent-card.json</code> describing capabilities, input/output schemas, and supported skills. Remote agents delegate tasks over the A2A protocol with <strong>isolated memory context</strong> — only task-relevant, non-sensitive data crosses the boundary (Layer 4 of <a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a>).</p>
+<pre><code class="language-powershell">uvicorn capstone_agent.a2a_server:app --port 8001
+</code></pre>
+<p>Related: <a href="../../project-wiki/02%20Architecture/System%20Overview.html">System Overview</a> · <a href="../../project-wiki/01%20Overview/Course%20Concepts%20Map.html">Course Concepts Map</a> (Days 2a, 5a)</p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

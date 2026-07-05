@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Development Workflow · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Development Workflow</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Development Workflow</h1>
+<p>How work happens on this repository, including the automated wiki/harness sync layer. Lanes: Developer/Claude, Hooks, Sync.</p>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph LANE_DEV[&quot;Lane: Developer / Claude&quot;]
+        EDIT[&quot;Edit code / docs / wiki&quot;]
+        TEST[&quot;uv run pytest tests/ -v&quot;]
+        GATE[&quot;Pre-commit gate:&lt;br/&gt;format + harness audit + pytest&quot;]
+        COMMIT[&quot;git commit (files staged by name)&quot;]
+    end
+
+    subgraph LANE_HOOK[&quot;Lane: Hooks (.claude/settings.json)&quot;]
+        PRE{&quot;PreToolUse:&lt;br/&gt;check_harness.py passes?&quot;}
+        STOP[&quot;Stop hook: sync_wiki.py&lt;br/&gt;(end of each work turn)&quot;]
+    end
+
+    subgraph LANE_SYNC[&quot;Lane: Deterministic sync (scripts/sync_wiki.py)&quot;]
+        GEN[&quot;Regenerate _generated/ pages:&lt;br/&gt;Module Inventory, Test Inventory,&lt;br/&gt;Harness Index, Changelog, Drift Report&quot;]
+        DEP[&quot;Rewrite AUTO:DEPGRAPH block&lt;br/&gt;in Module Dependency Graph&quot;]
+        CMD[&quot;Rewrite AUTO:STRUCTURE block&lt;br/&gt;in CLAUDE.md + root MEMORY.md&quot;]
+        MIRROR[&quot;sync_harness.py:&lt;br/&gt;.claude -&gt; .agents, CLAUDE.md -&gt; AGENTS.md&quot;]
+    end
+
+    PRE --&gt;|fail: fix harness first| EDIT
+    PRE --&gt;|pass| EDIT
+    EDIT --&gt; TEST --&gt; GATE --&gt; COMMIT
+    COMMIT --&gt; STOP
+    EDIT -.-&gt;|every turn end| STOP
+    STOP --&gt; GEN --&gt; DEP --&gt; CMD --&gt; MIRROR --&gt; DONE([Wiki + harness up to date])
+</code></pre>
+<p>Key facts:</p>
+<ul>
+<li><code>check_harness.py</code> runs before <strong>every</strong> tool call (PreToolUse, matcher <code>.*</code>) and fails fast on harness drift — see <a href="../../project-wiki/07%20Harness/Claude%20Harness.html">Claude Harness</a>.</li>
+<li><code>sync_wiki.py</code> runs at the end of every Claude work turn (Stop hook). It is deterministic (stdlib only, no LLM), idempotent, and always exits 0 — sync problems land in <a href="../../project-wiki/_generated/Drift%20Report.html">Drift Report</a> instead of blocking.</li>
+<li>Machine-owned pages live in <code>_generated/</code>; AUTO-marked blocks in <a href="../../project-wiki/02%20Architecture/Module%20Dependency%20Graph.html">Module Dependency Graph</a>, <code>CLAUDE.md</code>, and root <code>MEMORY.md</code> are rewritten in place. Hand-written prose is never touched.</li>
+<li>After any CLAUDE.md change, <code>sync_harness.py</code> must mirror it to AGENTS.md — the sync script does this automatically as its last step.</li>
+</ul>
+<p>Related: <a href="../../project-wiki/07%20Harness/Claude%20Harness.html">Claude Harness</a> · <a href="../../project-wiki/06%20Operations/Testing%20&amp;%20Eval.html">Testing &amp; Eval</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

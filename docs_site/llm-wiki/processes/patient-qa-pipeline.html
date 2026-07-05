@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patient QA Pipeline · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Patient QA Pipeline</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Patient QA Pipeline</h1>
+<blockquote>
+<p>Sources: Antigravity, 2026-07-05
+Raw: <a href="../../raw/processes/2026-07-04-patient-qa-pipeline.html">Patient QA Pipeline Source</a></p>
+</blockquote>
+<h1>Patient QA Pipeline</h1>
+<p>SequentialAgent (7 agents) answering clinical questions with cited evidence from notes, images, and vector search — grounded in patient context.</p>
+<pre><code class="language-mermaid">flowchart TD
+    START([Patient-scoped question]) --&gt; CA
+    CA[&quot;context_assembly_agent (flash-lite)&lt;br/&gt;lookup_patient_record, validate_qa_request&quot;] --&gt; ER
+    ER[&quot;evidence_retrieval_agent (pro-customtools)&lt;br/&gt;search_clinical_notes, search_vector_store,&lt;br/&gt;retrieve_imaging_evidence&quot;] --&gt; IE
+    IE[&quot;image_evidence_agent (pro)&lt;br/&gt;analyze_evidence_images, fetch_image_from_gcs&quot;] --&gt; CB
+    CB[&quot;citation_builder_agent (flash-lite)&lt;br/&gt;build_citations&quot;] --&gt; AS
+    AS[&quot;answer_synthesis_agent (pro)&lt;br/&gt;compose_clinical_answer&quot;] --&gt; AU
+    AU[&quot;qa_audit_agent (flash-lite)&lt;br/&gt;log_audit_event, save_qa_to_memory&quot;] --&gt; DONE([Cited answer + audit trail])
+</code></pre>
+<p>Key facts:</p>
+<ul>
+<li>Validation happens first: <code>validate_qa_request</code> rejects out-of-scope requests before any retrieval.</li>
+<li>Evidence is multimodal — text notes, vector search hits, and imaging pulled from GCS and analyzed by Gemini Vision.</li>
+<li>Every answer carries citations built before synthesis, so sources are traceable in the UI ([[Clinical App]]).</li>
+<li>The audit stage persists the exchange to long-term memory (<code>save_qa_to_memory</code>) with PHI filtered first ([[Memory Layers]] Layer 3).</li>
+</ul>
+<p>Related: [[Agent Architecture]] · [[End-to-End Request Flow]]</p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Base Index · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../index.html">Documentation hub</a>&nbsp;/&nbsp;Knowledge Base Index</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Knowledge Base Index</h1>
+<h2>architecture</h2>
+<p>Nexus compiled knowledge on architecture.</p>
+<table>
+<thead>
+<tr>
+<th>Article</th>
+<th>Summary</th>
+<th>Updated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="architecture/agent-architecture.html">Agent Architecture</a></td>
+<td>A root orchestrator routes every request to one of three SequentialAgent pipelines.</td>
+<td>2026-07-04</td>
+</tr>
+<tr>
+<td><a href="architecture/diagram-atlas.html">Diagram Atlas</a></td>
+<td>The product now exposes the prepared architecture diagrams as an interactive atlas in the landing page, clinician dashboard, admin dashboard, and contextual workflow panels.</td>
+<td>2026-07-05</td>
+</tr>
+<tr>
+<td><a href="architecture/model-registry.html">Model Registry</a></td>
+<td><code>capstone_agent/llm.py</code> is the single place model selection happens.</td>
+<td>2026-07-04</td>
+</tr>
+<tr>
+<td><a href="architecture/module-dependency-graph.html">Module Dependency Graph</a></td>
+<td><!-- AUTO:DEPGRAPH:BEGIN --></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-mermaid">flowchart LR
+    a2a_server[a2a_server.py]
+    agent[agent.py]
+    app[app.py]
+    callbacks[callbacks.py]
+    clinical_schemas[clinical_schemas.py]
+    config[config.py]
+    context[context.py]
+    database[database.py]
+    document_processor[document_processor.py]
+    human_in_the_loop[human_in_the_loop.py]
+    llm[llm.py]
+    memory[memory.py]
+    mock_data[mock_data.py]
+    models[models.py]
+    observability[observability.py]
+    orchestration[orchestration.py]
+    plugins[plugins.py]
+    prompts[prompts.py]
+    security[security.py]
+    tools[tools.py]. | 2026-07-04 |
+| [Module Reference](architecture/module-reference.html) | Every Python module currently in the repository, with its purpose (taken from module docstrings). | 2026-07-04 |
+| [System Overview](architecture/system-overview.html) | A multi-agent clinical AI platform built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and HIPAA-aligned security. | 2026-07-05 |
+
+## harness
+
+Nexus compiled knowledge on harness.
+
+| Article | Summary | Updated |
+|---------|---------|---------|
+| [Claude Harness](harness/claude-harness.html) | The `.claude/` harness controls and validates agent-assisted development on this repository. | 2026-07-04 |
+
+## operations
+
+Nexus compiled knowledge on operations.
+
+| Article | Summary | Updated |
+|---------|---------|---------|
+| [Clinical App](operations/clinical-app.html) | The clinician-facing product: a React frontend served by a FastAPI server that runs in **deterministic demo mode** by default or bridges **live** to the ADK agent backend. | 2026-07-05 |
+| [Deployment](operations/deployment.html) | Three supported targets — all read secrets from `.env` / Secret Manager at runtime, never baked into images. | 2026-07-04 |
+| [MCP and A2A](operations/mcp-and-a2a.html) | Two interoperability surfaces let external clients and agents use Nexus capabilities. | 2026-07-04 |
+| [Observability](operations/observability.html) | Three pillars — Logs (diary), Traces (narrative), Metrics (timing) — plus clinical audit events. | 2026-07-04 |
+| [REST API and Developer Console](operations/rest-api-and-developer-console.html) | Nexus exposes a versioned, secure REST API backend built on FastAPI and a React-based interactive Developer/API Console to assist developers in testing, auditing, and executing agent pipelines and MCP tools. | 2026-07-05 |
+| [Testing &amp; Eval](operations/testing-eval.html) | pytest + pytest-asyncio for system contracts; ADK `AgentEvaluator` for content quality. | 2026-07-04 |
+
+## overview
+
+Nexus compiled knowledge on overview.
+
+| Article | Summary | Updated |
+|---------|---------|---------|
+| [Course Concepts Map](overview/course-concepts-map.html) | The project covers **all 10 course notebooks** (Days 1a through 5b). | 2026-07-04 |
+| [Problem &amp; Solution](overview/problem-solution.html) | Clinical work spans disconnected notes, session images, structured records, historical evidence, and population databases. | 2026-07-04 |
+
+## processes
+
+Nexus compiled knowledge on processes.
+
+| Article | Summary | Updated |
+|---------|---------|---------|
+| [DB Intelligence Pipeline](processes/db-intelligence-pipeline.html) | SequentialAgent (6 agents) translating natural language into safe SQL with validation before execution and chart-spec generation after. | 2026-07-04 |
+| [Deployment Pipeline](processes/deployment-pipeline.html) | Three targets fed by one hardened build. | 2026-07-04 |
+| [Development Workflow](processes/development-workflow.html) | How work happens on this repository, including the automated wiki/harness sync layer. | 2026-07-04 |
+| [End-to-End Request Flow](processes/end-to-end-request-flow.html) | Every request crosses three security gates and one routing decision. | 2026-07-04 |
+| [Human-in-the-Loop Approval](processes/human-in-the-loop-approval.html) | The clinical review gate (Day 2b) — a LongRunningFunctionTool pauses the pipeline until a clinician decides. | 2026-07-04 |
+| [Image Extraction Pipeline](processes/image-extraction-pipeline.html) | SequentialAgent (9 agents) processing clinical images through quality assessment, AI vision analysis, structured field extraction, a critic/refiner validation loop, and clinician review before persistence. | 2026-07-04 |
+| [Patient QA Pipeline](processes/patient-qa-pipeline.html) | SequentialAgent (7 agents) answering clinical questions with cited evidence from notes, images, and vector search — grounded in patient context. | 2026-07-04 |
+
+## security-memory
+
+Nexus compiled knowledge on security memory.
+
+| Article | Summary | Updated |
+|---------|---------|---------|
+| [Memory Layers](security-memory/memory-layers.html) | Four-layer memory system with automatic PII/PHI redaction before anything persists. | 2026-07-04 |
+| [Security Layers](security-memory/security-layers.html) | Defense in depth — three fixed callback layers plus clinical extensions. | 2026-07-04 |
+
+</code></pre>
+
+<footer class="doc-footer">
+  <a href="../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>End-to-End Request Flow · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;End-to-End Request Flow</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>End-to-End Request Flow</h1>
+<blockquote>
+<p>Sources: Antigravity, 2026-07-05
+Raw: <a href="../../raw/processes/2026-07-04-end-to-end-request-flow.html">End-to-End Request Flow Source</a></p>
+</blockquote>
+<h1>End-to-End Request Flow</h1>
+<p>Every request crosses three security gates and one routing decision. BPMN-style lanes: User, Security, Orchestrator, Pipelines.</p>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph LANE_USER[&quot;Lane: User&quot;]
+        START([User request]) --&gt; IN[Message enters agent]
+        RESP([Response delivered])
+    end
+
+    subgraph LANE_SEC[&quot;Lane: Security (callbacks.py)&quot;]
+        L1{Layer 1&lt;br/&gt;content_safety_callback&lt;br/&gt;injection? unicode attack?}
+        L2{Layer 2&lt;br/&gt;tool_authorization_callback&lt;br/&gt;args valid? rate ok? secrets?}
+        L3{Layer 3&lt;br/&gt;output_safety_callback&lt;br/&gt;PII/PHI/secret leak?}
+        BLOCK1[Block + log_security_event]
+        BLOCK2[Block + log_security_event]
+        REDACT[Redact or block + log]
+    end
+
+    subgraph LANE_ORCH[&quot;Lane: Orchestrator (flash-lite)&quot;]
+        ROUTE{Intent routing}
+        MCPT[MCP tools / memory recall / HITL approval]
+    end
+
+    subgraph LANE_PIPE[&quot;Lane: Pipelines (SequentialAgent)&quot;]
+        P1[Image Extraction&lt;br/&gt;9 agents]
+        P2[Patient Q&amp;A&lt;br/&gt;7 agents]
+        P3[DB Intelligence&lt;br/&gt;6 agents]
+        TOOLS[Tool execution&lt;br/&gt;Pydantic-validated]
+    end
+
+    IN --&gt; L1
+    L1 --&gt;|blocked| BLOCK1 --&gt; RESP
+    L1 --&gt;|clean| ROUTE
+    ROUTE --&gt;|image workflow| P1
+    ROUTE --&gt;|patient question| P2
+    ROUTE --&gt;|database question| P3
+    ROUTE --&gt;|direct| MCPT
+    P1 --&gt; L2
+    P2 --&gt; L2
+    P3 --&gt; L2
+    MCPT --&gt; L2
+    L2 --&gt;|blocked| BLOCK2 --&gt; RESP
+    L2 --&gt;|valid| TOOLS
+    TOOLS --&gt; L3
+    L3 --&gt;|found| REDACT --&gt; RESP
+    L3 --&gt;|clean| RESP
+</code></pre>
+<p>Key facts:</p>
+<ul>
+<li>Layer 1 blocks 18 injection/extraction patterns (15 generic + 3 HIPAA-specific) after unicode NFKC normalization.</li>
+<li>Layer 2 runs per tool call: Pydantic validation, <code>temp:</code> state rate limiting, secret scan on arguments.</li>
+<li>Layer 3 inspects every model response for PII, PHI, and secrets before it reaches the user.</li>
+<li>Every block/detection is logged via <code>observability.log_security_event()</code>.</li>
+</ul>
+<p>Related: [[Security Layers]] · [[Agent Architecture]] · [[Image Extraction Pipeline]] · [[Patient QA Pipeline]] · [[DB Intelligence Pipeline]]</p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Extraction Pipeline · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Image Extraction Pipeline</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Image Extraction Pipeline</h1>
+<p>SequentialAgent (9 agents) processing clinical images through quality assessment, AI vision analysis, structured field extraction, a critic/refiner validation loop, and clinician review before persistence. Lanes: Agents, Validation Loop, Clinician.</p>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph LANE_AG[&quot;Lane: Pipeline agents&quot;]
+        QA[&quot;quality_assessor_agent (flash-lite)&lt;br/&gt;assess_image_quality&quot;]
+        VA[&quot;vision_analyzer_agent (pro)&lt;br/&gt;analyze_clinical_image&quot;]
+        CS[&quot;clinical_structuring_agent (pro)&lt;br/&gt;structure_clinical_findings, store_to_gcs&quot;]
+    end
+
+    subgraph LANE_LOOP[&quot;Lane: validation_gate (LoopAgent, Day 1b)&quot;]
+        CRIT{critic_agent&lt;br/&gt;confidence &gt;= threshold?}
+        REF[&quot;refiner_agent&lt;br/&gt;flag_for_review (fields &lt; 0.80)&quot;]
+        EXIT[&quot;exit_loop&quot;]
+    end
+
+    subgraph LANE_HITL[&quot;Lane: Clinician (HITL, Day 2b)&quot;]
+        GATE{Clinician review&lt;br/&gt;transition_extraction_review}
+        PERSIST[&quot;persist_extraction_relational&lt;br/&gt;persist_extraction_vector&quot;]
+        DISCARD[&quot;Discard + reason logged&quot;]
+    end
+
+    START([Clinical image uploaded]) --&gt; QA --&gt; VA --&gt; CS --&gt; CRIT
+    CRIT --&gt;|below threshold| REF --&gt; CRIT
+    CRIT --&gt;|passes| EXIT --&gt; GATE
+    GATE --&gt;|approve| PERSIST --&gt; DONE([Stored + timeline updated + audit event])
+    GATE --&gt;|reject| DISCARD --&gt; DONE2([Rejected, audit logged])
+</code></pre>
+<p>Key facts:</p>
+<ul>
+<li><strong>output_key plumbing</strong>: each agent writes its result to <code>session.state</code>; the next stage reads it — no direct coupling (<a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a> Layer 2).</li>
+<li>The <strong>LoopAgent</strong> repeats critic → refiner until field confidence passes the threshold; fields below 0.80 are flagged for review.</li>
+<li><strong>State machine</strong>: <code>transition_extraction_review</code> only allows <code>needs_review</code> → <code>approved</code> or <code>needs_review</code> → <code>rejected</code>. Persistence tools require an approved review receipt — see <a href="../../project-wiki/03%20Processes/Human-in-the-Loop%20Approval.html">Human-in-the-Loop Approval</a>.</li>
+</ul>
+<p>Related: <a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a> · <a href="../../project-wiki/03%20Processes/End-to-End%20Request%20Flow.html">End-to-End Request Flow</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>
