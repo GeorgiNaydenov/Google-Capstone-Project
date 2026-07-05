@@ -185,11 +185,11 @@ Existing endpoint shapes change only additively.
 
 ## Phase 7 — Post-cut-line (only if time remains)
 
-- [ ] Card-collapse patient queue + inbox tables <640px; touch targets ≥40px; landing/roles
+- [x] Card-collapse patient queue + inbox tables <640px; touch targets ≥40px; landing/roles
       stacking; manual 360px pass on all 16 routes
-- [ ] vitest: DiagramAtlas tabs, DiagramViewer zoom, ErrorBoundary, no-fallback-literal
+- [x] vitest: DiagramAtlas tabs, DiagramViewer zoom, ErrorBoundary, no-fallback-literal
       dashboard, drawer toggle (mock matchMedia), toast on save, onboarding V2
-- [ ] pytest: storage records after upload+approve, summary counts
+- [x] pytest: storage records after upload+approve, summary counts
 
 ## Verification matrix
 
