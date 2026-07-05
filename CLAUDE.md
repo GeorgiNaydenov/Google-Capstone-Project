@@ -54,6 +54,7 @@ clinical_app/
 mcp_server/
   server.py                 # Clinical MCP server — real database-backed tools via Model Context Protocol.
 scripts/
+  build_docs_site.py        # Build the standalone documentation hub served at /documentation.
   build_llm_wiki.py         # Script to compile the Obsidian Project Wiki into the Karpathy LLM Wiki structure.
   check_harness.py
   export_diagrams.py        # Export Project Wiki draw.io diagrams into frontend public assets.

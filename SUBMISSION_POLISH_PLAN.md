@@ -56,81 +56,89 @@ Demo tenants: seeded-but-plausible via `DemoRepository`. Real tenant: derived/pe
 Existing endpoint shapes change only additively.
 
 ### 1a. Repository/tenancy
-- [ ] `DemoDataset` gains `users` (5-6 per dataset), `monitor_baseline`, `pipeline_baseline`;
+- [x] `DemoDataset` gains `users` (5-6 per dataset), `monitor_baseline`, `pipeline_baseline`;
       deep-copied on `reset()` (`clinical_app/repository.py`, `tenancy.py`)
-- [ ] Both repos: `permissions` + `save_permissions(matrix, actor)` (demo session-scoped;
+- [x] Both repos: `permissions` + `save_permissions(matrix, actor)` (demo session-scoped;
       live `role_permissions` table, default matrix inserted on first read, persisted + audited)
-- [ ] Both repos: `list_users()` (demo dataset / live `users` table)
-- [ ] Both repos: `agent_monitoring()` (demo baseline+session runs; live derived from
+- [x] Both repos: `list_users()` (demo dataset / live `users` table)
+- [x] Both repos: `agent_monitoring()` (demo baseline+session runs; live derived from
       `repo.runs` + `audit_log`, honest `[]` when empty)
-- [ ] New `clinical_app/system.py`: `component_checks(repo)` — real checks with latency
+- [x] New `clinical_app/system.py`: `component_checks(repo)` — real checks with latency
       (SQLite SELECT 1, capstone_agent importable, uploads writable, model env configured
       [never calls model], frontend/dist present, MCP importable)
-- [ ] `clinical_app/system.py`: `seed_users(db_path)` — idempotent users + role_permissions
+- [x] `clinical_app/system.py`: `seed_users(db_path)` — idempotent users + role_permissions
       seeding in capstone.db from Pydantic-validated DEFAULT_USERS; called from
       `LiveRepository._hydrate_from_database()`
-- [ ] `LiveRepository._load_rows` joins `extracted_fields` into sessions; add
+- [x] `LiveRepository._load_rows` joins `extracted_fields` into sessions; add
       `build_notifications()` (awaiting review → critical, failed → warning)
 
 ### 1b. Endpoints (`clinical_app/app.py`, Pydantic models in `clinical_app/models.py`)
-- [ ] GET `/api/system/health` — `{components:[{name,status,latencyMs,detail}],checkedAt}`
-- [ ] GET `/api/agents/monitoring` (admin) — per-agent stats
-- [ ] GET `/api/users` — + `memberCounts` per role
-- [ ] GET/PUT `/api/permissions` (admin) — `{roles,matrix,version}`; PUT persists + audits
-- [ ] GET `/api/database/schema` — parsed from `clinical_schemas.SCHEMA_DDL`
-- [ ] GET `/api/summary` — `{queueCount,inboxCount,unreadNotifications,patients}`
-- [ ] GET `/api/patients/{id}/evidence`
-- [ ] GET `/api/storage` — extend with derived `records:[...]`
-- [ ] GET `/api/sessions/{id}` — extend with `extractedFields`
-- [ ] GET `/api/dashboard` — extend metrics: failedExtractions, totalUsers, activeClinicians,
+- [x] GET `/api/system/health` — `{components:[{name,status,latencyMs,detail}],checkedAt}`
+- [x] GET `/api/agents/monitoring` (admin) — per-agent stats
+- [x] GET `/api/users` — + `memberCounts` per role
+- [x] GET/PUT `/api/permissions` (admin) — `{roles,matrix,version}`; PUT persists + audits
+- [x] GET `/api/database/schema` — parsed from `clinical_schemas.SCHEMA_DDL`
+- [x] GET `/api/summary` — `{queueCount,inboxCount,unreadNotifications,patients}`
+- [x] GET `/api/patients/{id}/evidence`
+- [x] GET `/api/storage` — extend with derived `records:[...]`
+- [x] GET `/api/sessions/{id}` — extend with `extractedFields`
+- [x] GET `/api/dashboard` — extend metrics: failedExtractions, totalUsers, activeClinicians,
       pendingActions
-- [ ] Real-tenant `/api/notifications` → `repo.build_notifications()`
-- [ ] `capstone_agent/tools.py` `compose_clinical_answer`: deterministic synthesis replacing
+- [x] Real-tenant `/api/notifications` → `repo.build_notifications()`
+- [x] `capstone_agent/tools.py` `compose_clinical_answer`: deterministic synthesis replacing
       TODO pass-through (no LLM call; keep ToolResponse contract)
 
 ### 1c. Frontend wiring — delete every hardcoded constant
-- [ ] `api.ts` new calls: systemHealth, monitoring, permissions, savePermissions, schema,
+- [x] `api.ts` new calls: systemHealth, monitoring, permissions, savePermissions, schema,
       summary, patientEvidence; `types.ts` metrics required
-- [ ] `AdminScreens.tsx`: delete serviceHealth/monitorRows/objectRows/permissionSeed/mock
+- [x] `AdminScreens.tsx`: delete serviceHealth/monitorRows/objectRows/permissionSeed/mock
       role rows/[98.6,97.9,99.1]/"214/214"/static logs/"Total users: 48" — wire to endpoints,
       empty states for real tenant
-- [ ] `ClinicalScreens.tsx`: delete dashboardAlerts, fallbackActivity, all `?? N` fallbacks;
+- [x] `ClinicalScreens.tsx`: delete dashboardAlerts, fallbackActivity, all `?? N` fallbacks;
       PatientOverview derived; PatientProfile evidence tabs ← patientEvidence(); AI Summary ←
       latest QA run or CTA; SessionDetail ← extractedFields; ReportsView real navigation
-- [ ] `WorkflowScreens.tsx`: schemaTables ← api.schema(); DB Answer tab derived from rows;
+- [x] `WorkflowScreens.tsx`: schemaTables ← api.schema(); DB Answer tab derived from rows;
       relevance ← run confidence; QA source counts ← patientEvidence()
-- [ ] `Shell.tsx`: nav badges ← api.summary(); profile button → popover (no PT-8829 /
+- [x] `Shell.tsx`: nav badges ← api.summary(); profile button → popover (no PT-8829 /
       "Dr. Sarah Miller" hardcode)
-- [ ] `EntryScreens.tsx` RoleSelection: real health/summary instead of fake "Ready" badges
-- [ ] Quick filters "new"/"flagged"/"followup" implemented client-side with aria-pressed
+- [x] `EntryScreens.tsx` RoleSelection: real health/summary instead of fake "Ready" badges
+- [x] Quick filters "new"/"flagged"/"followup" implemented client-side with aria-pressed
 
 ### 1d. Tests
-- [ ] `test_clinical_api.py`: update users `== 2`; add system-health, schema, permissions,
+- [x] `test_clinical_api.py`: update users `== 2`; add system-health, schema, permissions,
       monitoring tests (all pass without GOOGLE_API_KEY)
-- [ ] `test_product_integration.py`: capstone users seeded; permissions persist across
+- [x] `test_product_integration.py`: capstone users seeded; permissions persist across
       fresh sessions; monitoring `[]` before runs; notifications derived from run state
 
 ## Phase 2 — Diagram atlas + home revamp
 
-- [ ] 2a. Export all 28 `.drawio` → `frontend/public/diagrams/svg/` via draw.io CLI
+- [x] 2a. Export all 28 `.drawio` → `frontend/public/diagrams/svg/` via draw.io CLI
       (`drawio -x -f svg -e -o out.svg in.drawio`; C4 via `--page-index 0/1/2`); copy PNGs
       08-28 as fallbacks; optional `scripts/export_diagrams.py`
-- [ ] 2b. `frontend/src/diagrams.ts` catalog `{id,title,category,summary,svg,png,points}`.
+- [x] 2b. `frontend/src/diagrams.ts` catalog `{id,title,category,summary,svg,png,points}`.
       Tabs→sub-tabs: System (01,02-p1/p2/p3,03,05,25) · Agents & Pipelines (06,07,08,09,12,28)
       · Security & Memory (10,11,22,26) · Processes (14-17,19-21,29) · Data & API (23,24) ·
       Deployment & Quality (04,13,18,27)
-- [ ] 2b. `components/DiagramViewer.tsx` — pointer pan, wheel+pinch zoom, zoom/reset/
+- [x] 2b. `components/DiagramViewer.tsx` — pointer pan, wheel+pinch zoom, zoom/reset/
       fullscreen, keyboard +/-/0, SVG `<img>` with PNG onError fallback, touch-first
-- [ ] 2b. `components/DiagramAtlas.tsx` (tablist + sub-tabs + viewer + summary; props
+- [x] 2b. `components/DiagramAtlas.tsx` (tablist + sub-tabs + viewer + summary; props
       defaultCategory, compact) and `components/InlineDiagram.tsx` (collapsible embed)
-- [ ] 2c. Atlas section on ClinicianDashboard + AdminDashboard (collapsible)
-- [ ] 2c. Landing refactor onto viewer/catalog; REMOVE "Open draw.io source" links; fix
+- [x] 2c. Atlas section on ClinicianDashboard + AdminDashboard (collapsible)
+- [x] 2c. Landing refactor onto viewer/catalog; REMOVE "Open draw.io source" links; fix
       07-a2a card; update `App.test.tsx`
-- [ ] 2c. Contextual embeds: Config/Safety←11, Config/monitoring←06, DB schema←23-ERD,
+- [x] 2c. Contextual embeds: Config/Safety←11, Config/monitoring←06, DB schema←23-ERD,
       Storage←10, Inbox←15-HITL, Extraction←16, QA←19
-- [ ] 2d. ClinicianDashboard: derived greeting/counts, quick-action row, atlas
-- [ ] 2d. AdminDashboard: metric-driven KPIs, health card, monitoring performance, pipeline
+- [x] 2d. ClinicianDashboard: derived greeting/counts, quick-action row, atlas
+- [x] 2d. AdminDashboard: metric-driven KPIs, health card, monitoring performance, pipeline
       status from storage records, atlas
+
+## Documentation hub (user-added scope, done)
+
+- [x] Standalone docs pages at `/documentation` (hub + Karpathy LLM Wiki + Obsidian
+      Project Wiki rendered HTML + links to Swagger/ReDoc/OpenAPI/API console),
+      built by `scripts/build_docs_site.py`, mounted ahead of the SPA fallback,
+      each page with home icon, "Back to main page", and "Enter the application"
+      buttons; app entry points link out instead of embedding wikis
 
 ## Phase 3 — UX polish / design patterns
 

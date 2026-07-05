@@ -1343,11 +1343,15 @@ def create_app() -> FastAPI:
             title="Clinician AI Kit - ReDoc Specification"
         )
 
-    docs_site = Path(__file__).resolve().parents[1] / "docs_site"
-    if docs_site.is_dir():
-        # Standalone documentation hub: readable wiki + API doc pages that
-        # share the deployed origin but load none of the application shell.
-        api.mount("/documentation", StaticFiles(directory=docs_site, html=True), name="documentation")
+    # Standalone documentation hub — built into frontend/public/documentation by
+    # scripts/build_docs_site.py and copied into dist/ by npm run build. Prefer
+    # the built copy, but fall back to the committed source folder so the hub
+    # serves without a frontend build (dev servers and the test client).
+    project_root = Path(__file__).resolve().parents[1]
+    for candidate in (project_root / "frontend" / "dist" / "documentation", project_root / "frontend" / "public" / "documentation"):
+        if candidate.is_dir():
+            api.mount("/documentation", StaticFiles(directory=candidate, html=True), name="documentation")
+            break
 
     dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
     if dist.is_dir():
@@ -1359,7 +1363,7 @@ def create_app() -> FastAPI:
         def spa(path: str) -> FileResponse:
             """Serve built frontend and fall back to SPA entry point."""
 
-            if path in ("api", "docs", "redoc", "openapi.json", "documentation") or path.startswith(("api/", "docs/", "redoc/", "documentation/")):
+            if path in ("api", "docs", "redoc", "openapi.json") or path.startswith(("api/", "docs/", "redoc/")):
                 raise HTTPException(404, "API route not found")
             candidate = (dist / path).resolve()
             if candidate.is_file() and dist.resolve() in candidate.parents:

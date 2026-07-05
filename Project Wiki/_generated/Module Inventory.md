@@ -45,6 +45,7 @@ Hand-written companion: [[Module Reference]].
 | `clinical_app` | `tenancy.py` | Tenant registry for the clinician product — single source of truth. |
 | `mcp_server` | `__init__.py` | (no docstring) |
 | `mcp_server` | `server.py` | Clinical MCP server — real database-backed tools via Model Context Protocol. |
+| `scripts` | `build_docs_site.py` | Build the standalone documentation hub served at /documentation. |
 | `scripts` | `build_llm_wiki.py` | Script to compile the Obsidian Project Wiki into the Karpathy LLM Wiki structure. |
 | `scripts` | `check_harness.py` | (no docstring) |
 | `scripts` | `export_diagrams.py` | Export Project Wiki draw.io diagrams into frontend public assets. |

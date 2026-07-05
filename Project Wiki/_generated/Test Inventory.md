@@ -15,7 +15,7 @@ Hand-written companion: [[Testing & Eval]].
 |-----------|-------|--------|
 | `test_agent_eval.py` | 3 | Agent evaluation tests — validates agent behavior end-to-end. |
 | `test_callbacks.py` | 10 | Unit tests for the 3-layer security callbacks. |
-| `test_clinical_api.py` | 18 | Frontend contract tests for deterministic clinician product API. |
+| `test_clinical_api.py` | 19 | Frontend contract tests for deterministic clinician product API. |
 | `test_clinical_tools.py` | 32 | Clinical tool integration tests — mock data consistency and HITL. |
 | `test_context.py` | 5 | Tests for context engineering utilities (Day 1 working memory). |
 | `test_document_parsing.py` | 8 | Document upload policy and extraction contract tests. |
@@ -31,4 +31,4 @@ Hand-written companion: [[Testing & Eval]].
 | `test_versioned_api.py` | 5 | Unit tests for the versioned API backend endpoints (V1 and V2). |
 | `test_wiki_sync.py` | 7 | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |
 
-**Total test functions: 235**
+**Total test functions: 236**

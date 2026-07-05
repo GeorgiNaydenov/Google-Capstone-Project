@@ -1,5 +1,60 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Component, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AgentRun, AuditEvent, Evidence, Patient, Role, ToolCall } from "./types";
+
+export class ErrorBoundary extends Component<{ children: ReactNode; label?: string }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return <div className="error" role="alert">
+        <strong>{this.props.label ?? "This view"} hit an unexpected error</strong>
+        <span>{this.state.error.message}</span>
+        <button className="button subtle" onClick={() => this.setState({ error: null })}>Try again</button>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
+type Toast = { id: number; message: string; tone: "success" | "error" | "info" };
+const ToastContext = createContext<(message: string, tone?: Toast["tone"]) => void>(() => undefined);
+
+export function useToast() { return useContext(ToastContext); }
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const push = useCallback((message: string, tone: Toast["tone"] = "success") => {
+    const id = Date.now() + Math.random();
+    setToasts(current => [...current.slice(-3), { id, message, tone }]);
+    window.setTimeout(() => setToasts(current => current.filter(item => item.id !== id)), 4600);
+  }, []);
+  return <ToastContext.Provider value={push}>
+    {children}
+    <div className="toast-stack" role="status" aria-live="polite">{toasts.map(toast => <div key={toast.id} className={`toast ${toast.tone}`}><span>{toast.message}</span><button aria-label="Dismiss notification" onClick={() => setToasts(current => current.filter(item => item.id !== toast.id))}>x</button></div>)}</div>
+  </ToastContext.Provider>;
+}
+
+export function ConfirmDialog({ open, title, detail, confirmLabel = "Confirm", tone = "danger", onConfirm, onCancel }: { open: boolean; title: string; detail: string; confirmLabel?: string; tone?: "danger" | "primary"; onConfirm: () => void; onCancel: () => void }) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    confirmRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onCancel(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onCancel]);
+  if (!open) return null;
+  return <div className="modal-backdrop" onClick={onCancel}>
+    <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-label={title} onClick={event => event.stopPropagation()}>
+      <h2>{title}</h2>
+      <p>{detail}</p>
+      <div className="button-row">
+        <button className="button subtle" onClick={onCancel}>Cancel</button>
+        <button ref={confirmRef} className={`button ${tone}`} onClick={onConfirm}>{confirmLabel}</button>
+      </div>
+    </section>
+  </div>;
+}
 
 export function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const paths: Record<string, string> = {

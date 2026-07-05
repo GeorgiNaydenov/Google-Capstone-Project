@@ -26,7 +26,7 @@ from markdown_it import MarkdownIt
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 LLM_WIKI_ROOT = PROJECT_ROOT / "wiki"
 OBSIDIAN_ROOT = PROJECT_ROOT / "Project Wiki"
-OUTPUT_ROOT = PROJECT_ROOT / "docs_site"
+OUTPUT_ROOT = PROJECT_ROOT / "frontend" / "public" / "documentation"
 
 SKIP_DIRS = {".obsidian", "diagrams"}
 

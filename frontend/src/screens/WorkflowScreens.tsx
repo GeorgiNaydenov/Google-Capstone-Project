@@ -1,7 +1,7 @@
 import { DragEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api";
-import { AgentMeta, AgentStepper, Card, ChartPanel, ConfidenceMeter, DenseTable, EmptyState, ErrorState, EvidenceCard, JsonViewer, LoadingState, ReviewChecklist, SourceViewer, SqlPreview, StatusBadge } from "../components";
+import { AgentMeta, AgentStepper, Card, ChartPanel, ConfidenceMeter, ConfirmDialog, DenseTable, EmptyState, ErrorState, EvidenceCard, JsonViewer, LoadingState, ReviewChecklist, SourceViewer, SqlPreview, StatusBadge, useToast } from "../components";
 import { InlineDiagram } from "../components/InlineDiagram";
 import { useClinical } from "../context";
 import type { AgentRun, Evidence, ToolCall } from "../types";
@@ -65,6 +65,8 @@ export function Extraction() {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
+  const [confirmReject, setConfirmReject] = useState(false);
+  const toast = useToast();
   useRunPolling(run, setRun);
   useEffect(() => {
     const fields = run?.result?.fields;
@@ -87,9 +89,16 @@ export function Extraction() {
   const decide = async (decision: "approved" | "rejected") => {
     if (!run) return;
     setBusy(true); setError("");
-    try { setRun(await api.review(run.id, decision, fieldEdits)); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Review decision failed"); }
+    try {
+      setRun(await api.review(run.id, decision, fieldEdits));
+      toast(decision === "approved" ? "Extraction approved and synced" : "Extraction rejected; nothing persisted", decision === "approved" ? "success" : "info");
+    }
+    catch (reason) { const message = reason instanceof Error ? reason.message : "Review decision failed"; setError(message); toast(message, "error"); }
     finally { setBusy(false); }
+  };
+  const onDecision = (decision: "approved" | "rejected") => {
+    if (decision === "rejected") { setConfirmReject(true); return; }
+    void decide(decision);
   };
   const extractionPipeline = catalog.data?.pipelines.find(item => item.id === "extraction");
   const agents = extractionPipeline?.agents ?? ["quality_assessor_agent", "ocr_processor_agent", "vision_analyzer_agent", "clinical_structuring_agent", "validation_agent", "clinical_review_gate_agent", "storage_agent", "vector_indexing_agent", "audit_agent"];
@@ -112,13 +121,14 @@ export function Extraction() {
         <Card title="3. Structured clinical output">{!run ? <EmptyState title="Awaiting agent output"/> : outputTab === "Extracted fields" ? <div className="editable-fields"><DenseTable columns={[{ key: "field", label: "Clinical field" }, { key: "value", label: "Extracted value", render: row => <input aria-label={`Edit ${String(row.field)}`} disabled={run.status === "completed"} value={String(fieldEdits[String(row.field)] ?? "")} onChange={event => setFieldEdits(current => ({ ...current, [String(row.field)]: event.target.value }))}/> }, { key: "confidence", label: "Confidence", render: row => { const c = Number(row.confidence); return <span className={c < 75 ? "confidence-low" : c < 90 ? "confidence-mid" : "confidence-high"}>{c}%</span>; } }, { key: "review", label: "Validation", render: row => <StatusBadge tone={row.review === "Pass" ? "success" : "review"}>{String(row.review)}</StatusBadge> }]} rows={fieldRows}/></div> : outputTab === "Structured JSON" ? <JsonViewer value={{ patientId, source: file?.name, fields: fieldEdits, confidence: run.confidence, humanReview: run.status }}/>: outputTab === "Relational mapping" ? <DenseTable columns={[{ key: "field", label: "JSON field" }, { key: "table", label: "Table" }, { key: "column", label: "Column" }, { key: "status", label: "Mapping" }]} rows={fieldRows.map(row => ({ id: row.id, field: row.field, table: "session_extractions", column: row.field.replaceAll(/([A-Z])/g, "_$1").toLowerCase(), status: "Ready" }))}/>: <div className="vector-preview"><StatusBadge tone={run.status === "completed" ? "success" : "review"}>{run.status === "completed" ? "Indexed" : "Waiting for approval"}</StatusBadge><code>vertex://clinical-evidence/{run.id}</code><p>Text and image embeddings · 768 dimensions · patient-scoped namespace</p></div>}</Card>
       </section>
       <aside className="extraction-review">
-        {run ? <><Card title="Confidence and provenance"><ConfidenceMeter value={run.confidence}/><dl className="compact-facts"><div><dt>Agent system</dt><dd>{run.agentName}</dd></div><div><dt>Audit ID</dt><dd>{run.auditId}</dd></div><div><dt>Trace ID</dt><dd>{run.traceId}</dd></div><div><dt>Evidence</dt><dd>{run.evidence?.length ?? 0} source</dd></div></dl></Card><ReviewChecklist disabled={run.status === "completed" || busy} onRerun={() => void start()} onDecision={decision => void decide(decision)}/><Card title="Storage and audit"><div className="receipt-list">{["json", "relational", "vector", "audit"].map(target => { const receipt = receipts.find(item => item.target === target); const synced = run.status === "completed" && (target === "audit" || receipt?.status === "synced"); return <div key={target}><span>{target}</span><StatusBadge tone={synced ? "success" : "review"}>{synced ? "synced" : "pending review"}</StatusBadge>{receipt?.receiptId && <code>{receipt.receiptId}</code>}</div>; })}</div></Card></> : <Card title="Human review boundary"><p>Extracted values remain editable and unpersisted until all verification checks are complete.</p><ul className="policy-list"><li>No automatic clinical decisions</li><li>Field-level confidence visible</li><li>Evidence remains reopenable</li><li>Every action is audited</li></ul></Card>}
+        {run ? <><Card title="Confidence and provenance"><ConfidenceMeter value={run.confidence}/><dl className="compact-facts"><div><dt>Agent system</dt><dd>{run.agentName}</dd></div><div><dt>Audit ID</dt><dd>{run.auditId}</dd></div><div><dt>Trace ID</dt><dd>{run.traceId}</dd></div><div><dt>Evidence</dt><dd>{run.evidence?.length ?? 0} source</dd></div></dl></Card><ReviewChecklist disabled={run.status === "completed" || busy} onRerun={() => void start()} onDecision={onDecision}/><Card title="Storage and audit"><div className="receipt-list">{["json", "relational", "vector", "audit"].map(target => { const receipt = receipts.find(item => item.target === target); const synced = run.status === "completed" && (target === "audit" || receipt?.status === "synced"); return <div key={target}><span>{target}</span><StatusBadge tone={synced ? "success" : "review"}>{synced ? "synced" : "pending review"}</StatusBadge>{receipt?.receiptId && <code>{receipt.receiptId}</code>}</div>; })}</div></Card></> : <Card title="Human review boundary"><p>Extracted values remain editable and unpersisted until all verification checks are complete.</p><ul className="policy-list"><li>No automatic clinical decisions</li><li>Field-level confidence visible</li><li>Evidence remains reopenable</li><li>Every action is audited</li></ul></Card>}
       </aside>
     </div>
+    <ConfirmDialog open={confirmReject} title="Reject this extraction?" detail="The extracted values will be discarded and nothing is persisted to clinical storage. This is logged to the audit trail." confirmLabel="Reject output" onConfirm={() => { setConfirmReject(false); void decide("rejected"); }} onCancel={() => setConfirmReject(false)}/>
   </>;
 }
 
-const exampleQuestions = ["What changed between the last two sessions?", "Show image evidence for the latest abnormal result.", "Which extracted fields were verified by a clinician?", "Summarize the 90-day clinical trend."];
+const exampleQuestions =["What changed between the last two sessions?", "Show image evidence for the latest abnormal result.", "Which extracted fields were verified by a clinician?", "Summarize the 90-day clinical trend."];
 
 export function PatientQa() {
   const [params] = useSearchParams();

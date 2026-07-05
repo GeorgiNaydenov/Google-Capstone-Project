@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api";
-import { AuditTimeline, Card, DenseTable, EmptyState, ErrorState, JsonViewer, KpiStrip, LoadingState, StatusBadge } from "../components";
+import { AuditTimeline, Card, DenseTable, EmptyState, ErrorState, JsonViewer, KpiStrip, LoadingState, StatusBadge, useToast } from "../components";
 import { DiagramAtlas } from "../components/DiagramAtlas";
 import { InlineDiagram } from "../components/InlineDiagram";
 import { useApi } from "../useApi";
@@ -74,6 +74,7 @@ export function UsersRoles() {
   const [tab, setTab] = useState("Users");
   const [saving, setSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState("");
+  const toast = useToast();
   const rows = asArray<ClinicalUser>(users.data);
   const roles = permissionsState.data?.roles ?? ["Admin", "Clinician", "Reviewer", "Read-only Viewer", "Data Manager"];
   const matrix = permissionsState.data?.matrix ?? [];
@@ -91,8 +92,11 @@ export function UsersRoles() {
       const saved = await api.savePermissions(matrix);
       permissionsState.setData(saved);
       setSaveNotice(`Permission matrix v${saved.version} saved and audit event recorded.`);
+      toast(`Permission matrix v${saved.version} saved`);
     } catch (reason) {
-      setSaveNotice(reason instanceof Error ? reason.message : "Unable to save permissions");
+      const message = reason instanceof Error ? reason.message : "Unable to save permissions";
+      setSaveNotice(message);
+      toast(message, "error");
     } finally { setSaving(false); }
   };
   const roleAssignments = rows.map((user, index) => ({ id: index + 1, user: user.name, roles: user.roles.join(", "), scope: user.scope, status: user.status }));
@@ -137,6 +141,7 @@ export function AgentConfiguration() {
   const [notice, setNotice] = useState("");
   const [saveError, setSaveError] = useState("");
   const [disabledAgents, setDisabledAgents] = useState<string[]>([]);
+  const toast = useToast();
   if (configState.loading) return <LoadingState/>;
   if (configState.error || !configState.data) return <ErrorState error={configState.error ?? new Error("Configuration unavailable")} retry={configState.refresh}/>;
   const config = configState.data;
@@ -144,10 +149,14 @@ export function AgentConfiguration() {
   const save = async () => {
     setSaving(true); setNotice(""); setSaveError("");
     try {
-      configState.setData(await api.saveConfig(config));
+      const saved = await api.saveConfig(config);
+      configState.setData(saved);
       setNotice("Configuration version saved and audit event recorded.");
+      toast(`Agent configuration v${saved.version} saved`);
     } catch (reason) {
-      setSaveError(reason instanceof Error ? reason.message : "Unable to save configuration");
+      const message = reason instanceof Error ? reason.message : "Unable to save configuration";
+      setSaveError(message);
+      toast(message, "error");
     } finally {
       setSaving(false);
     }

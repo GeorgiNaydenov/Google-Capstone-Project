@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ClinicalProvider, useClinical } from "./context";
+import { ErrorBoundary, ToastProvider } from "./components";
 import { Shell } from "./Shell";
 import { AdminDashboard, AgentConfiguration, DataStorage, UsersRoles } from "./screens/AdminScreens";
 import { ClinicalInbox, ClinicianDashboard, PatientOverview, PatientProfile, PatientSearch, SessionDetail } from "./screens/ClinicalScreens";
@@ -23,7 +24,7 @@ function RequireRole({ allow, fallback, children }: { allow: Role; fallback: str
 }
 
 export function App() {
-  return <ClinicalProvider><Routes>
+  return <ClinicalProvider><ToastProvider><ErrorBoundary label="The application"><Routes>
     <Route path="/" element={<Landing/>}/><Route path="/roles" element={<RoleSelection/>}/>
     <Route path="/docs-viewer" element={<DeveloperConsole/>}/>
     <Route path="/app" element={<Shell/>}>
@@ -39,5 +40,5 @@ export function App() {
       <Route path="configuration" element={<RequireRole allow="admin" fallback="/app/dashboard"><AgentConfiguration/></RequireRole>}/>
       <Route path="console" element={<Navigate to="/docs-viewer?tab=api_runner" replace/>}/>
     </Route><Route path="*" element={<Navigate to="/" replace/>}/>
-  </Routes></ClinicalProvider>;
+  </Routes></ErrorBoundary></ToastProvider></ClinicalProvider>;
 }
