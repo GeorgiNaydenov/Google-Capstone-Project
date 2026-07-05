@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { DiagramAtlas } from "../components/DiagramAtlas";
 import { Icon, StatusBadge } from "../components";
@@ -40,29 +40,13 @@ export function Landing() {
       count: "6 agents",
     },
   ];
-  const [docsOpen, setDocsOpen] = useState(false);
-
   return <main className="landing-page">
     <header className="landing-nav">
       <div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div>
       <nav>
         <a href="#workflows">Agent workflows</a>
         <a href="#architecture">Architecture diagrams</a>
-        <a href="#governance">Governance</a>
-        <div className="nav-dropdown" onMouseEnter={() => setDocsOpen(true)} onMouseLeave={() => setDocsOpen(false)}>
-          <button type="button" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Developer & Docs <Icon name="settings" size={14}/>
-          </button>
-          {docsOpen && (
-            <div className="nav-dropdown-menu">
-              <a href="/documentation/">Documentation hub</a>
-              <a href="/documentation/llm-wiki/index.html">Karpathy LLM Wiki</a>
-              <a href="/documentation/project-wiki/Home.html">Obsidian Wiki</a>
-              <a href="/docs">Interactive API Docs</a>
-              <button type="button" onClick={() => navigate("/docs-viewer?tab=api_runner")}>API Console</button>
-            </div>
-          )}
-        </div>
+        <Link to="/docs-access">How to Access Documentation</Link>
       </nav>
       <StatusBadge tone="info">Synthetic clinical data</StatusBadge>
     </header>
@@ -87,7 +71,6 @@ export function Landing() {
       <div className="diagram-atlas-intro"><div><strong>Architecture diagram atlas</strong><small>Six categories with pan, zoom, fullscreen, SVG rendering, and PNG fallback.</small></div><StatusBadge tone="info">31 views</StatusBadge></div>
       <DiagramAtlas defaultCategory="system"/>
     </section>
-    <section className="governance-section" id="governance"><div><span className="eyebrow">HUMAN-GOVERNED BY DESIGN</span><h2>Clinical decisions stay with clinicians.</h2><p>Patient scope checks, read-only SQL, evidence citations, explicit approval, secret redaction, and immutable audit events are present across the product. The system helps prepare decisions; it does not make them quietly in the background.</p></div><button className="button primary large" onClick={() => void enter()}>Start clinical workspace</button></section>
   </main>;
 }
 
@@ -100,5 +83,85 @@ export function RoleSelection() {
     <header><div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div><StatusBadge tone="info">Synthetic clinical data</StatusBadge></header>
     <section className="role-intro"><span className="eyebrow accent">SELECT WORKSPACE</span><h1>How are you working today?</h1><p>The same identity can switch roles at any time. Active patient and workflow context follows you.</p></section>
     <div className="role-dashboard"><section className="role-cards"><button onClick={() => enter("clinician")}><span className="role-icon"><Icon name="activity" size={28}/></span><div><small>CLINICAL OPERATIONS</small><strong>Clinician workspace</strong><p>Patient queue, sessions, extraction, cited Q&A, database intelligence, review, and audit.</p><b>Enter clinician workspace</b></div></button><button onClick={() => enter("admin")}><span className="role-icon"><Icon name="settings" size={28}/></span><div><small>PLATFORM CONTROL</small><strong>Administrator workspace</strong><p>Users, agents, routing, pipelines, storage, indexes, relational data, health, and compliance.</p><b>Enter admin workspace</b></div></button></section><aside><section><h2>Recent agent runs</h2>{[["Image Extraction", "PT-8829", "Completed"], ["Patient Q&A", "PT-1029", "Review"], ["Database Intelligence", "Cohort", "Completed"]].map(([agent, entity, status]) => <div className="role-activity" key={agent}><span className="pulse"/><span><strong>{agent}</strong><small>{entity} moments ago</small></span><StatusBadge tone={status === "Completed" ? "success" : "review"}>{status}</StatusBadge></div>)}</section><section><h2>System status</h2><div className="role-status"><span>ADK orchestrator <StatusBadge tone="success">Ready</StatusBadge></span><span>Clinical data stores <StatusBadge tone="success">Synchronized</StatusBadge></span><span>Audit pipeline <StatusBadge tone="success">Recording</StatusBadge></span></div></section></aside></div>
+  </main>;
+}
+
+type DocsGuide = {
+  id: string;
+  title: string;
+  what: string;
+  prerequisites: string[];
+  commands: string;
+  url: string;
+  urlLabel: string;
+  note?: string;
+};
+
+const docsGuides: DocsGuide[] = [
+  {
+    id: "swagger",
+    title: "1. Swagger UI — interactive API console",
+    what: "Auto-generated, styled OpenAPI console for every /api/v1 and /api/v2 REST endpoint. Lets you send real requests to the running backend from the browser.",
+    prerequisites: ["Python 3.11+", "uv (or pip)", "Packages from requirements.txt — fastapi and uvicorn are already listed there"],
+    commands: `uv venv .venv --python 3.11\nuv pip install --python .venv\\Scripts\\python.exe -r requirements.txt\nuv run uvicorn clinical_app.app:app --reload --port 8000`,
+    url: "http://localhost:8000/docs",
+    urlLabel: "localhost:8000/docs",
+    note: "Works the same in demo or live mode — only the backend process needs to be running.",
+  },
+  {
+    id: "redoc",
+    title: "2. ReDoc — readable API reference",
+    what: "The same OpenAPI contract as Swagger, rendered as a structured, read-only reference organized by tag. Better for skimming the schema than for firing test requests.",
+    prerequisites: ["Same backend process as Swagger — no extra install"],
+    commands: `uv run uvicorn clinical_app.app:app --reload --port 8000`,
+    url: "http://localhost:8000/redoc",
+    urlLabel: "localhost:8000/redoc",
+    note: "The raw machine-readable contract is also available at /openapi.json on the same server.",
+  },
+  {
+    id: "obsidian",
+    title: "3. Obsidian Project Wiki — engineering vault",
+    what: "The full engineering vault: architecture notes, security and memory design, operations runbooks, and generated inventories. Pre-rendered to static HTML and already committed to the repo.",
+    prerequisites: ["None to just read it — the rendered pages ship in frontend/public/documentation/project-wiki/", "To rebuild after editing Project Wiki/*.md: Python 3.11+ and the markdown-it-py package", "Optional, to edit the vault itself with backlinks and graph view: the Obsidian desktop app (obsidian.md)"],
+    commands: `# View it (dev server)\ncd frontend && npm ci && npm run dev\n# then open the URL below\n\n# Rebuild after editing Project Wiki/*.md\nuv pip install markdown-it-py\nuv run python scripts/build_docs_site.py`,
+    url: "http://localhost:5173/documentation/project-wiki/Home.html",
+    urlLabel: "localhost:5173/documentation/project-wiki/Home.html",
+    note: "Once the FastAPI backend serves the built frontend, the same page is at localhost:8000/documentation/project-wiki/Home.html.",
+  },
+  {
+    id: "karpathy",
+    title: "4. Karpathy LLM Wiki — distilled knowledge base",
+    what: "One distilled article per topic, summarized and categorized for fast reading, compiled from the same Obsidian vault by the same build script.",
+    prerequisites: ["None to just read it — already committed under frontend/public/documentation/llm-wiki/", "To rebuild after editing wiki/*.md: Python 3.11+ and the markdown-it-py package"],
+    commands: `# View it (dev server)\ncd frontend && npm ci && npm run dev\n# then open the URL below\n\n# Rebuild (regenerates both wikis in one pass)\nuv pip install markdown-it-py\nuv run python scripts/build_docs_site.py`,
+    url: "http://localhost:5173/documentation/llm-wiki/index.html",
+    urlLabel: "localhost:5173/documentation/llm-wiki/index.html",
+  },
+];
+
+export function DocsAccess() {
+  return <main className="docs-access-page">
+    <header className="landing-nav">
+      <div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div>
+      <nav><Link to="/">Back to main page</Link></nav>
+    </header>
+    <section className="docs-access-intro">
+      <span className="eyebrow accent">DEVELOPER REFERENCE</span>
+      <h1>How to access documentation</h1>
+      <p>Four surfaces cover this project's documentation: two live API consoles generated straight from the code, and two pre-rendered knowledge bases. Each entry below lists exactly what it needs, the commands to run, and the URL to open.</p>
+    </section>
+    <section className="docs-access-list">
+      {docsGuides.map(guide => <article className="docs-access-card" key={guide.id}>
+        <h2>{guide.title}</h2>
+        <p>{guide.what}</p>
+        <h3>Dependencies</h3>
+        <ul>{guide.prerequisites.map(item => <li key={item}>{item}</li>)}</ul>
+        <h3>Commands</h3>
+        <pre>{guide.commands}</pre>
+        <h3>Open it</h3>
+        <a href={guide.url} target="_blank" rel="noreferrer">{guide.urlLabel}</a>
+        {guide.note && <p className="docs-access-note">{guide.note}</p>}
+      </article>)}
+    </section>
   </main>;
 }

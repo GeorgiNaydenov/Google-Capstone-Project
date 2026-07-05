@@ -588,11 +588,20 @@ html { scroll-behavior: smooth; }
 .landing-nav nav a::after, .landing-nav nav button::after { content: ""; position: absolute; right: 0; bottom: 15px; left: 0; height: 2px; border-radius: 99px; background: var(--blue); transform: scaleX(0); transform-origin: left; transition: transform .22s ease; }
 .landing-nav nav a:hover, .landing-nav nav button:hover { color: var(--blue-dark); transform: translateY(-1px); }
 .landing-nav nav a:hover::after, .landing-nav nav button:hover::after { transform: scaleX(1); }
-.nav-dropdown { position: relative; display: flex; align-items: center; }
-.nav-dropdown-menu { position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid var(--border-strong); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-width: 200px; padding: 8px; z-index: 50; }
-.nav-dropdown-menu button, .nav-dropdown-menu a { display: block; text-decoration: none; text-align: left; padding: 10px 12px; width: 100%; border-radius: 4px; border: none; background: none; cursor: pointer; color: #475569; font-weight: 500; font-size: 13px; font-family: inherit; }
-.nav-dropdown-menu button:hover, .nav-dropdown-menu a:hover { background: #f1f5f9; color: var(--blue-dark); }
-.nav-dropdown-menu button::after { display: none; }
+.docs-access-page { max-width: 960px; margin: 0 auto; padding-bottom: 80px; }
+.docs-access-intro { padding: 48px 5vw 8px; }
+.docs-access-intro h1 { margin: 7px 0 10px; font-size: 30px; letter-spacing: 0; }
+.docs-access-intro p { max-width: 700px; color: #475569; line-height: 1.6; }
+.docs-access-list { display: grid; gap: 20px; padding: 20px 5vw 0; }
+.docs-access-card { padding: 24px 26px; border: 1px solid var(--border-strong); border-radius: 8px; background: #fff; box-shadow: 0 14px 32px #0f172a0f; }
+.docs-access-card h2 { margin: 0 0 8px; font-size: 18px; letter-spacing: 0; }
+.docs-access-card > p { margin: 0 0 14px; color: #334155; font-size: 14px; line-height: 1.6; }
+.docs-access-card h3 { margin: 16px 0 6px; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: #64748b; }
+.docs-access-card ul { margin: 0; padding-left: 18px; color: #334155; font-size: 13px; line-height: 1.6; }
+.docs-access-card pre { margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 6px; background: #0f172a; color: #e2e8f0; font-size: 12.5px; line-height: 1.6; overflow-x: auto; white-space: pre; }
+.docs-access-card > a { display: inline-block; margin-top: 4px; color: var(--blue-dark); font-size: 13px; font-weight: 700; text-decoration: none; }
+.docs-access-card > a:hover { text-decoration: underline; }
+.docs-access-note { margin: 10px 0 0; color: #64748b; font-size: 12px; line-height: 1.5; }
 .landing-page .button { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease, background .22s ease; }
 .landing-page .button:hover { transform: translateY(-1px); }
 .landing-hero { display: grid; min-height: 550px; grid-template-columns: .9fr 1.1fr; align-items: center; gap: 5vw; padding: 55px 5vw; background: linear-gradient(135deg, #f8fafc 52%, #edf6ff); }
@@ -747,7 +756,7 @@ html { scroll-behavior: smooth; }
 .role-status > span { display: flex; min-height: 37px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); font-size: 12px; }
 
 /* Onboarding tour */
-.tour-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; align-items: end; justify-items: center; padding: clamp(18px, 4vw, 44px); background: linear-gradient(180deg, #f8fafc55, #e2e8f045); backdrop-filter: saturate(1.04); }
+.tour-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; align-items: center; justify-items: center; padding: clamp(18px, 4vw, 44px); background: linear-gradient(180deg, #f8fafc55, #e2e8f045); backdrop-filter: saturate(1.04); }
 .tour-backdrop::before { content: ""; position: absolute; inset: 16px; border: 1px solid #ffffff80; border-radius: 16px; pointer-events: none; }
 .tour-modal { position: relative; z-index: 1; display: grid; gap: 12px; width: min(640px, 94vw); max-height: calc(100vh - 56px); overflow: auto; padding: 20px 24px 18px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fffffff5; box-shadow: 0 22px 55px #0f172a30; outline: 0; animation: tour-in .28s ease; }
 @keyframes tour-in { from { opacity: 0; transform: translateY(10px) scale(.985); } }

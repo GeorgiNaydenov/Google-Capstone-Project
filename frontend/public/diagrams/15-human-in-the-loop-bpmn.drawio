@@ -101,10 +101,11 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="600" y="80" />
-              <mxPoint x="55" y="80" />
-              <mxPoint x="55" y="620" />
+              <mxPoint x="80" y="80" />
+              <mxPoint x="80" y="620" />
               <mxPoint x="365" y="620" />
             </Array>
+            <mxPoint as="offset" x="0" y="-12" />
           </mxGeometry>
         </mxCell>
         <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.75;entryY=1;" edge="1" parent="1" source="approved" target="audit">

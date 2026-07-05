@@ -5,7 +5,7 @@ import { ErrorBoundary, ToastProvider } from "./components";
 import { Shell } from "./Shell";
 import { AdminDashboard, AgentConfiguration, DataStorage, UsersRoles } from "./screens/AdminScreens";
 import { ClinicalInbox, ClinicianDashboard, PatientOverview, PatientProfile, PatientSearch, SessionDetail } from "./screens/ClinicalScreens";
-import { Landing, RoleSelection } from "./screens/EntryScreens";
+import { DocsAccess, Landing, RoleSelection } from "./screens/EntryScreens";
 import { DatabaseIntelligence, Extraction, PatientQa } from "./screens/WorkflowScreens";
 import { DeveloperConsole } from "./screens/DeveloperConsole";
 import type { Role } from "./types";
@@ -14,7 +14,7 @@ export const primaryRoutes = [
   "/", "/roles", "/app/patients", "/app/overview", "/app/dashboard", "/app/queue",
   "/app/patient/:patientId", "/app/session/:sessionId", "/app/extraction", "/app/qa",
   "/app/database", "/app/inbox", "/app/admin", "/app/users", "/app/storage", "/app/configuration", "/app/console",
-  "/docs-viewer",
+  "/docs-viewer", "/docs-access",
 ] as const;
 
 function RequireRole({ allow, fallback, children }: { allow: Role; fallback: string; children: ReactNode }) {
@@ -27,6 +27,7 @@ export function App() {
   return <ClinicalProvider><ToastProvider><ErrorBoundary label="The application"><Routes>
     <Route path="/" element={<Landing/>}/><Route path="/roles" element={<RoleSelection/>}/>
     <Route path="/docs-viewer" element={<DeveloperConsole/>}/>
+    <Route path="/docs-access" element={<DocsAccess/>}/>
     <Route path="/app" element={<Shell/>}>
       <Route index element={<Navigate to="dashboard" replace/>}/>
       <Route path="patients" element={<PatientSearch/>}/><Route path="overview" element={<PatientOverview/>}/>

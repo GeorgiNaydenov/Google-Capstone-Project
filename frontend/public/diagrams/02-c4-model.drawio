@@ -162,7 +162,7 @@
         <mxCell id="k7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;entryX=0.25;entryY=0;" edge="1" parent="1" source="orch" target="p3">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1025" y="145" />
+              <mxPoint x="1025" y="142.5" />
             </Array>
           </mxGeometry>
         </mxCell>

@@ -8,9 +8,10 @@ describe("clinical product shell", () => {
   beforeEach(() => { localStorage.setItem(ONBOARDING_KEY, "done"); });
   afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); sessionStorage.clear(); });
   it("declares the current primary screen inventory", () => {
-    expect(primaryRoutes).toHaveLength(18);
+    expect(primaryRoutes).toHaveLength(19);
     expect(primaryRoutes).toContain("/app/console");
     expect(primaryRoutes).toContain("/docs-viewer");
+    expect(primaryRoutes).toContain("/docs-access");
   });
   it("renders public synthetic demo landing", () => {
     render(<MemoryRouter initialEntries={["/"]}><App/></MemoryRouter>);

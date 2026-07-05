@@ -116,7 +116,8 @@
         <mxCell id="e10" value="queries governed clinical records" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="al_db" target="sqlite">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="850" y="970" />
+              <mxPoint x="1040" y="970" />
+              <mxPoint x="815" y="970" />
             </Array>
           </mxGeometry>
         </mxCell>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { DiagramView } from "../diagrams";
 
 type Point = { x: number; y: number };
@@ -32,9 +32,6 @@ export function DiagramViewer({ diagram, compact = false }: { diagram: DiagramVi
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
   const [src, setSrc] = useState(diagram.svg);
 
-  const [showScrollHint, setShowScrollHint] = useState(false);
-  const hintTimeoutRef = useRef<number | null>(null);
-
   useEffect(() => {
     setScale(1);
     scaleRef.current = 1;
@@ -43,7 +40,6 @@ export function DiagramViewer({ diagram, compact = false }: { diagram: DiagramVi
     pointers.current.clear();
     drag.current = null;
     pinch.current = null;
-    setShowScrollHint(false);
   }, [diagram.id, diagram.svg]);
 
   useEffect(() => { scaleRef.current = scale; }, [scale]);
@@ -52,17 +48,20 @@ export function DiagramViewer({ diagram, compact = false }: { diagram: DiagramVi
   const reset = () => { setScale(1); setOffset({ x: 0, y: 0 }); };
   const fullscreen = () => { void viewportRef.current?.requestFullscreen?.(); };
 
-  const onWheel = (event: WheelEvent<HTMLDivElement>) => {
-    if (event.ctrlKey || event.metaKey) {
+  // Non-passive wheel listener so preventDefault actually stops browser zoom/scroll.
+  // Plain scroll zooms the diagram; Ctrl/Meta+scroll is passed through to the browser.
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const handler = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) return; // let browser handle its own zoom
       event.preventDefault();
       const direction = event.deltaY > 0 ? -0.12 : 0.12;
       zoom(direction);
-    } else {
-      setShowScrollHint(true);
-      if (hintTimeoutRef.current) window.clearTimeout(hintTimeoutRef.current);
-      hintTimeoutRef.current = window.setTimeout(() => setShowScrollHint(false), 2000);
-    }
-  };
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -115,33 +114,12 @@ export function DiagramViewer({ diagram, compact = false }: { diagram: DiagramVi
       role="img"
       aria-label={`${diagram.title} diagram`}
       tabIndex={0}
-      onWheel={onWheel}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       onKeyDown={onKeyDown}
     >
-      {showScrollHint && (
-        <div style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          background: "rgba(15, 23, 42, 0.85)",
-          color: "#fff",
-          padding: "10px 18px",
-          borderRadius: "99px",
-          pointerEvents: "none",
-          fontSize: "13px",
-          fontWeight: "bold",
-          zIndex: 10,
-          boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
-          transition: "opacity 0.2s ease"
-        }}>
-          Use Ctrl + Scroll to zoom
-        </div>
-      )}
       <img
         src={src}
         alt=""
