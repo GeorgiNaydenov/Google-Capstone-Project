@@ -64,10 +64,15 @@ def tenant_storage(db_path: Path | str | None, uploads_root: Path | str | None =
 
 
 def get_connection():
-    """Get a connection to the context-active SQLite database."""
+    """Get a connection to the context-active SQLite database.
+
+    GCS FUSE (Cloud Run volume mount) does not support random writes required
+    by SQLite WAL mode. Using DELETE journal mode ensures sequential writes to
+    the single .db file, which is fully compatible with GCS FUSE semantics.
+    """
     conn = sqlite3.connect(str(active_db_path()))
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA journal_mode=DELETE")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 

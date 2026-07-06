@@ -14,6 +14,14 @@
 .coverage
 htmlcov
 .run-logs
+.run-venv
+.venv-codex
+.uv-cache
+.ruff_cache
+.tmp
+.tmp_showcase_validation
+.docker-tmp
+tmp_*
 
 # Python and Node build artifacts
 __pycache__
@@ -21,6 +29,7 @@ __pycache__
 *.tsbuildinfo
 .venv
 venv
+node_modules
 frontend/node_modules
 frontend/dist
 
@@ -31,7 +40,7 @@ frontend/dist
 *.db-shm
 uploads
 uploads_*
-showcase_data
+!showcase_data/**
 
 # Docs source trees (the built hub ships inside frontend/dist)
 Project Wiki
