@@ -6,6 +6,10 @@
 <title>Overview · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -36,24 +40,6 @@ to the main page or straight into the clinician/admin workspace.</p>
     <p>The full engineering vault: architecture notes, process documentation,
     security and memory design, operations runbooks, and generated inventories.</p>
     <small>Source vault, rendered page by page</small>
-  </a>
-  <a class="hub-card" href="/docs">
-    <h2>Interactive API docs (Swagger)</h2>
-    <p>Try every V1 and V2 endpoint against the running backend with the themed
-    Swagger console.</p>
-    <small>Live OpenAPI console</small>
-  </a>
-  <a class="hub-card" href="/redoc">
-    <h2>API reference (ReDoc)</h2>
-    <p>The same OpenAPI contract as structured reference reading, organized by
-    tag with schemas expanded.</p>
-    <small>Live OpenAPI reference</small>
-  </a>
-  <a class="hub-card" href="/openapi.json">
-    <h2>OpenAPI schema (JSON)</h2>
-    <p>The machine-readable contract for generators, testing tools, and API
-    clients.</p>
-    <small>Raw specification</small>
   </a>
   <a class="hub-card" href="/docs-viewer?tab=api_runner">
     <h2>In-app API console</h2>
@@ -159,8 +145,14 @@ to the main page or straight into the clinician/admin workspace.</p>
 <li><a href="project-wiki/_generated/modules/scripts.check_harness.html"><strong>scripts/check_harness.py</strong><span>_generated/modules/scripts.check_harness.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/scripts.export_diagrams.html"><strong>scripts/export_diagrams.py</strong><span>_generated/modules/scripts.export_diagrams.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/scripts.generate_database_showcase.html"><strong>scripts/generate_database_showcase.py</strong><span>_generated/modules/scripts.generate_database_showcase.html</span></a></li>
+<li><a href="project-wiki/_generated/modules/scripts.generate_database_showcase_demo2.html"><strong>scripts/generate_database_showcase_demo2.py</strong><span>_generated/modules/scripts.generate_database_showcase_demo2.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/scripts.generate_extraction_showcase.html"><strong>scripts/generate_extraction_showcase.py</strong><span>_generated/modules/scripts.generate_extraction_showcase.html</span></a></li>
+<li><a href="project-wiki/_generated/modules/scripts.generate_extraction_showcase_demo2.html"><strong>scripts/generate_extraction_showcase_demo2.py</strong><span>_generated/modules/scripts.generate_extraction_showcase_demo2.html</span></a></li>
+<li><a href="project-wiki/_generated/modules/scripts.generate_live_test_data.html"><strong>scripts/generate_live_test_data.py</strong><span>_generated/modules/scripts.generate_live_test_data.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/scripts.generate_multimodal_patient_showcase.html"><strong>scripts/generate_multimodal_patient_showcase.py</strong><span>_generated/modules/scripts.generate_multimodal_patient_showcase.html</span></a></li>
+<li><a href="project-wiki/_generated/modules/scripts.generate_multimodal_patient_showcase_demo2.html"><strong>scripts/generate_multimodal_patient_showcase_demo2.py</strong><span>_generated/modules/scripts.generate_multimodal_patient_showcase_demo2.html</span></a></li>
+<li><a href="project-wiki/_generated/modules/scripts.run_clinical_app_dev.html"><strong>scripts/run_clinical_app_dev.py</strong><span>_generated/modules/scripts.run_clinical_app_dev.html</span></a></li>
+<li><a href="project-wiki/_generated/modules/scripts.showcase_clinical_core.html"><strong>scripts/showcase_clinical_core.py</strong><span>_generated/modules/scripts.showcase_clinical_core.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/scripts.sync_harness.html"><strong>scripts/sync_harness.py</strong><span>_generated/modules/scripts.sync_harness.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/scripts.sync_wiki.html"><strong>scripts/sync_wiki.py</strong><span>_generated/modules/scripts.sync_wiki.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.__init__.html"><strong>tests/__init__.py</strong><span>_generated/modules/tests.__init__.html</span></a></li>
@@ -173,12 +165,14 @@ to the main page or straight into the clinician/admin workspace.</p>
 <li><a href="project-wiki/_generated/modules/tests.test_document_parsing.html"><strong>tests/test_document_parsing.py</strong><span>_generated/modules/tests.test_document_parsing.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_eval.html"><strong>tests/test_eval.py</strong><span>_generated/modules/tests.test_eval.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_live_bridge.html"><strong>tests/test_live_bridge.py</strong><span>_generated/modules/tests.test_live_bridge.html</span></a></li>
+<li><a href="project-wiki/_generated/modules/tests.test_live_ingestion.html"><strong>tests/test_live_ingestion.py</strong><span>_generated/modules/tests.test_live_ingestion.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_memory.html"><strong>tests/test_memory.py</strong><span>_generated/modules/tests.test_memory.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_orchestration.html"><strong>tests/test_orchestration.py</strong><span>_generated/modules/tests.test_orchestration.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_product_integration.html"><strong>tests/test_product_integration.py</strong><span>_generated/modules/tests.test_product_integration.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_product_orchestration.html"><strong>tests/test_product_orchestration.py</strong><span>_generated/modules/tests.test_product_orchestration.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_security.html"><strong>tests/test_security.py</strong><span>_generated/modules/tests.test_security.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_showcase_generators.html"><strong>tests/test_showcase_generators.py</strong><span>_generated/modules/tests.test_showcase_generators.html</span></a></li>
+<li><a href="project-wiki/_generated/modules/tests.test_template_generators.html"><strong>tests/test_template_generators.py</strong><span>_generated/modules/tests.test_template_generators.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_tools.html"><strong>tests/test_tools.py</strong><span>_generated/modules/tests.test_tools.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_versioned_api.html"><strong>tests/test_versioned_api.py</strong><span>_generated/modules/tests.test_versioned_api.html</span></a></li>
 <li><a href="project-wiki/_generated/modules/tests.test_wiki_sync.html"><strong>tests/test_wiki_sync.py</strong><span>_generated/modules/tests.test_wiki_sync.html</span></a></li>

@@ -10,15 +10,24 @@ as a non-root user, and serves the clinical product on Cloud Run's `PORT`.
 ADK Web remains a local developer surface. Deploy via Cloud Build:
 
 ```bash
-# One-time: let the Cloud Run runtime service account call Vertex AI
-gcloud projects add-iam-policy-binding PROJECT_ID \
-    --member="serviceAccount:<cloud-run-runtime-sa>" --role="roles/aiplatform.user"
+# One-time: let the default Cloud Run runtime service account call Vertex AI.
+PROJECT_ID="your-project-id"
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+    --role="roles/aiplatform.user"
+
+# Optional when ENABLE_TRACING=TRUE is kept in cloudbuild.yaml.
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+    --role="roles/cloudtrace.agent"
 
 # Build + push + deploy
 gcloud builds submit --config deployment/cloudbuild.yaml .
 ```
 
-Live-mode environment (set by `cloudbuild.yaml`):
+Live-mode environment set by `cloudbuild.yaml`:
 
 | Variable | Value | Why |
 |---|---|---|
@@ -26,6 +35,7 @@ Live-mode environment (set by `cloudbuild.yaml`):
 | `GOOGLE_GENAI_USE_VERTEXAI` | `TRUE` | Gemini via Vertex AI with the runtime SA's ADC — no API key |
 | `GOOGLE_CLOUD_LOCATION` | `global` | Gemini 3.1 models are only served from the global endpoint |
 | `HIPAA_MODE` | `TRUE` | Forces PHI redaction on all output paths |
+| `CLINICAL_DATA_DIR` | `/data` | Writable path owned by the non-root container user |
 
 Constraints to respect until the storage layer moves off-instance:
 
@@ -45,10 +55,10 @@ tenant database and uploads relocate there:
 
 ```bash
 # Local container with a named volume that survives restarts
-docker build -f deployment/Dockerfile -t nexus-clinical .
+docker build -f deployment/Dockerfile -t clinical-ai-kit .
 docker run --rm -p 8080:8080 \
-    -e CLINICAL_DATA_DIR=/data -v nexus-data:/data \
-    nexus-clinical
+    -e CLINICAL_DATA_DIR=/data -v clinical-ai-kit-data:/data \
+    clinical-ai-kit
 ```
 
 On Cloud Run the container filesystem is ephemeral, so real-tenant data does
@@ -57,12 +67,35 @@ volume (Cloud Run volume mounts or a GCS FUSE mount). The demo tenants keep no
 files, so they need no volume. The default `clinical.db` self-seeds on first
 touch and is safe to leave ephemeral.
 
+For the Kaggle demo, ephemeral `/data` is acceptable because all bundled
+clinical data is synthetic and the live Capstone tenant is only a demonstration
+of the real ADK/Gemini boundary. For real production, mount persistent storage
+or move the clinical database and uploads to Cloud SQL plus object storage.
+
 ### Health and readiness
 
 - `GET /healthz` — liveness (used by the Docker `HEALTHCHECK`).
 - `GET /readyz` — runs real component checks (database reachable, uploads
   writable, agent + MCP importable) and returns `503` until the database and
-  upload storage are usable. Point Cloud Run / Kubernetes readiness probes here.
+  upload storage are usable. Check this URL after deploy before submitting the
+  public project link.
+
+### Optional API-key deployment
+
+The default Cloud Run path uses Vertex AI ADC. If you must deploy with a Gemini
+API key instead, create a Secret Manager secret and edit the Cloud Run deploy
+step in `deployment/cloudbuild.yaml`:
+
+```bash
+gcloud secrets create GOOGLE_API_KEY --replication-policy=automatic
+printf "KEY" | gcloud secrets versions add GOOGLE_API_KEY --data-file=-
+```
+
+Then set `GOOGLE_GENAI_USE_VERTEXAI=FALSE` and add:
+
+```bash
+--update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest
+```
 
 The generic ADK CLI deployment below exposes the ADK developer UI rather than
 the Nexus product and is retained only for agent-runtime troubleshooting:

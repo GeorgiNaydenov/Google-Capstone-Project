@@ -38,6 +38,18 @@ def first_patient_id(api: TestClient, request_headers: dict[str, str]) -> str:
     return api.get("/api/patients", headers=request_headers).json()[0]["id"]
 
 
+def first_patient_with_image_evidence(api: TestClient, request_headers: dict[str, str]) -> str:
+    """Return a patient id that exposes image evidence in the active demo dataset."""
+
+    for patient in api.get("/api/patients", headers=request_headers).json()[:100]:
+        evidence = api.get(
+            f"/api/patients/{patient['id']}/evidence", headers=request_headers
+        ).json()
+        if any(item.get("kind") == "image" for item in evidence):
+            return patient["id"]
+    pytest.fail("at least one demo patient should expose image evidence")
+
+
 def upload_image(api: TestClient, request_headers: dict[str, str], patient_id: str) -> str:
     """Upload a small, browser-renderable image and return its asset ID."""
 
@@ -123,13 +135,14 @@ def test_extraction_approval_preserves_fields_and_updates_patient_state(api: Tes
     """Approval persists only edited fields and creates linked clinical evidence."""
 
     request_headers = headers(session="approved-extraction")
+    patient_id = first_patient_id(api, request_headers)
     sessions_before = api.get(
-        "/api/sessions", headers=request_headers, params={"patient_id": PATIENT_ID}
+        "/api/sessions", headers=request_headers, params={"patient_id": patient_id}
     ).json()
-    run = start_extraction(api, request_headers, PATIENT_ID)
+    run = start_extraction(api, request_headers, patient_id)
     reviewed_fields = {
         "documentType": "Verified CT",
-        "patientMatch": PATIENT_ID,
+        "patientMatch": patient_id,
         "finding": "Three hepatic lesions",
     }
 
@@ -151,7 +164,7 @@ def test_extraction_approval_preserves_fields_and_updates_patient_state(api: Tes
     assert {receipt["status"] for receipt in result["storageReceipts"]} == {"synced"}
 
     sessions_after = api.get(
-        "/api/sessions", headers=request_headers, params={"patient_id": PATIENT_ID}
+        "/api/sessions", headers=request_headers, params={"patient_id": patient_id}
     ).json()
     new_sessions = {item["id"]: item for item in sessions_after} | {}
     for item in sessions_before:
@@ -163,7 +176,7 @@ def test_extraction_approval_preserves_fields_and_updates_patient_state(api: Tes
         "/api/runs/qa",
         headers=request_headers,
         json={
-            "patientId": PATIENT_ID,
+            "patientId": patient_id,
             "question": "Show the newly verified evidence",
             "filters": {"source": "structured", "dateRange": "all"},
         },
@@ -176,10 +189,12 @@ def test_extraction_rejection_does_not_persist_or_create_records(api: TestClient
     """Rejected output must not create sessions, evidence, or storage receipts."""
 
     request_headers = headers(session="rejected-extraction")
+    patient_id = first_patient_id(api, request_headers)
     sessions_before = api.get(
-        "/api/sessions", headers=request_headers, params={"patient_id": PATIENT_ID}
+        "/api/sessions", headers=request_headers, params={"patient_id": patient_id}
     ).json()
-    run = start_extraction(api, request_headers, PATIENT_ID)
+    persisted_before = api.get("/api/storage", headers=request_headers).json()["persistedCount"]
+    run = start_extraction(api, request_headers, patient_id)
     rejected = api.post(
         f"/api/runs/{run['id']}/review",
         headers=request_headers,
@@ -192,20 +207,21 @@ def test_extraction_rejection_does_not_persist_or_create_records(api: TestClient
         for receipt in rejected.json()["result"]["storageReceipts"]
     )
     assert api.get(
-        "/api/sessions", headers=request_headers, params={"patient_id": PATIENT_ID}
+        "/api/sessions", headers=request_headers, params={"patient_id": patient_id}
     ).json() == sessions_before
-    assert api.get("/api/storage", headers=request_headers).json()["persistedCount"] == 0
+    assert api.get("/api/storage", headers=request_headers).json()["persistedCount"] == persisted_before
 
 
 def test_qa_image_citation_reopens_authorized_asset(api: TestClient) -> None:
     """Image evidence citations must resolve to bytes in the same demo session."""
 
     request_headers = headers(session="image-citation")
+    patient_id = first_patient_with_image_evidence(api, request_headers)
     response = api.post(
         "/api/runs/qa",
         headers=request_headers,
         json={
-            "patientId": PATIENT_ID,
+            "patientId": patient_id,
             "question": "Show image evidence for the latest abnormal result",
             "filters": {"source": "image", "dateRange": "all"},
         },
@@ -272,56 +288,66 @@ def test_repository_registry_evicts_oldest_session_at_capacity() -> None:
     first.uploads["sentinel"] = {"assetId": "sentinel"}
     registry.get("second")
     registry.get("third")
-    assert registry.get("first").uploads == {}
+    assert "sentinel" not in registry.get("first").uploads
 
 
 def test_upload_limit_rejects_oversized_body(api: TestClient) -> None:
     """Public upload endpoint enforces its documented process-memory boundary."""
 
+    request_headers = headers(session="upload-limit")
+    patient_id = first_patient_id(api, request_headers)
+    asset_count_before = api.get("/api/storage", headers=request_headers).json()["assetCount"]
     response = api.post(
         "/api/assets",
-        headers=headers(session="upload-limit"),
-        data={"patient_id": PATIENT_ID},
+        headers=request_headers,
+        data={"patient_id": patient_id},
         files={"file": ("too-large.pdf", b"x" * 10_000_001, "application/pdf")},
     )
     assert response.status_code == 413
-    assert api.get("/api/storage", headers=headers(session="upload-limit")).json()["assetCount"] == 0
+    assert api.get("/api/storage", headers=request_headers).json()["assetCount"] == asset_count_before
 
 
 def test_upload_rejects_unsupported_file_type(api: TestClient) -> None:
     """Unsupported documents should never be stored as unknown assets."""
 
+    request_headers = headers(session="unsupported-upload")
+    patient_id = first_patient_id(api, request_headers)
+    asset_count_before = api.get("/api/storage", headers=request_headers).json()["assetCount"]
     response = api.post(
         "/api/assets",
-        headers=headers(session="unsupported-upload"),
-        data={"patient_id": PATIENT_ID},
+        headers=request_headers,
+        data={"patient_id": patient_id},
         files={"file": ("note.txt", b"plain clinical text", "text/plain")},
     )
     assert response.status_code == 415
-    assert api.get("/api/storage", headers=headers(session="unsupported-upload")).json()["assetCount"] == 0
+    assert api.get("/api/storage", headers=request_headers).json()["assetCount"] == asset_count_before
 
 
 def test_upload_rejects_mismatched_content_type(api: TestClient) -> None:
     """Declared media type, extension, and signature must agree."""
 
+    request_headers = headers(session="mismatch-upload")
+    patient_id = first_patient_id(api, request_headers)
+    asset_count_before = api.get("/api/storage", headers=request_headers).json()["assetCount"]
     response = api.post(
         "/api/assets",
-        headers=headers(session="mismatch-upload"),
-        data={"patient_id": PATIENT_ID},
+        headers=request_headers,
+        data={"patient_id": patient_id},
         files={"file": ("scan.pdf", b"\x89PNG\r\n\x1a\nsynthetic", "application/pdf")},
     )
     assert response.status_code == 422
-    assert api.get("/api/storage", headers=headers(session="mismatch-upload")).json()["assetCount"] == 0
+    assert api.get("/api/storage", headers=request_headers).json()["assetCount"] == asset_count_before
 
 
 def test_knowledge_base_upload_indexes_document_for_qa(api: TestClient) -> None:
     """Knowledge-base documents become patient-scoped Q&A evidence."""
 
     request_headers = headers(session="kb-upload")
+    patient_id = first_patient_id(api, request_headers)
     uploaded = api.post(
         "/api/knowledge-base/assets",
         headers=request_headers,
-        data={"patient_id": PATIENT_ID},
+        data={"patient_id": patient_id},
         files={"file": ("care-plan.md", b"# Care plan\nBNP rising; repeat echo recommended.", "text/markdown")},
     )
     assert uploaded.status_code == 201
@@ -330,7 +356,7 @@ def test_knowledge_base_upload_indexes_document_for_qa(api: TestClient) -> None:
     qa = api.post(
         "/api/runs/qa",
         headers=request_headers,
-        json={"patientId": PATIENT_ID, "question": "What does the uploaded knowledge base say about BNP?", "source_types": ["document"], "filters": {}},
+        json={"patientId": patient_id, "question": "What does the uploaded knowledge base say about BNP?", "source_types": ["document"], "filters": {}},
     )
 
     assert qa.status_code == 201

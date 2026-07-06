@@ -344,8 +344,11 @@ def build_db_intelligence_pipeline() -> SequentialAgent:
         output_key="validated_sql",
     )
 
+    # pro, not flash-lite: this stage enforces a security-critical approval
+    # gate (never infer approval, never fabricate a receipt) — flash-lite
+    # was observed ignoring that conditional guard under retry pressure.
     sql_approval = LlmAgent(
-        model=build_model("flash-lite"),
+        model=build_model("pro"),
         name="sql_preview_approval_agent",
         description="Presents safe SQL and requires explicit approval before execution.",
         instruction=CLINICAL_INSTRUCTIONS["sql_preview_approval"],
@@ -357,8 +360,11 @@ def build_db_intelligence_pipeline() -> SequentialAgent:
     # with function declarations (AFC gets disabled and every tool call
     # fails in a retry loop). Code execution lives on the root agent's
     # code_executor_tool instead.
+    # pro, not flash-lite: same reasoning as sql_approval above — this stage
+    # must reliably refuse to call execute_approved_clinical_query without a
+    # real receipt instead of retrying with a fabricated one.
     query_executor = LlmAgent(
-        model=build_model("flash-lite"),
+        model=build_model("pro"),
         name="query_executor_agent",
         description="Executes validated SQL queries.",
         instruction=CLINICAL_INSTRUCTIONS["query_executor"],

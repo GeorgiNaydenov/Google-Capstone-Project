@@ -6,6 +6,10 @@
 <title>MCP and A2A · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -20,10 +24,10 @@
 <main>
 <h1>MCP and A2A</h1>
 <p>Two interoperability surfaces let external clients and agents use Nexus capabilities.</p>
-<pre><code class="language-mermaid">flowchart LR
-    EXT[&quot;External client&lt;br/&gt;(Claude Desktop, other agents)&quot;] &lt;-- &quot;MCP (JSON-RPC 2.0 / stdio)&quot; --&gt; MCP[&quot;mcp_server/server.py&lt;br/&gt;7 clinical tools (FastMCP)&quot;]
-    REMOTE[&quot;Remote agent&lt;br/&gt;(any A2A client)&quot;] &lt;-- &quot;A2A protocol&lt;br/&gt;agent card + tasks&quot; --&gt; A2A[&quot;capstone_agent/a2a_server.py&lt;br/&gt;:8001&quot;]
-</code></pre>
+<pre class="mermaid">flowchart LR
+    EXT["External client<br/>(Claude Desktop, other agents)"] <-- "MCP (JSON-RPC 2.0 / stdio)" --> MCP["mcp_server/server.py<br/>7 clinical tools (FastMCP)"]
+    REMOTE["Remote agent<br/>(any A2A client)"] <-- "A2A protocol<br/>agent card + tasks" --> A2A["capstone_agent/a2a_server.py<br/>:8001"]
+</pre>
 <h2>MCP server</h2>
 <p><code>mcp_server/server.py</code> — a clinical MCP server with <strong>real database-backed tools</strong> exposed via FastMCP (JSON-RPC 2.0 over stdio). Any MCP-compatible client (ADK, Claude Desktop, other frameworks) can discover and call the 7 clinical tools. The root orchestrator also consumes MCP tools directly (<a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a>).</p>
 <h2>A2A server</h2>

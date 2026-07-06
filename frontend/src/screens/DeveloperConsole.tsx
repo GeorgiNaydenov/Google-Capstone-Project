@@ -13,11 +13,11 @@ interface Endpoint {
 
 const PRESET_ENDPOINTS: Endpoint[] = [
   { method: "GET", path: "/api/v1/patients", description: "List all patients with risk level and condition info" },
-  { method: "GET", path: "/api/v1/patients/PT-8829", description: "Get a specific patient profile by ID" },
-  { method: "GET", path: "/api/v1/sessions", description: "List all clinical sessions, optionally filtered by patient_id", defaultParams: { patient_id: "PT-8829" } },
+  { method: "GET", path: "/api/v1/patients/PT-D00008", description: "Get a specific patient profile by ID" },
+  { method: "GET", path: "/api/v1/sessions", description: "List all clinical sessions, optionally filtered by patient_id", defaultParams: { patient_id: "PT-D00008" } },
   { method: "GET", path: "/api/v1/dashboard", description: "Retrieve metrics, patients, sessions, and activity logs", defaultParams: { role: "clinician" } },
-  { method: "POST", path: "/api/v1/orchestrate", description: "Classify user natural language request and output a workflow plan", defaultBody: JSON.stringify({ query: "show me all patients with high risk of lung cancer", patientId: "PT-8829" }, null, 2) },
-  { method: "POST", path: "/api/v1/runs/qa", description: "Execute patient-scoped grounded Q&A", defaultBody: JSON.stringify({ patientId: "PT-8829", question: "What is the primary tumor size?", source_types: ["text", "image"], filters: { dateRange: "30d" } }, null, 2) },
+  { method: "POST", path: "/api/v1/orchestrate", description: "Classify user natural language request and output a workflow plan", defaultBody: JSON.stringify({ query: "show me all patients with high risk of heart failure", patientId: "PT-D00008" }, null, 2) },
+  { method: "POST", path: "/api/v1/runs/qa", description: "Execute patient-scoped grounded Q&A", defaultBody: JSON.stringify({ patientId: "PT-D00008", question: "What is the most recent ejection fraction?", source_types: ["text", "image"], filters: { dateRange: "30d" } }, null, 2) },
   { method: "POST", path: "/api/v1/runs/database/preview", description: "Generate safe read-only SQL query for population questions", defaultBody: JSON.stringify({ question: "How many patients are active?" }, null, 2) },
   { method: "POST", path: "/api/v1/import", description: "Import patient-cohort data or documents through agent ETL (live mode only)", defaultBody: JSON.stringify({ importType: "database" }, null, 2) },
   { method: "GET", path: "/api/v2/health", description: "Fetch advanced system health checking database and storage connectivity" },
@@ -173,7 +173,7 @@ export function DeveloperConsole() {
     if (pathMatches) {
       pathMatches.forEach(match => {
         const paramName = match.replace(/[{}]/g, "");
-        initialPaths[paramName] = paramName === "patient_id" ? "PT-8829" : "RUN-001";
+        initialPaths[paramName] = paramName === "patient_id" ? "PT-D00008" : "RUN-001";
       });
     }
     setPathParams(initialPaths);
@@ -198,7 +198,7 @@ export function DeveloperConsole() {
           const props = res.tools[0].inputSchema.properties;
           const sample: Record<string, any> = {};
           Object.keys(props).forEach(key => {
-            sample[key] = props[key].default !== undefined ? props[key].default : (props[key].type === "integer" ? 10 : "PT-8829");
+            sample[key] = props[key].default !== undefined ? props[key].default : (props[key].type === "integer" ? 10 : "PT-D00008");
           });
           setMcpArguments(JSON.stringify(sample, null, 2));
         } else {
@@ -384,7 +384,7 @@ export function DeveloperConsole() {
       const props = tool.inputSchema.properties;
       const sample: Record<string, any> = {};
       Object.keys(props).forEach(key => {
-        sample[key] = props[key].default !== undefined ? props[key].default : (props[key].type === "integer" ? 10 : "PT-8829");
+        sample[key] = props[key].default !== undefined ? props[key].default : (props[key].type === "integer" ? 10 : "PT-D00008");
       });
       setMcpArguments(JSON.stringify(sample, null, 2));
     } else {

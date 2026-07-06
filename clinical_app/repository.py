@@ -232,8 +232,20 @@ def _monitor_row(baseline: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def load_showcase_dataset(key: str, base_dir: Path, notifications: list[dict[str, Any]], users: list[dict[str, Any]]) -> DemoDataset | None:
-    """Dynamically load a generated showcase dataset if files exist."""
+def load_showcase_dataset(
+    key: str,
+    base_dir: Path,
+    notifications: list[dict[str, Any]],
+    users: list[dict[str, Any]],
+    base_patients: list[dict[str, Any]] | None = None,
+    base_sessions: list[dict[str, Any]] | None = None,
+    base_evidence: dict[str, list[dict[str, Any]]] | None = None,
+) -> DemoDataset | None:
+    """Dynamically load a generated showcase dataset if files exist.
+
+    base_patients/base_sessions/base_evidence are merged first so hand-authored
+    demo anchors keep stable ordering while generated records add scale.
+    """
 
     db_manifest_path = base_dir / "database" / "app_manifest.json"
     multimodal_manifest_path = base_dir / "multimodal" / "app_manifest.json"
@@ -255,9 +267,9 @@ def load_showcase_dataset(key: str, base_dir: Path, notifications: list[dict[str
             with open(extraction_manifest_path, "r", encoding="utf-8") as f:
                 extraction_manifest = json.load(f)
 
-        patients_by_id: dict[str, dict[str, Any]] = {}
-        sessions_by_id: dict[str, dict[str, Any]] = {}
-        evidence = {}
+        patients_by_id: dict[str, dict[str, Any]] = {item["patient_id"]: dict(item) for item in (base_patients or [])}
+        sessions_by_id: dict[str, dict[str, Any]] = {item["session_id"]: dict(item) for item in (base_sessions or [])}
+        evidence: dict[str, list[dict[str, Any]]] = {patient_id: list(items) for patient_id, items in (base_evidence or {}).items()}
         uploads = {}
         db_path = _generated_database_path(base_dir / "database")
         if db_path and db_path.is_file():
@@ -551,12 +563,28 @@ def load_showcase_dataset(key: str, base_dir: Path, notifications: list[dict[str
 
 # Try loading generated showcase datasets for both demo tenants. The primary
 # scripts feed Research Clinic; the demo2 scripts feed Northstar Health.
-GENERATED_RESEARCH = load_showcase_dataset("research_clinic", PROJECT_ROOT / "showcase_data", RESEARCH_NOTIFICATIONS, RESEARCH_USERS)
+GENERATED_RESEARCH = load_showcase_dataset(
+    "research_clinic",
+    PROJECT_ROOT / "showcase_data",
+    RESEARCH_NOTIFICATIONS,
+    RESEARCH_USERS,
+    base_patients=PATIENTS,
+    base_sessions=SESSIONS,
+    base_evidence=EVIDENCE,
+)
 if GENERATED_RESEARCH:
     RESEARCH_CLINIC = GENERATED_RESEARCH
     DATASETS["research_clinic"] = RESEARCH_CLINIC
 
-DEMO2_NORTHSTAR = load_showcase_dataset("northstar", PROJECT_ROOT / "showcase_data" / "demo2", NORTHSTAR_NOTIFICATIONS, NORTHSTAR_USERS)
+DEMO2_NORTHSTAR = load_showcase_dataset(
+    "northstar",
+    PROJECT_ROOT / "showcase_data" / "demo2",
+    NORTHSTAR_NOTIFICATIONS,
+    NORTHSTAR_USERS,
+    base_patients=NORTHSTAR_PATIENTS,
+    base_sessions=NORTHSTAR_SESSIONS,
+    base_evidence=NORTHSTAR_EVIDENCE,
+)
 if DEMO2_NORTHSTAR:
     NORTHSTAR = DEMO2_NORTHSTAR
     DATASETS["northstar"] = NORTHSTAR

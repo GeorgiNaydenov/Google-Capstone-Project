@@ -6,6 +6,10 @@
 <title>Deployment Pipeline · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -25,34 +29,34 @@ Raw: <a href="../../raw/processes/2026-07-04-deployment-pipeline.html">Deploymen
 </blockquote>
 <h1>Deployment Pipeline</h1>
 <p>Three targets fed by one hardened build. Lanes: Developer, Cloud Build, Runtime.</p>
-<pre><code class="language-mermaid">flowchart TD
-    subgraph LANE_DEV[&quot;Lane: Developer&quot;]
-        SUBMIT[&quot;gcloud builds submit&lt;br/&gt;--config deployment/cloudbuild.yaml&quot;]
-        ADK_DEPLOY[&quot;adk deploy agent_engine&lt;br/&gt;(.agent_engine_config.json)&quot;]
-        K8S[&quot;kubectl apply (custom manifests)&quot;]
+<pre class="mermaid">flowchart TD
+    subgraph LANE_DEV["Lane: Developer"]
+        SUBMIT["gcloud builds submit<br/>--config deployment/cloudbuild.yaml"]
+        ADK_DEPLOY["adk deploy agent_engine<br/>(.agent_engine_config.json)"]
+        K8S["kubectl apply (custom manifests)"]
     end
 
-    subgraph LANE_BUILD[&quot;Lane: Cloud Build&quot;]
-        BUILD[&quot;Build hardened image&lt;br/&gt;(Dockerfile: non-root, healthcheck)&quot;]
-        SECRET[&quot;Pull GOOGLE_API_KEY&lt;br/&gt;from Secret Manager&quot;]
+    subgraph LANE_BUILD["Lane: Cloud Build"]
+        BUILD["Build hardened image<br/>(Dockerfile: non-root, healthcheck)"]
+        SECRET["Pull GOOGLE_API_KEY<br/>from Secret Manager"]
     end
 
-    subgraph LANE_RUN[&quot;Lane: Runtime&quot;]
-        CR[&quot;Cloud Run :8000&lt;br/&gt;production clinical product&quot;]
-        AE[&quot;Vertex AI Agent Engine&lt;br/&gt;autoscale + Memory Bank&quot;]
-        GKE[&quot;GKE&lt;br/&gt;self-managed Kubernetes&quot;]
-        A2A[&quot;A2A server :8001&lt;br/&gt;agent card for agent-to-agent calls&quot;]
-        GEM[&quot;Gemini 3.1 API&lt;br/&gt;(LLM inference)&quot;]
+    subgraph LANE_RUN["Lane: Runtime"]
+        CR["Cloud Run :8000<br/>production clinical product"]
+        AE["Vertex AI Agent Engine<br/>autoscale + Memory Bank"]
+        GKE["GKE<br/>self-managed Kubernetes"]
+        A2A["A2A server :8001<br/>agent card for agent-to-agent calls"]
+        GEM["Gemini 3.1 API<br/>(LLM inference)"]
     end
 
-    SUBMIT --&gt; BUILD --&gt; SECRET --&gt; CR
-    ADK_DEPLOY --&gt; AE
-    K8S --&gt; GKE
-    CR --&gt; GEM
-    AE --&gt; GEM
-    GKE --&gt; GEM
-    CR -.-&gt; A2A
-</code></pre>
+    SUBMIT --> BUILD --> SECRET --> CR
+    ADK_DEPLOY --> AE
+    K8S --> GKE
+    CR --> GEM
+    AE --> GEM
+    GKE --> GEM
+    CR -.-> A2A
+</pre>
 <p>Key facts:</p>
 <ul>
 <li>Secrets come from Secret Manager at build/runtime — never baked into images ([[Deployment]]).</li>

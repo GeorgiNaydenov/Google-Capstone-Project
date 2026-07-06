@@ -876,7 +876,10 @@ def create_app() -> FastAPI:
             repo.runs[run_id] = item
             try:
                 live_result = await execute_live(
-                    f"Extract structured clinical findings from this uploaded clinical document for patient {patient_id}. Analyze the image or document, identify all clinical fields, and structure them with confidence scores.",
+                    f"Delegate to the image_extraction_pipeline sub-agent to run the full clinical "
+                    f"extraction workflow (quality check, OCR, vision analysis, clinical structuring, "
+                    f"and review gate) on the attached document for patient {patient_id}. Structure "
+                    f"every field with a confidence score.",
                     user,
                     file_bytes=file_bytes,
                     file_mime=file_mime,

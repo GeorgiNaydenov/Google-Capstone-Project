@@ -9,29 +9,7 @@ Nexus compiled knowledge on architecture.
 | [Agent Architecture](architecture/agent-architecture.md) | A root orchestrator routes every request to one of three SequentialAgent pipelines. | 2026-07-04 |
 | [Diagram Atlas](architecture/diagram-atlas.md) | The product now exposes the prepared architecture diagrams as an interactive atlas in the landing page, clinician dashboard, admin dashboard, and contextual workflow panels. | 2026-07-05 |
 | [Model Registry](architecture/model-registry.md) | `capstone_agent/llm.py` is the single place model selection happens. | 2026-07-04 |
-| [Module Dependency Graph](architecture/module-dependency-graph.md) | <!-- AUTO:DEPGRAPH:BEGIN -->
-```mermaid
-flowchart LR
-    a2a_server[a2a_server.py]
-    agent[agent.py]
-    app[app.py]
-    callbacks[callbacks.py]
-    clinical_schemas[clinical_schemas.py]
-    config[config.py]
-    context[context.py]
-    database[database.py]
-    document_processor[document_processor.py]
-    human_in_the_loop[human_in_the_loop.py]
-    llm[llm.py]
-    memory[memory.py]
-    mock_data[mock_data.py]
-    models[models.py]
-    observability[observability.py]
-    orchestration[orchestration.py]
-    plugins[plugins.py]
-    prompts[prompts.py]
-    security[security.py]
-    tools[tools.py]. | 2026-07-04 |
+| [Module Dependency Graph](architecture/module-dependency-graph.md) | No circular dependencies. | 2026-07-04 |
 | [Module Reference](architecture/module-reference.md) | Every Python module currently in the repository, with its purpose (taken from module docstrings). | 2026-07-04 |
 | [System Overview](architecture/system-overview.md) | A multi-agent clinical AI platform built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and HIPAA-aligned security. | 2026-07-05 |
 

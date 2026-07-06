@@ -1,6 +1,6 @@
 # frontend — React Clinical UI
 
-A **React/Vite/TypeScript** single-page application providing the clinician-facing interface for the Nexus Clinical AI Command Center. Features 16 primary routes across clinician and admin views with role-based access.
+A **React/Vite/TypeScript** single-page application providing the clinician-facing interface for Nexus Clinical AI Command Center. Features clinician and admin views with role-based access.
 
 ---
 

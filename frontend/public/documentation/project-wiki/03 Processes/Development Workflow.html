@@ -6,6 +6,10 @@
 <title>Development Workflow · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -20,33 +24,33 @@
 <main>
 <h1>Development Workflow</h1>
 <p>How work happens on this repository, including the automated wiki/harness sync layer. Lanes: Developer/Claude, Hooks, Sync.</p>
-<pre><code class="language-mermaid">flowchart TD
-    subgraph LANE_DEV[&quot;Lane: Developer / Claude&quot;]
-        EDIT[&quot;Edit code / docs / wiki&quot;]
-        TEST[&quot;uv run pytest tests/ -v&quot;]
-        GATE[&quot;Pre-commit gate:&lt;br/&gt;format + harness audit + pytest&quot;]
-        COMMIT[&quot;git commit (files staged by name)&quot;]
+<pre class="mermaid">flowchart TD
+    subgraph LANE_DEV["Lane: Developer / Claude"]
+        EDIT["Edit code / docs / wiki"]
+        TEST["uv run pytest tests/ -v"]
+        GATE["Pre-commit gate:<br/>format + harness audit + pytest"]
+        COMMIT["git commit (files staged by name)"]
     end
 
-    subgraph LANE_HOOK[&quot;Lane: Hooks (.claude/settings.json)&quot;]
-        PRE{&quot;PreToolUse:&lt;br/&gt;check_harness.py passes?&quot;}
-        STOP[&quot;Stop hook: sync_wiki.py&lt;br/&gt;(end of each work turn)&quot;]
+    subgraph LANE_HOOK["Lane: Hooks (.claude/settings.json)"]
+        PRE{"PreToolUse:<br/>check_harness.py passes?"}
+        STOP["Stop hook: sync_wiki.py<br/>(end of each work turn)"]
     end
 
-    subgraph LANE_SYNC[&quot;Lane: Deterministic sync (scripts/sync_wiki.py)&quot;]
-        GEN[&quot;Regenerate _generated/ pages:&lt;br/&gt;Module Inventory, Test Inventory,&lt;br/&gt;Harness Index, Changelog, Drift Report&quot;]
-        DEP[&quot;Rewrite AUTO:DEPGRAPH block&lt;br/&gt;in Module Dependency Graph&quot;]
-        CMD[&quot;Rewrite AUTO:STRUCTURE block&lt;br/&gt;in CLAUDE.md + root MEMORY.md&quot;]
-        MIRROR[&quot;sync_harness.py:&lt;br/&gt;.claude -&gt; .agents, CLAUDE.md -&gt; AGENTS.md&quot;]
+    subgraph LANE_SYNC["Lane: Deterministic sync (scripts/sync_wiki.py)"]
+        GEN["Regenerate _generated/ pages:<br/>Module Inventory, Test Inventory,<br/>Harness Index, Changelog, Drift Report"]
+        DEP["Rewrite AUTO:DEPGRAPH block<br/>in Module Dependency Graph"]
+        CMD["Rewrite AUTO:STRUCTURE block<br/>in CLAUDE.md + root MEMORY.md"]
+        MIRROR["sync_harness.py:<br/>.claude -> .agents, CLAUDE.md -> AGENTS.md"]
     end
 
-    PRE --&gt;|fail: fix harness first| EDIT
-    PRE --&gt;|pass| EDIT
-    EDIT --&gt; TEST --&gt; GATE --&gt; COMMIT
-    COMMIT --&gt; STOP
-    EDIT -.-&gt;|every turn end| STOP
-    STOP --&gt; GEN --&gt; DEP --&gt; CMD --&gt; MIRROR --&gt; DONE([Wiki + harness up to date])
-</code></pre>
+    PRE -->|fail: fix harness first| EDIT
+    PRE -->|pass| EDIT
+    EDIT --> TEST --> GATE --> COMMIT
+    COMMIT --> STOP
+    EDIT -.->|every turn end| STOP
+    STOP --> GEN --> DEP --> CMD --> MIRROR --> DONE([Wiki + harness up to date])
+</pre>
 <p>Key facts:</p>
 <ul>
 <li><code>check_harness.py</code> runs before <strong>every</strong> tool call (PreToolUse, matcher <code>.*</code>) and fails fast on harness drift — see <a href="../../project-wiki/07%20Harness/Claude%20Harness.html">Claude Harness</a>.</li>

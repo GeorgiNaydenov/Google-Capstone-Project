@@ -6,6 +6,10 @@
 <title>Security Layers · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -20,26 +24,26 @@
 <main>
 <h1>Security Layers</h1>
 <p>Defense in depth — three fixed callback layers plus clinical extensions. No single point of failure. All blocks are logged via <code>observability.log_security_event()</code> (<a href="../../project-wiki/06%20Operations/Observability.html">Observability</a>).</p>
-<pre><code class="language-mermaid">flowchart TD
-    U[User input] --&gt; L1
-    subgraph L1[&quot;Layer 1 — Input Security (before_model_callback)&quot;]
-        P[&quot;15 generic injection patterns&lt;br/&gt;+ 3 HIPAA-specific: hipaa_bypass, phi_extraction, safety_disable&lt;br/&gt;Unicode NFKC normalization (anti-homoglyph)&quot;]
+<pre class="mermaid">flowchart TD
+    U[User input] --> L1
+    subgraph L1["Layer 1 — Input Security (before_model_callback)"]
+        P["15 generic injection patterns<br/>+ 3 HIPAA-specific: hipaa_bypass, phi_extraction, safety_disable<br/>Unicode NFKC normalization (anti-homoglyph)"]
     end
-    L1 --&gt;|clean| AG[Agent + LLM]
-    L1 --&gt;|blocked| B1[Blocked + logged]
-    AG --&gt; L2
-    subgraph L2[&quot;Layer 2 — Tool Security (before_tool_callback)&quot;]
-        T[&quot;Pydantic validation on all tool inputs&lt;br/&gt;Per-tool rate limiting via temp: state&lt;br/&gt;Secret scanning on tool arguments&quot;]
+    L1 -->|clean| AG[Agent + LLM]
+    L1 -->|blocked| B1[Blocked + logged]
+    AG --> L2
+    subgraph L2["Layer 2 — Tool Security (before_tool_callback)"]
+        T["Pydantic validation on all tool inputs<br/>Per-tool rate limiting via temp: state<br/>Secret scanning on tool arguments"]
     end
-    L2 --&gt;|valid| TOOLS[Tool execution]
-    L2 --&gt;|blocked| B2[Blocked + logged]
-    TOOLS --&gt; L3
-    subgraph L3[&quot;Layer 3 — Output Security (after_model_callback)&quot;]
-        O[&quot;PII detection: email, phone, SSN, credit card&lt;br/&gt;PHI detection: MRN, ICD-10, NPI, DEA, drug dosage&lt;br/&gt;Secret leak detection: API keys, tokens, passwords&quot;]
+    L2 -->|valid| TOOLS[Tool execution]
+    L2 -->|blocked| B2[Blocked + logged]
+    TOOLS --> L3
+    subgraph L3["Layer 3 — Output Security (after_model_callback)"]
+        O["PII detection: email, phone, SSN, credit card<br/>PHI detection: MRN, ICD-10, NPI, DEA, drug dosage<br/>Secret leak detection: API keys, tokens, passwords"]
     end
-    L3 --&gt;|clean| R[Response to user]
-    L3 --&gt;|found| RED[Redact or block + logged]
-</code></pre>
+    L3 -->|clean| R[Response to user]
+    L3 -->|found| RED[Redact or block + logged]
+</pre>
 <h2>The three callbacks (order is fixed)</h2>
 <table>
 <thead>

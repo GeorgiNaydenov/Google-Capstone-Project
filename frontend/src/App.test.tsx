@@ -30,7 +30,7 @@ describe("clinical product shell", () => {
     expect(screen.getAllByRole("button", { name: /packet/i }).length).toBeGreaterThanOrEqual(10);
     expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /run selected packet/i }));
-    expect(await screen.findByDisplayValue(/Clinical record packet/i)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(/Enterprise five-patient clinical packet/i)).toBeInTheDocument();
   });
   it("keeps real upload input for the live tenant", () => {
     sessionStorage.setItem("tenant", "capstone");

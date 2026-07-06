@@ -6,6 +6,10 @@
 <title>REST API and Developer Console · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -23,15 +27,15 @@
 <hr />
 <h2>1. API Architecture &amp; Versioning</h2>
 <p>The FastAPI product server (<code>clinical_app/app.py</code>) serves endpoints organized under distinct routers:</p>
-<pre><code class="language-mermaid">flowchart TD
-    UI[&quot;Clinician App UI&quot;] --&gt;|HTTP /api/...| COMPAT[&quot;Compatibility Router&quot;]
-    CONSOLE[&quot;Developer Console&quot;] --&gt;|HTTP /api/v2/...| V2[&quot;V2 Router&quot;]
-    SWAGGER[&quot;Swagger/ReDoc Docs&quot;] --&gt;|HTTP /api/v1/...| V1[&quot;V1 Router&quot;]
+<pre class="mermaid">flowchart TD
+    UI["Clinician App UI"] -->|HTTP /api/...| COMPAT["Compatibility Router"]
+    CONSOLE["Developer Console"] -->|HTTP /api/v2/...| V2["V2 Router"]
+    SWAGGER["Swagger/ReDoc Docs"] -->|HTTP /api/v1/...| V1["V1 Router"]
     
-    COMPAT --&gt;|Redirects/Aliases| V1
-    V1 --&gt;|Exposes Clinical Core| CO[&quot;Clinical Core&quot;]
-    V2 --&gt;|Exposes Dev Tools| DT[&quot;Developer Tools&quot;]
-</code></pre>
+    COMPAT -->|Redirects/Aliases| V1
+    V1 -->|Exposes Clinical Core| CO["Clinical Core"]
+    V2 -->|Exposes Dev Tools| DT["Developer Tools"]
+</pre>
 <ol>
 <li><strong>V1 API (<code>/api/v1</code>)</strong>: Core clinical endpoints exposing dashboard metrics, patients list, sessions status, GCS storage assets, notifications, and security logs.</li>
 <li><strong>Compatibility API (<code>/api</code>)</strong>: Re-mounts the V1 router to guarantee complete backward compatibility with all legacy integration scripts and tests.</li>

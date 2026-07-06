@@ -127,3 +127,7 @@ MEMORY.md
 # Obsidian vault — per-user workspace state, not source
 # =============================================================================
 Project Wiki/.obsidian/workspace.json
+
+# Local build/tool artifacts
+.docker-tmp/
+tmp_sharex_*.jpg

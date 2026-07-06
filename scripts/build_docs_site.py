@@ -92,6 +92,10 @@ def page(title: str, body: str, depth: int) -> str:
 <title>{html.escape(title)} · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="{root}docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({{ startOnLoad: true, theme: "neutral" }});
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -133,6 +137,21 @@ def first_heading(text: str, fallback: str) -> str:
 
     match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
     return match.group(1).strip() if match else fallback
+
+
+def render_mermaid_blocks(body: str) -> str:
+    """Turn rendered ```mermaid fenced code blocks into mermaid.js source divs.
+
+    markdown-it emits ``<pre><code class="language-mermaid">...</code></pre>``
+    with HTML-escaped entities; mermaid.js scans for ``.mermaid`` elements and
+    parses their raw text content, so the code block is unescaped back to the
+    original diagram source.
+    """
+
+    def replace(match: re.Match[str]) -> str:
+        return f'<pre class="mermaid">{html.unescape(match.group(1))}</pre>'
+
+    return re.sub(r'<pre><code class="language-mermaid">(.*?)</code></pre>', replace, body, flags=re.DOTALL)
 
 
 def build_tree(source: Path, destination: Path, renderer: MarkdownIt, link_index: dict[str, str], wikilinks: bool) -> list[tuple[str, str]]:
@@ -188,6 +207,7 @@ def build_tree(source: Path, destination: Path, renderer: MarkdownIt, link_index
         text = re.sub(r"\((?:\.\./)*(?:02 Architecture/)?diagrams/([^)\s]+)\)", lambda match: f"(/diagrams/{match.group(1)})", text)
 
         body = renderer.render(text)
+        body = render_mermaid_blocks(body)
         out_path.write_text(page(title, body, depth), encoding="utf-8", newline="\n")
         pages.append((title, str(out_path.relative_to(destination)).replace("\\", "/")))
     return pages
@@ -237,24 +257,6 @@ to the main page or straight into the clinician/admin workspace.</p>
     <p>The full engineering vault: architecture notes, process documentation,
     security and memory design, operations runbooks, and generated inventories.</p>
     <small>Source vault, rendered page by page</small>
-  </a>
-  <a class="hub-card" href="/docs">
-    <h2>Interactive API docs (Swagger)</h2>
-    <p>Try every V1 and V2 endpoint against the running backend with the themed
-    Swagger console.</p>
-    <small>Live OpenAPI console</small>
-  </a>
-  <a class="hub-card" href="/redoc">
-    <h2>API reference (ReDoc)</h2>
-    <p>The same OpenAPI contract as structured reference reading, organized by
-    tag with schemas expanded.</p>
-    <small>Live OpenAPI reference</small>
-  </a>
-  <a class="hub-card" href="/openapi.json">
-    <h2>OpenAPI schema (JSON)</h2>
-    <p>The machine-readable contract for generators, testing tools, and API
-    clients.</p>
-    <small>Raw specification</small>
   </a>
   <a class="hub-card" href="/docs-viewer?tab=api_runner">
     <h2>In-app API console</h2>

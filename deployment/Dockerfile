@@ -18,13 +18,16 @@ RUN apt-get update \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN useradd --create-home --uid 10001 clinical
+RUN useradd --create-home --uid 10001 clinical \
+    && mkdir -p /data \
+    && chown -R clinical:clinical /data
 COPY --chown=clinical:clinical . ./
 COPY --from=frontend-build --chown=clinical:clinical /frontend/dist ./frontend/dist
 
 USER clinical
 
 ENV PORT=8080
+ENV CLINICAL_DATA_DIR=/data
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

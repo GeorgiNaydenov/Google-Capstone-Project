@@ -126,6 +126,8 @@ def main():
             paragraphs = [p.strip() for p in body.split("\n\n") if p.strip()]
             summary = "No summary available."
             for p in paragraphs:
+                if "\n" in p or p.startswith("<!--") or p.startswith("```"):
+                    continue
                 if not p.startswith("#") and not p.startswith(">") and not p.startswith("-") and not p.startswith("["):
                     summary = p.split(". ")[0].strip(".") + "."
                     break

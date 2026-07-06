@@ -6,6 +6,10 @@
 <title>Module Inventory · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -217,13 +221,43 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 </tr>
 <tr>
 <td><code>scripts</code></td>
+<td><code>generate_database_showcase_demo2.py</code></td>
+<td>Generate the second-platform database intelligence demo dataset.</td>
+</tr>
+<tr>
+<td><code>scripts</code></td>
 <td><code>generate_extraction_showcase.py</code></td>
-<td>Generate synthetic extraction assets for the image extraction agent.</td>
+<td>Generate production-like extraction packets for the extraction agent.</td>
+</tr>
+<tr>
+<td><code>scripts</code></td>
+<td><code>generate_extraction_showcase_demo2.py</code></td>
+<td>Generate the second-platform extraction demo asset set.</td>
+</tr>
+<tr>
+<td><code>scripts</code></td>
+<td><code>generate_live_test_data.py</code></td>
+<td>Generate a small live test dataset (database cohort, PDF, images) and run ETL ingestion.</td>
 </tr>
 <tr>
 <td><code>scripts</code></td>
 <td><code>generate_multimodal_patient_showcase.py</code></td>
 <td>Generate multimodal patient bundles for the Q&amp;A agent.</td>
+</tr>
+<tr>
+<td><code>scripts</code></td>
+<td><code>generate_multimodal_patient_showcase_demo2.py</code></td>
+<td>Generate the second-platform multimodal Q&amp;A demo bundle set.</td>
+</tr>
+<tr>
+<td><code>scripts</code></td>
+<td><code>run_clinical_app_dev.py</code></td>
+<td>Run the clinical FastAPI app from the local Windows dev environment.</td>
+</tr>
+<tr>
+<td><code>scripts</code></td>
+<td><code>showcase_clinical_core.py</code></td>
+<td>Shared clinically coherent synthetic cohort engine for all showcase generators.</td>
 </tr>
 <tr>
 <td><code>scripts</code></td>
@@ -287,6 +321,11 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 </tr>
 <tr>
 <td><code>tests</code></td>
+<td><code>test_live_ingestion.py</code></td>
+<td>Unit tests for live mode ingestion, ETL, and database seeding.</td>
+</tr>
+<tr>
+<td><code>tests</code></td>
 <td><code>test_memory.py</code></td>
 <td>Tests for memory governance (Day 3b).</td>
 </tr>
@@ -314,6 +353,11 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 <td><code>tests</code></td>
 <td><code>test_showcase_generators.py</code></td>
 <td>Smoke tests for showcase data generators.</td>
+</tr>
+<tr>
+<td><code>tests</code></td>
+<td><code>test_template_generators.py</code></td>
+<td>Unit tests for template-based showcase data generators.</td>
 </tr>
 <tr>
 <td><code>tests</code></td>

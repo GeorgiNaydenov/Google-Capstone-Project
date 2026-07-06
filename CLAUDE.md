@@ -65,6 +65,7 @@ scripts/
   generate_live_test_data.py # Generate a small live test dataset (database cohort, PDF, images) and run ETL ingestion.
   generate_multimodal_patient_showcase.py # Generate multimodal patient bundles for the Q&A agent.
   generate_multimodal_patient_showcase_demo2.py # Generate the second-platform multimodal Q&A demo bundle set.
+  ingest_capstone_live_samples.py # Ingest the corrected multi-patient live sample dataset into the real Capstone tenant database.
   run_clinical_app_dev.py   # Run the clinical FastAPI app from the local Windows dev environment.
   showcase_clinical_core.py # Shared clinically coherent synthetic cohort engine for all showcase generators.
   sync_harness.py
@@ -252,7 +253,7 @@ This harness controls and validates agent executions.
 | `.claude/skills/obsidian-bases/SKILL.md` | Create and edit Obsidian Bases |
 | `.claude/skills/obsidian-cli/SKILL.md` | Interact with vaults via Obsidian CLI |
 | `.claude/skills/drawio/SKILL.md` | Generate .drawio diagrams (architecture, ERD, UML, flowcharts, network) and export PNG/SVG/PDF via draw.io CLI |
-
+| `.claude/skills/drawio-skill/SKILL.md` | Wrapper for the vendored upstream drawio-skill package |`r`n
 ### Commands
 
 | Command | Purpose |

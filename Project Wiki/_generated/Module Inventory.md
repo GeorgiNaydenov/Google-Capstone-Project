@@ -1,7 +1,7 @@
 ---
 title: Module Inventory
 type: generated
-updated: 2026-07-06
+updated: 2026-07-07
 tags:
   - generated
 ---
@@ -56,6 +56,7 @@ Hand-written companion: [[Module Reference]].
 | `scripts` | `generate_live_test_data.py` | Generate a small live test dataset (database cohort, PDF, images) and run ETL ingestion. |
 | `scripts` | `generate_multimodal_patient_showcase.py` | Generate multimodal patient bundles for the Q&A agent. |
 | `scripts` | `generate_multimodal_patient_showcase_demo2.py` | Generate the second-platform multimodal Q&A demo bundle set. |
+| `scripts` | `ingest_capstone_live_samples.py` | Ingest the corrected multi-patient live sample dataset into the real Capstone tenant database. |
 | `scripts` | `run_clinical_app_dev.py` | Run the clinical FastAPI app from the local Windows dev environment. |
 | `scripts` | `showcase_clinical_core.py` | Shared clinically coherent synthetic cohort engine for all showcase generators. |
 | `scripts` | `sync_harness.py` | (no docstring) |

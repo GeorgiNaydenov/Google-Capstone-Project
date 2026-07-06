@@ -6,6 +6,10 @@
 <title>Image Extraction Pipeline · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -25,31 +29,31 @@ Raw: <a href="../../raw/processes/2026-07-04-image-extraction-pipeline.html">Ima
 </blockquote>
 <h1>Image Extraction Pipeline</h1>
 <p>SequentialAgent (9 agents) processing clinical images through quality assessment, AI vision analysis, structured field extraction, a critic/refiner validation loop, and clinician review before persistence. Lanes: Agents, Validation Loop, Clinician.</p>
-<pre><code class="language-mermaid">flowchart TD
-    subgraph LANE_AG[&quot;Lane: Pipeline agents&quot;]
-        QA[&quot;quality_assessor_agent (flash-lite)&lt;br/&gt;assess_image_quality&quot;]
-        VA[&quot;vision_analyzer_agent (pro)&lt;br/&gt;analyze_clinical_image&quot;]
-        CS[&quot;clinical_structuring_agent (pro)&lt;br/&gt;structure_clinical_findings, store_to_gcs&quot;]
+<pre class="mermaid">flowchart TD
+    subgraph LANE_AG["Lane: Pipeline agents"]
+        QA["quality_assessor_agent (flash-lite)<br/>assess_image_quality"]
+        VA["vision_analyzer_agent (pro)<br/>analyze_clinical_image"]
+        CS["clinical_structuring_agent (pro)<br/>structure_clinical_findings, store_to_gcs"]
     end
 
-    subgraph LANE_LOOP[&quot;Lane: validation_gate (LoopAgent, Day 1b)&quot;]
-        CRIT{critic_agent&lt;br/&gt;confidence &gt;= threshold?}
-        REF[&quot;refiner_agent&lt;br/&gt;flag_for_review (fields &lt; 0.80)&quot;]
-        EXIT[&quot;exit_loop&quot;]
+    subgraph LANE_LOOP["Lane: validation_gate (LoopAgent, Day 1b)"]
+        CRIT{critic_agent<br/>confidence >= threshold?}
+        REF["refiner_agent<br/>flag_for_review (fields < 0.80)"]
+        EXIT["exit_loop"]
     end
 
-    subgraph LANE_HITL[&quot;Lane: Clinician (HITL, Day 2b)&quot;]
-        GATE{Clinician review&lt;br/&gt;transition_extraction_review}
-        PERSIST[&quot;persist_extraction_relational&lt;br/&gt;persist_extraction_vector&quot;]
-        DISCARD[&quot;Discard + reason logged&quot;]
+    subgraph LANE_HITL["Lane: Clinician (HITL, Day 2b)"]
+        GATE{Clinician review<br/>transition_extraction_review}
+        PERSIST["persist_extraction_relational<br/>persist_extraction_vector"]
+        DISCARD["Discard + reason logged"]
     end
 
-    START([Clinical image uploaded]) --&gt; QA --&gt; VA --&gt; CS --&gt; CRIT
-    CRIT --&gt;|below threshold| REF --&gt; CRIT
-    CRIT --&gt;|passes| EXIT --&gt; GATE
-    GATE --&gt;|approve| PERSIST --&gt; DONE([Stored + timeline updated + audit event])
-    GATE --&gt;|reject| DISCARD --&gt; DONE2([Rejected, audit logged])
-</code></pre>
+    START([Clinical image uploaded]) --> QA --> VA --> CS --> CRIT
+    CRIT -->|below threshold| REF --> CRIT
+    CRIT -->|passes| EXIT --> GATE
+    GATE -->|approve| PERSIST --> DONE([Stored + timeline updated + audit event])
+    GATE -->|reject| DISCARD --> DONE2([Rejected, audit logged])
+</pre>
 <p>Key facts:</p>
 <ul>
 <li><strong>output_key plumbing</strong>: each agent writes its result to <code>session.state</code>; the next stage reads it — no direct coupling ([[Memory Layers]] Layer 2).</li>

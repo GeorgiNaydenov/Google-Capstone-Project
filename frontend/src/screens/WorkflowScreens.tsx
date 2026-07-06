@@ -4,16 +4,20 @@ import { api } from "../api";
 import { AgentMeta, AgentStepper, Card, ChartPanel, ConfidenceMeter, ConfirmDialog, DenseTable, EmptyState, ErrorState, JsonViewer, LoadingState, pipelineDisplayName, ReviewChecklist, SourceViewer, SqlPreview, StatusBadge, useToast } from "../components";
 import { InlineDiagram } from "../components/InlineDiagram";
 import { useClinical } from "../context";
-import { syntheticExtractionOptions } from "../fallbackData";
+import { syntheticExtractionOptionsForTenant } from "../fallbackData";
 import { historyKey, loadTurns, saveTurns, WorkflowTurn } from "../runHistory";
 import type { AgentRun, Evidence, ExtractionSource, SchemaTable, ToolCall } from "../types";
 import { useApi } from "../useApi";
+
+/** Anchor patient per demo tenant: a real generated-cohort record with
+ * evidence across all three workflows (extraction, Q&A, database). */
+const TENANT_DEFAULT_PATIENT: Record<string, string> = { "research-clinic": "PT-D00008", northstar: "PT-N00003" };
 
 /** Resolve the workflow's starting patient: URL param, then the active
  * patient, then the demo showcase patient — real tenants start blank. */
 function useDefaultPatient(param: string | null): string {
   const { patient, tenant } = useClinical();
-  return param ?? patient?.id ?? (tenant.kind === "demo" ? "PT-8829" : "");
+  return param ?? patient?.id ?? (tenant.kind === "demo" ? TENANT_DEFAULT_PATIENT[tenant.id] ?? "" : "");
 }
 
 /** Patient ids differ across tenants, so a tenant switch while the screen is
@@ -24,7 +28,7 @@ function useTenantPatientReset(setPatientId: (id: string) => void) {
   useEffect(() => {
     if (previous.current === tenant.id) return;
     previous.current = tenant.id;
-    setPatientId(tenant.kind === "demo" ? "PT-8829" : "");
+    setPatientId(tenant.kind === "demo" ? TENANT_DEFAULT_PATIENT[tenant.id] ?? "" : "");
   }, [tenant.id]);
 }
 
@@ -136,10 +140,11 @@ export function Extraction() {
   const catalog = useApi(() => api.agents(), [tenant.id]);
   const demoMode = tenant.kind === "demo";
   const sourceCatalog = useApi(() => demoMode ? api.extractionSources() : Promise.resolve([] as ExtractionSource[]), [tenant.id, demoMode]);
+  const tenantSyntheticOptions = syntheticExtractionOptionsForTenant(tenant.id);
   const [patientId, setPatientId] = useState(useDefaultPatient(params.get("patient")));
   useTenantPatientReset(setPatientId);
   const [file, setFile] = useState<File | null>(null);
-  const [syntheticSource, setSyntheticSource] = useState<ExtractionSource | null>(syntheticExtractionOptions[0] ?? null);
+  const [syntheticSource, setSyntheticSource] = useState<ExtractionSource | null>(tenantSyntheticOptions[0] ?? null);
   const [preview, setPreview] = useState("");
   const [run, setRun] = useState<AgentRun | null>(null);
   const [fieldEdits, setFieldEdits] = useState<Record<string, unknown>>({});
@@ -151,7 +156,7 @@ export function Extraction() {
   const [error, setError] = useState("");
   const [confirmReject, setConfirmReject] = useState(false);
   const toast = useToast();
-  const sourceOptions = demoMode && sourceCatalog.data?.length ? sourceCatalog.data : syntheticExtractionOptions;
+  const sourceOptions = demoMode && sourceCatalog.data?.length ? sourceCatalog.data : tenantSyntheticOptions;
   const threadKey = historyKey(tenant.id, "extraction");
   useRunPolling(run, setRun);
   useTurnHistory(threadKey, "extraction", undefined, () => undefined, restored => {

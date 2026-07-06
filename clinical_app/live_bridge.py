@@ -12,6 +12,18 @@ from uuid import uuid4
 _session_service: Any = None
 _memory_service: Any = None
 
+# Extraction-pipeline tools (assess_image_quality, extract_clinical_text,
+# analyze_clinical_image) take a filesystem path or GCS URI, not inline bytes.
+# A freshly uploaded file has neither until we write it to disk here, so
+# without this mapping the sub-agents can only hallucinate a URI and every
+# tool call 404s against the database.
+_MIME_EXTENSIONS = {
+    "application/pdf": ".pdf",
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
+
 # Pipeline output_key values surfaced to the product API (see
 # capstone_agent/orchestration.py). SequentialAgent final responses come from
 # the last stage (audit narration), so structured results must be read from
@@ -102,6 +114,7 @@ async def _execute_once(
 
         from capstone_agent.agent import root_agent
         from capstone_agent.config import redact_secrets
+        from capstone_agent.document_processor import UPLOAD_DIR, generate_document_id
         from capstone_agent.memory import create_memory_service
         from capstone_agent.security import redact_pii
     except (ImportError, KeyError) as error:
@@ -132,7 +145,22 @@ async def _execute_once(
     # again would mask a fresh answer produced outside that pipeline.
     baseline_state = dict(session.state or {})
 
-    parts: list[types.Part] = [types.Part(text=query)]
+    effective_query = query
+    if file_bytes and file_mime:
+        extension = _MIME_EXTENSIONS.get(file_mime, "")
+        saved_path = UPLOAD_DIR / f"{generate_document_id('live-upload' + extension, file_bytes)}{extension}"
+        if not saved_path.exists():
+            saved_path.write_bytes(file_bytes)
+        # Pipeline tools (assess_image_quality, extract_clinical_text,
+        # analyze_clinical_image) require this exact local path as their
+        # image_uri argument; the inline Part below only lets the top-level
+        # model see the content, it does not give tool calls access to it.
+        effective_query = (
+            f"{query}\n\nThe uploaded file is saved locally at this exact path "
+            f"(use it verbatim as image_uri/file_path in tool calls): {saved_path}"
+        )
+
+    parts: list[types.Part] = [types.Part(text=effective_query)]
     if file_bytes and file_mime:
         parts.append(types.Part(inline_data=types.Blob(mime_type=file_mime, data=file_bytes)))
 

@@ -1,59 +1,61 @@
-# Writeup facts — verified numbers for the Kaggle submission
+# Writeup Facts
 
-Source-of-truth figures for the ≤2,500-word writeup and the 5-minute video.
-Everything here is verified against the code, not estimated.
+Source-of-truth figures for the Kaggle writeup and 5-minute video. These are grounded in the current code and submission docs.
 
-## One-line pitch
+## One-Line Pitch
 
-Nexus Clinical AI Command Center — a clinician-facing platform where a visible
-multi-agent system turns fragmented clinical evidence (images, notes, records,
-population data) into decisions clinicians can verify, with every consequential
-write held behind human review.
+Nexus Clinical AI Command Center is a clinician-facing platform where a visible multi-agent system turns fragmented clinical evidence - images, notes, records, and population data - into decisions clinicians can verify, with every consequential write held behind human review.
 
-## Competition concepts demonstrated (5 of the required 3)
+## Competition Concepts Demonstrated
 
 | Concept | Evidence |
-|---------|----------|
-| Agent / multi-agent (ADK) | 1 root orchestrator + 22 pipeline sub-agents across 3 SequentialAgent pipelines (`capstone_agent/agent.py`, `orchestration.py`) |
-| MCP server | `mcp_server/server.py` — FastMCP clinical tools over JSON-RPC/stdio, consumed by the agent and any MCP client |
-| Security | 3-layer callback pipeline: input injection blocking, tool validation + rate limiting, output PII/PHI/secret scanning (`capstone_agent/callbacks.py`, `security.py`) |
-| Deployability | Multi-stage Dockerfile (frontend + API single origin), Cloud Build → Cloud Run, Vertex AI Agent Engine config (`deployment/`) |
-| Agent Skills | `.claude/` + `.agents/` harness skills (diagramming, testing workflow, deployment) that govern this repo's own development |
+| --- | --- |
+| Agent / multi-agent system with ADK | 1 root orchestrator plus 22 pipeline sub-agents across 3 SequentialAgent pipelines in `capstone_agent/agent.py` and `capstone_agent/orchestration.py` |
+| MCP server | `mcp_server/server.py` exposes FastMCP clinical tools over JSON-RPC/stdio |
+| Security | 3-layer callback pipeline: input injection blocking, tool validation/rate limiting, and output PII/PHI/secret scanning |
+| Deployability | Multi-stage Dockerfile, Cloud Build to Cloud Run, health/readiness endpoints, and Vertex AI Agent Engine config |
+| Agent Skills | `.claude/` and `.agents/` harness skills for testing, deployment, documentation, diagramming, and repo governance |
 
-## Architecture counts (verified)
+## Architecture Counts
 
-- **Agents**: 23 total = 1 orchestrator + 22 sub-agents. Pipelines: Image
-  Extraction **9**, Patient Q&A **7**, Database Intelligence **6**.
-- **Model tiers** (`capstone_agent/llm.py`): flash-lite (default), pro,
-  pro-customtools, flash-image.
-- **Security**: 15 generic + 3 HIPAA-specific injection patterns; PII (email,
-  phone, SSN, credit card) + PHI (MRN, ICD-10, NPI, DEA, dosage) detection.
-- **Memory**: 4 layers — working (context.py), session state, long-term
-  (MemoryService), A2A context.
-- **Frontend**: 18 primary routes; React + Vite + TypeScript; fully responsive.
-- **Tests**: 274 pytest passing (model tests skip without a key) + 13 frontend
-  vitest passing.
+- Agents: 23 total = 1 orchestrator plus 22 sub-agents.
+- Image Extraction pipeline: 9 agents.
+- Patient Q&A pipeline: 7 agents.
+- Database Intelligence pipeline: 6 agents.
+- Model tiers in `capstone_agent/llm.py`: `flash-lite`, `pro`, `pro-customtools`, `flash-image`.
+- Memory: 4 layers - working context, session state, long-term memory, and A2A context.
+- Frontend: React, Vite, TypeScript, clinician and admin routes.
 
-## Tenancy — demo vs live (say this clearly in the video)
+## Demo vs Live
 
-- **Research Clinic** and **Northstar Health**: seeded demo tenants that
-  demonstrate the product with realistic data and the ability to switch
-  between organizations.
-- **Capstone**: the live tenant. It starts empty and fills only with what is
-  actually uploaded and approved, executing the real ADK + Gemini agents.
-- No authentication anywhere (a capstone requirement) — role is chosen client
-  side; the switcher lives in the top bar.
+- Research Clinic and Northstar Health are deterministic seeded demo tenants.
+- Capstone is the live tenant. It starts empty and uses the real ADK/Gemini path when credentials are configured.
+- There is no production authentication in this capstone demo. Role and tenant selection are exposed in the UI for judging.
 
-## What is real vs emulated (be honest in the writeup)
+## Real vs Emulated
 
-- Real: SQLite persistence, document parsing (PyMuPDF + Gemini Vision), the
-  full ADK agent graph, MCP server, 3-layer security, audit trail, live-mode
-  seam (tool calls, session continuity, server-gated SQL).
-- Emulated locally under Google-service names: GCS object storage, Vertex
-  Vector Search, Firestore — SQLite-backed and labelled as such.
+Real:
 
-## Links to include
+- ADK agent graph.
+- MCP server.
+- Pydantic tool contracts.
+- SQLite persistence.
+- Document parsing and upload policy.
+- Human-in-the-loop approval gates.
+- Tool-call traces.
+- Security callbacks.
+- Audit trail.
+- Live-mode bridge to Gemini.
+- Cloud Run/Agent Engine deployment assets.
 
-- Public repo (Apache-2.0): https://github.com/GeorgiNaydenov/Google-Capstone-Project
-- Documentation hub (when deployed): `/documentation` — Karpathy LLM Wiki,
-  Obsidian Project Wiki, and interactive API docs.
+Local demo equivalents:
+
+- Object storage.
+- Vector search.
+- Firestore-like state.
+
+## Links
+
+- Public repo: https://github.com/GeorgiNaydenov/nexus-clinical-ai-capstone
+- Local app: http://localhost:8000
+- Local documentation hub: http://localhost:8000/documentation

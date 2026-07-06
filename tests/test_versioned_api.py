@@ -61,7 +61,10 @@ def test_v1_patients_and_compatibility() -> None:
     patients_compat = res2.json()
     
     assert patients_v1 == patients_compat
-    assert len(patients_v1) == 24
+    # The demo tenant now layers a generated cohort under the hand-authored
+    # fixture patients, so the exact count depends on generator output; just
+    # confirm the well-known fixture patient is still reachable at the front.
+    assert len(patients_v1) >= 24
     assert patients_v1[0]["id"] == "PT-8829"
 
 

@@ -1,49 +1,82 @@
-# Cloud Build pipeline for deploying to Cloud Run.
-# Trigger this from the repo root:
+# Cloud Build pipeline for deploying Clinical AI Kit to Cloud Run.
+#
+# Trigger from the repo root:
 #   gcloud builds submit --config deployment/cloudbuild.yaml .
 #
-# Authentication: the service uses Vertex AI through the Cloud Run runtime
-# service account (Application Default Credentials) — no API key required.
-# Grant the runtime SA access once:
-#   gcloud projects add-iam-policy-binding $PROJECT_ID \
-#     --member="serviceAccount:<cloud-run-runtime-sa>" --role="roles/aiplatform.user"
+# Default auth path:
+# - Cloud Run calls Gemini through Vertex AI using the runtime service account.
+# - No GOOGLE_API_KEY is baked into the image or required by this pipeline.
 #
-# Alternative (API key instead of Vertex): store the key in Secret Manager and
-# add this flag to the deploy step, plus set GOOGLE_GENAI_USE_VERTEXAI=FALSE:
+# One-time IAM for the runtime service account:
+#   gcloud projects add-iam-policy-binding PROJECT_ID \
+#     --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+#     --role="roles/aiplatform.user"
+#
+# If ENABLE_TRACING=TRUE stays enabled, also grant Cloud Trace writes when your
+# organization does not include it by default:
+#   gcloud projects add-iam-policy-binding PROJECT_ID \
+#     --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+#     --role="roles/cloudtrace.agent"
+#
+# Optional API-key mode instead of Vertex:
+#   gcloud secrets create GOOGLE_API_KEY --replication-policy=automatic
+#   printf "KEY" | gcloud secrets versions add GOOGLE_API_KEY --data-file=-
+# Then change GOOGLE_GENAI_USE_VERTEXAI=FALSE and add:
 #   --update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest
 
+substitutions:
+  _REGION: us-central1
+  _SERVICE: clinical-ai-kit
+  _REPOSITORY: clinical-ai-kit
+  _IMAGE: clinical-ai-kit
+
 steps:
-  # Build the Docker image.
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/clinical-ai-command-center', '-f', 'deployment/Dockerfile', '.']
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud artifacts repositories describe "${_REPOSITORY}" --location="${_REGION}" >/dev/null 2>&1 ||
+        gcloud artifacts repositories create "${_REPOSITORY}" \
+          --repository-format=docker \
+          --location="${_REGION}" \
+          --description="Clinical AI Kit container images"
 
-  # Push to Container Registry.
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/clinical-ai-command-center']
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:latest
+      - -f
+      - deployment/Dockerfile
+      - .
 
-  # Deploy to Cloud Run.
-  # --max-instances=1 is required: the product server keeps per-browser demo
-  # state in process memory and persists to a local SQLite file, so multiple
-  # instances would see divergent data. Scale beyond one instance only after
-  # moving sessions to a shared database (SESSION_BACKEND=database) and the
-  # clinical store to Cloud SQL.
-  # GOOGLE_CLOUD_LOCATION=global: Gemini 3.1 models are served from the
-  # global Vertex endpoint (regional endpoints 404 for these model ids).
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud
     args:
-      - 'run'
-      - 'deploy'
-      - 'clinical-ai-command-center'
-      - '--image=gcr.io/$PROJECT_ID/clinical-ai-command-center'
-      - '--region=us-central1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-      - '--port=8080'
-      - '--memory=1Gi'
-      - '--max-instances=1'
-      - '--set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=FALSE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,HIPAA_MODE=TRUE,MEMORY_BACKEND=vertex,SESSION_BACKEND=memory,ENABLE_TRACING=TRUE,TRACE_EXPORTER=gcp,CLINICAL_DATA_DIR=/data'
-      - '--update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest'
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --memory=1Gi
+      - --cpu=1
+      - --concurrency=20
+      - --min-instances=0
+      - --max-instances=1
+      - --set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,HIPAA_MODE=TRUE,PHI_REDACTION=TRUE,MEMORY_BACKEND=memory,SESSION_BACKEND=memory,ENABLE_TRACING=TRUE,TRACE_EXPORTER=gcp,CLINICAL_DATA_DIR=/data
 
 images:
-  - 'gcr.io/$PROJECT_ID/clinical-ai-command-center'
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:latest

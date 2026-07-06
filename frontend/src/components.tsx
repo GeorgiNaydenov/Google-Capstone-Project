@@ -213,6 +213,10 @@ function formatMetricLabel(key: string | undefined): string {
   return key.replace(/_/g, " ").replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
+// Shared across the plot trace and the on-screen legend so swatches always
+// match what Plotly actually painted.
+const CHART_COLORS = ["#2563eb", "#16a34a", "#b45309", "#dc2626", "#0284c7", "#7c3aed", "#0f766e"];
+
 export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record<string, unknown>>; variant?: string }) {
   const chartRef = useRef<HTMLDivElement>(null);
   const metricKey = useMemo(() => {
@@ -234,7 +238,36 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
   }), [rows]);
   const total = Math.round(points.reduce((sum, point) => sum + point.value, 0) * 100) / 100;
   const largest = points.reduce((top, point) => point.value > top.value ? point : top, points[0] ?? { label: "none", value: 0 });
+  const lowest = points.reduce((bottom, point) => point.value < bottom.value ? point : bottom, points[0] ?? { label: "none", value: 0 });
   const chartKind = variant.toLowerCase();
+  const isTrendKind = chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area");
+  // Bar/box/scatter/pie/treemap color each category from CHART_COLORS, so
+  // they get a legend; line/area/histogram/heatmap use one color or a
+  // colorscale (heatmap already shows its own scale via showscale).
+  const isSwatchLegend = !isTrendKind && !chartKind.includes("histogram") && !chartKind.includes("heatmap");
+  // Rows are the same governed SQL result in both demo and live-agent mode
+  // (clinical_app/app.py runs the same clinical_schemas.execute_query(sql)
+  // either way), so this narrative is derived purely from the returned rows
+  // and reads identically regardless of which mode produced them.
+  const insight = useMemo(() => {
+    if (!points.length) return "No rows were returned to summarize.";
+    if (isTrendKind && points.length > 1) {
+      const first = points[0];
+      const last = points[points.length - 1];
+      const delta = Math.round((last.value - first.value) * 100) / 100;
+      const direction = delta > 0 ? "rose" : delta < 0 ? "fell" : "held steady";
+      return `${metricLabel} ${direction} from ${first.value} at ${first.label} to ${last.value} at ${last.label}${delta !== 0 ? ` (${delta > 0 ? "+" : ""}${delta})` : ""}.`;
+    }
+    if (chartKind.includes("box") || chartKind.includes("histogram")) {
+      const spread = Math.round((largest.value - lowest.value) * 100) / 100;
+      return `${metricLabel} spans ${lowest.value} to ${largest.value} across ${points.length} segments - a spread of ${spread}, with ${largest.label} at the top.`;
+    }
+    if (isCountMetric) {
+      const share = total > 0 ? Math.round((largest.value / total) * 1000) / 10 : 0;
+      return `${largest.label} is the largest segment at ${largest.value} ${metricLabel}${share ? ` (${share}% of the ${total} total)` : ""}.`;
+    }
+    return `${largest.label} has the highest ${metricLabel} at ${largest.value}, versus ${lowest.value} at ${lowest.label}.`;
+  }, [points, isTrendKind, chartKind, metricLabel, isCountMetric, total, largest, lowest]);
   // When rows expose two or more numeric columns, heatmaps render a real
   // label-by-metric matrix instead of a single undifferentiated value strip.
   const matrix = useMemo(() => {
@@ -249,7 +282,7 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
     let cancelled = false;
     const labels = points.map(point => point.label);
     const values = points.map(point => point.value);
-    const colors = ["#2563eb", "#16a34a", "#b45309", "#dc2626", "#0284c7", "#7c3aed", "#0f766e"];
+    const colors = CHART_COLORS;
     const trace = chartKind.includes("pie") ? {
       type: "pie",
       labels,
@@ -309,24 +342,31 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       hovertemplate: `%{x}<br>%{y} ${metricLabel}<extra></extra>`,
     };
     const isCartesian = !["pie", "treemap", "heatmap"].some(type => chartKind.includes(type));
-    // Plotly.react() diffs the previous plot in place, but its diff breaks
-    // (throws "Cannot read properties of undefined (reading 'anchor')")
-    // when the trace type flips between cartesian (bar/line/box/...) and
-    // non-cartesian (pie/treemap/heatmap) on the same DOM node. Purging
-    // before every plot forces a clean rebuild and sidesteps that bug.
-    void import("plotly.js-dist-min").then(({ default: Plotly }) => {
-      if (cancelled || !chartRef.current) return;
-      Plotly.purge(chartRef.current);
-      void Plotly.newPlot(chartRef.current, [trace], {
+    // Plotly's cleanLayout enumerates every "xaxis"/"yaxis" key on the layout
+    // object and reads `.anchor` off its value, regardless of whether that
+    // value is present. Setting yaxis/xaxis to `undefined` still leaves the
+    // key on the object (unlike omitting it), which crashed heatmap/pie/
+    // treemap renders with "Cannot read properties of undefined (reading
+    // 'anchor')". Only include the axis keys at all for cartesian charts.
+    const layout: Record<string, unknown> = {
       margin: chartKind.includes("treemap") || chartKind.includes("pie") ? { t: 12, r: 8, b: 12, l: 8 } : { t: 16, r: 12, b: 54, l: 44 },
       height: chartKind.includes("treemap") ? 300 : 250,
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "#f8fafc",
       font: { family: "Inter, system-ui, sans-serif", size: 11, color: "#334155" },
-      yaxis: isCartesian ? { title: metricLabel, gridcolor: "#e2e8f0", zerolinecolor: "#cbd5e1" } : undefined,
-      xaxis: isCartesian ? { tickangle: -24 } : undefined,
       annotations: isCartesian && !chartKind.includes("histogram") && !chartKind.includes("box") ? [{ x: largest.label, y: largest.value, text: "largest segment", showarrow: true, arrowhead: 2, ax: 0, ay: -34 }] : [],
-      }, { displayModeBar: false, responsive: true });
+    };
+    if (isCartesian) {
+      layout.yaxis = { title: metricLabel, gridcolor: "#e2e8f0", zerolinecolor: "#cbd5e1" };
+      layout.xaxis = { tickangle: -24 };
+    }
+    // Purging before every plot avoids Plotly's incremental react() diff,
+    // which can also misbehave when the trace type flips between cartesian
+    // and non-cartesian charts on the same DOM node.
+    void import("plotly.js-dist-min").then(({ default: Plotly }) => {
+      if (cancelled || !chartRef.current) return;
+      Plotly.purge(chartRef.current);
+      void Plotly.newPlot(chartRef.current, [trace], layout, { displayModeBar: false, responsive: true });
     });
     return () => {
       cancelled = true;
@@ -335,7 +375,7 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
     };
   }, [chartKind, largest.label, largest.value, matrix, metricLabel, points, total, variant]);
 
-  return <figure className="plotly-chart" aria-label="Annotated Plotly query result chart"><figcaption><strong>{variant} - executed SQL visualization</strong><span>{points.length} segment{points.length === 1 ? "" : "s"} by {metricLabel}{isCountMetric ? ` - ${total} total` : ""}</span></figcaption><div ref={chartRef} className={chartKind.includes("treemap") ? "treemap-plot" : undefined}/><p>Largest segment: {largest.label} ({largest.value} {metricLabel}). Values come from the executed query rows.</p></figure>;
+  return <figure className="plotly-chart" aria-label="Annotated Plotly query result chart"><figcaption><strong>{variant} - executed SQL visualization</strong><span>{points.length} segment{points.length === 1 ? "" : "s"} by {metricLabel}{isCountMetric ? ` - ${total} total` : ""}</span></figcaption><div ref={chartRef} className={chartKind.includes("treemap") ? "treemap-plot" : undefined}/>{isSwatchLegend && <ul className="chart-legend" aria-label="Chart color key">{points.map((point, index) => <li key={point.id}><i style={{ background: CHART_COLORS[index % CHART_COLORS.length] }}/>{point.label}</li>)}</ul>}<p className="chart-insight"><strong>Key insight:</strong> {insight}</p></figure>;
 }
 
 export function JsonViewer({ value }: { value: unknown }) { return <pre className="json"><code>{JSON.stringify(value, null, 2)}</code></pre>; }

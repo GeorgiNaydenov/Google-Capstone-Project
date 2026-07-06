@@ -6,6 +6,10 @@
 <title>End-to-End Request Flow · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -25,50 +29,50 @@ Raw: <a href="../../raw/processes/2026-07-04-end-to-end-request-flow.html">End-t
 </blockquote>
 <h1>End-to-End Request Flow</h1>
 <p>Every request crosses three security gates and one routing decision. BPMN-style lanes: User, Security, Orchestrator, Pipelines.</p>
-<pre><code class="language-mermaid">flowchart TD
-    subgraph LANE_USER[&quot;Lane: User&quot;]
-        START([User request]) --&gt; IN[Message enters agent]
+<pre class="mermaid">flowchart TD
+    subgraph LANE_USER["Lane: User"]
+        START([User request]) --> IN[Message enters agent]
         RESP([Response delivered])
     end
 
-    subgraph LANE_SEC[&quot;Lane: Security (callbacks.py)&quot;]
-        L1{Layer 1&lt;br/&gt;content_safety_callback&lt;br/&gt;injection? unicode attack?}
-        L2{Layer 2&lt;br/&gt;tool_authorization_callback&lt;br/&gt;args valid? rate ok? secrets?}
-        L3{Layer 3&lt;br/&gt;output_safety_callback&lt;br/&gt;PII/PHI/secret leak?}
+    subgraph LANE_SEC["Lane: Security (callbacks.py)"]
+        L1{Layer 1<br/>content_safety_callback<br/>injection? unicode attack?}
+        L2{Layer 2<br/>tool_authorization_callback<br/>args valid? rate ok? secrets?}
+        L3{Layer 3<br/>output_safety_callback<br/>PII/PHI/secret leak?}
         BLOCK1[Block + log_security_event]
         BLOCK2[Block + log_security_event]
         REDACT[Redact or block + log]
     end
 
-    subgraph LANE_ORCH[&quot;Lane: Orchestrator (flash-lite)&quot;]
+    subgraph LANE_ORCH["Lane: Orchestrator (flash-lite)"]
         ROUTE{Intent routing}
         MCPT[MCP tools / memory recall / HITL approval]
     end
 
-    subgraph LANE_PIPE[&quot;Lane: Pipelines (SequentialAgent)&quot;]
-        P1[Image Extraction&lt;br/&gt;9 agents]
-        P2[Patient Q&amp;A&lt;br/&gt;7 agents]
-        P3[DB Intelligence&lt;br/&gt;6 agents]
-        TOOLS[Tool execution&lt;br/&gt;Pydantic-validated]
+    subgraph LANE_PIPE["Lane: Pipelines (SequentialAgent)"]
+        P1[Image Extraction<br/>9 agents]
+        P2[Patient Q&A<br/>7 agents]
+        P3[DB Intelligence<br/>6 agents]
+        TOOLS[Tool execution<br/>Pydantic-validated]
     end
 
-    IN --&gt; L1
-    L1 --&gt;|blocked| BLOCK1 --&gt; RESP
-    L1 --&gt;|clean| ROUTE
-    ROUTE --&gt;|image workflow| P1
-    ROUTE --&gt;|patient question| P2
-    ROUTE --&gt;|database question| P3
-    ROUTE --&gt;|direct| MCPT
-    P1 --&gt; L2
-    P2 --&gt; L2
-    P3 --&gt; L2
-    MCPT --&gt; L2
-    L2 --&gt;|blocked| BLOCK2 --&gt; RESP
-    L2 --&gt;|valid| TOOLS
-    TOOLS --&gt; L3
-    L3 --&gt;|found| REDACT --&gt; RESP
-    L3 --&gt;|clean| RESP
-</code></pre>
+    IN --> L1
+    L1 -->|blocked| BLOCK1 --> RESP
+    L1 -->|clean| ROUTE
+    ROUTE -->|image workflow| P1
+    ROUTE -->|patient question| P2
+    ROUTE -->|database question| P3
+    ROUTE -->|direct| MCPT
+    P1 --> L2
+    P2 --> L2
+    P3 --> L2
+    MCPT --> L2
+    L2 -->|blocked| BLOCK2 --> RESP
+    L2 -->|valid| TOOLS
+    TOOLS --> L3
+    L3 -->|found| REDACT --> RESP
+    L3 -->|clean| RESP
+</pre>
 <p>Key facts:</p>
 <ul>
 <li>Layer 1 blocks 18 injection/extraction patterns (15 generic + 3 HIPAA-specific) after unicode NFKC normalization.</li>

@@ -6,6 +6,10 @@
 <title>Patient QA Pipeline · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -20,15 +24,15 @@
 <main>
 <h1>Patient QA Pipeline</h1>
 <p>SequentialAgent (7 agents) answering clinical questions with cited evidence from notes, images, and vector search — grounded in patient context.</p>
-<pre><code class="language-mermaid">flowchart TD
-    START([Patient-scoped question]) --&gt; CA
-    CA[&quot;context_assembly_agent (flash-lite)&lt;br/&gt;lookup_patient_record, validate_qa_request&quot;] --&gt; ER
-    ER[&quot;evidence_retrieval_agent (pro-customtools)&lt;br/&gt;search_clinical_notes, search_vector_store,&lt;br/&gt;retrieve_imaging_evidence&quot;] --&gt; IE
-    IE[&quot;image_evidence_agent (pro)&lt;br/&gt;analyze_evidence_images, fetch_image_from_gcs&quot;] --&gt; CB
-    CB[&quot;citation_builder_agent (flash-lite)&lt;br/&gt;build_citations&quot;] --&gt; AS
-    AS[&quot;answer_synthesis_agent (pro)&lt;br/&gt;compose_clinical_answer&quot;] --&gt; AU
-    AU[&quot;qa_audit_agent (flash-lite)&lt;br/&gt;log_audit_event, save_qa_to_memory&quot;] --&gt; DONE([Cited answer + audit trail])
-</code></pre>
+<pre class="mermaid">flowchart TD
+    START([Patient-scoped question]) --> CA
+    CA["context_assembly_agent (flash-lite)<br/>lookup_patient_record, validate_qa_request"] --> ER
+    ER["evidence_retrieval_agent (pro-customtools)<br/>search_clinical_notes, search_vector_store,<br/>retrieve_imaging_evidence"] --> IE
+    IE["image_evidence_agent (pro)<br/>analyze_evidence_images, fetch_image_from_gcs"] --> CB
+    CB["citation_builder_agent (flash-lite)<br/>build_citations"] --> AS
+    AS["answer_synthesis_agent (pro)<br/>compose_clinical_answer"] --> AU
+    AU["qa_audit_agent (flash-lite)<br/>log_audit_event, save_qa_to_memory"] --> DONE([Cited answer + audit trail])
+</pre>
 <p>Key facts:</p>
 <ul>
 <li>Validation happens first: <code>validate_qa_request</code> rejects out-of-scope requests before any retrieval.</li>

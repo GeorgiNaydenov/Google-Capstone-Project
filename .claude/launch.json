@@ -24,6 +24,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--port", "5311", "--strictPort"],
       "port": 5311
+    },
+    {
+      "name": "frontend-scratch4",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--port", "5344", "--strictPort"],
+      "port": 5344
     }
   ]
 }

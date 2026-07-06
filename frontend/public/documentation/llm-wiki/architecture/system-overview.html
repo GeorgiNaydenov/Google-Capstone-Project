@@ -6,6 +6,10 @@
 <title>System Overview · Nexus Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
 </head>
 <body>
 <header class="doc-topbar">
@@ -26,16 +30,16 @@ Raw: <a href="../../raw/architecture/2026-07-05-system-overview.html">System Ove
 <h1>System Overview</h1>
 <p>A multi-agent clinical AI platform built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and HIPAA-aligned security.</p>
 <h2>The four-layer stack</h2>
-<pre><code class="language-mermaid">flowchart TD
-    FE[&quot;React Frontend (frontend/)&lt;br/&gt;16 routes - clinician + admin views - Vite + TypeScript&quot;]
-    API[&quot;FastAPI Product Server (clinical_app/app.py)&lt;br/&gt;Demo mode (deterministic) or Live ADK bridge&lt;br/&gt;Session isolation - role-based access - audit trail&quot;]
-    ADK[&quot;ADK Agent Backend (capstone_agent/)&lt;br/&gt;22 sub-agents - 3 pipelines - 24+ tools&lt;br/&gt;3-layer security - 4-layer memory - HITL - observability&quot;]
-    MCP[&quot;MCP Server (mcp_server/server.py)&lt;br/&gt;7 clinical tools via FastMCP (JSON-RPC 2.0)&quot;]
+<pre class="mermaid">flowchart TD
+    FE["React Frontend (frontend/)<br/>16 routes - clinician + admin views - Vite + TypeScript"]
+    API["FastAPI Product Server (clinical_app/app.py)<br/>Demo mode (deterministic) or Live ADK bridge<br/>Session isolation - role-based access - audit trail"]
+    ADK["ADK Agent Backend (capstone_agent/)<br/>22 sub-agents - 3 pipelines - 24+ tools<br/>3-layer security - 4-layer memory - HITL - observability"]
+    MCP["MCP Server (mcp_server/server.py)<br/>7 clinical tools via FastMCP (JSON-RPC 2.0)"]
 
-    FE -- &quot;HTTP /api/*&quot; --&gt; API
-    API -- &quot;ADK Runner&quot; --&gt; ADK
+    FE -- "HTTP /api/*" --> API
+    API -- "ADK Runner" --> ADK
     ADK --- MCP
-</code></pre>
+</pre>
 <ul>
 <li><strong>React frontend</strong> — 16-route clinical UI (Vite + TypeScript), served as a production build by FastAPI. See [[Clinical App]].</li>
 <li><strong>FastAPI product server</strong> (<code>clinical_app/</code>) — operates in deterministic demo mode or bridges live to the ADK runner; session isolation, role-based access, audit trail. See [[Clinical App]].</li>

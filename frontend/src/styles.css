@@ -612,6 +612,10 @@ progress.success::-webkit-progress-value { background: var(--green); }
 .plotly-chart > div { width: 100%; min-height: 250px; }
 .plotly-chart > div.treemap-plot { min-height: 300px; }
 .plotly-chart p { margin: 0; padding: 0 12px 10px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; padding: 8px 12px 0; list-style: none; }
+.chart-legend li { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.chart-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.chart-insight strong { color: #334155; }
 .chart-empty { display: grid; min-height: 190px; place-items: center; margin: 0 12px 12px; border: 1px dashed var(--border-strong); color: var(--muted); font-size: 12px; text-align: center; }
 
 /* Administration */
