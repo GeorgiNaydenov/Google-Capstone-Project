@@ -4,7 +4,7 @@ Source-of-truth figures for the Kaggle writeup and 5-minute video. These are gro
 
 ## One-Line Pitch
 
-Nexus Clinical AI Command Center is a clinician-facing platform where a visible multi-agent system turns fragmented clinical evidence - images, notes, records, and population data - into decisions clinicians can verify, with every consequential write held behind human review.
+Clinical AI Kit is a clinician-facing platform where a visible multi-agent system turns fragmented clinical evidence - images, notes, records, and population data - into decisions clinicians can verify, with every consequential write held behind human review.
 
 ## Competition Concepts Demonstrated
 
@@ -56,6 +56,6 @@ Local demo equivalents:
 
 ## Links
 
-- Public repo: https://github.com/GeorgiNaydenov/nexus-clinical-ai-capstone
+- Public repo: https://github.com/GeorgiNaydenov/Google-Capstone-Project
 - Local app: http://localhost:8000
 - Local documentation hub: http://localhost:8000/documentation

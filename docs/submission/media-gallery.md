@@ -4,7 +4,7 @@ The Kaggle form shows that videos must be hosted on YouTube. Do not upload an `.
 
 ## Required Basic Details
 
-- Title: `Nexus Clinical AI Command Center`
+- Title: `Clinical AI Kit`
 - Subtitle: `A Google ADK multi-agent clinical command center that turns fragmented evidence into auditable, clinician-approved decisions.`
 - Card and thumbnail image: use `docs/submission/media/card-thumbnail-560x280.png`
 - Submission tracks: choose the closest available tracks for Technical Implementation, Deployability, Security, and Agent / Multi-agent Systems. If the selector allows only one, choose Technical Implementation.
@@ -46,7 +46,7 @@ Use `docs/submission/demo-script.md` as the shot list. Keep the final YouTube vi
 
 Add these under **Attachments -> Project Links**:
 
-- GitHub repository: `https://github.com/GeorgiNaydenov/nexus-clinical-ai-capstone`
+- GitHub repository: `https://github.com/GeorgiNaydenov/Google-Capstone-Project`
 - Deployed app URL: add the Cloud Run URL after deployment, if available.
 - Documentation hub: use the deployed `/documentation` URL if deployed; otherwise mention `http://localhost:8000/documentation` in the README/setup path.
 

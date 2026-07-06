@@ -4,7 +4,7 @@ Use this as the last gate before submitting the Kaggle writeup and sharing the p
 
 ## Kaggle Form
 
-- [ ] Title is `Nexus Clinical AI Command Center`.
+- [ ] Title is `Clinical AI Kit`.
 - [ ] Subtitle is under 140 characters.
 - [ ] Card image uploaded from `docs/submission/media/card-thumbnail-560x280.png`.
 - [ ] Submission track selected.
@@ -16,7 +16,7 @@ Use this as the last gate before submitting the Kaggle writeup and sharing the p
 
 ## Repository
 
-- [ ] GitHub repository is public: `https://github.com/GeorgiNaydenov/nexus-clinical-ai-capstone`.
+- [ ] GitHub repository is public: `https://github.com/GeorgiNaydenov/Google-Capstone-Project`.
 - [ ] Apache-2.0 `LICENSE` is present in the repo root.
 - [ ] `README.md` renders cleanly on GitHub.
 - [ ] `.env`, `*.db`, upload folders, local virtual environments, and generated caches are not committed.

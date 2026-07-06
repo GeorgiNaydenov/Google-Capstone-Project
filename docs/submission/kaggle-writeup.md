@@ -6,7 +6,7 @@ Use this content in the Kaggle writeup editor. It is written for the 2,500-word 
 
 Title:
 
-Nexus Clinical AI Command Center
+Clinical AI Kit
 
 Subtitle:
 
@@ -23,9 +23,9 @@ Pick the closest available tracks in Kaggle's selector. If Kaggle only allows on
 
 ## Project Description
 
-Nexus Clinical AI Command Center is a clinician-facing capstone project for Kaggle's AI Agents: Intensive Vibe Coding challenge. It is built around a practical clinical problem: care teams often have too much evidence and too little structure. A single patient question may involve scanned intake forms, clinical images, historical notes, medication changes, structured database rows, prior visits, and risk signals from a larger population. A normal chatbot can summarize part of that context, but it usually hides the process that matters most: what evidence was used, which tools ran, what was uncertain, and where a human approved the result.
+Clinical AI Kit is a clinician-facing capstone project for Kaggle's AI Agents: Intensive Vibe Coding challenge. It is built around a practical clinical problem: care teams often have too much evidence and too little structure. A single patient question may involve scanned intake forms, clinical images, historical notes, medication changes, structured database rows, prior visits, and risk signals from a larger population. A normal chatbot can summarize part of that context, but it usually hides the process that matters most: what evidence was used, which tools ran, what was uncertain, and where a human approved the result.
 
-Nexus Clinical AI Command Center turns that process into a visible command center. The application is not meant to be a medical device, and all demo data is synthetic. The project is a production-shaped demonstration of how agentic clinical workflows can be made inspectable, governable, and safe enough to reason about.
+Clinical AI Kit turns that process into a visible command center. The application is not meant to be a medical device, and all demo data is synthetic. The project is a production-shaped demonstration of how agentic clinical workflows can be made inspectable, governable, and safe enough to reason about.
 
 The product has three guided workflows.
 
@@ -37,7 +37,7 @@ The third workflow is database intelligence. A user asks a cohort or operational
 
 The application is designed around the reviewer journey. A judge can start in demo mode, choose a clinician role, and immediately see a realistic workspace without needing a model key. The dashboard shows queue pressure, notifications, recent activity, system diagrams, and quick actions. From there, the judge can run extraction, Q&A, and database workflows in sequence and see the same design pattern repeated: the agent plans or performs work, the product exposes intermediate evidence, and the user gets a reviewable artifact instead of an opaque answer.
 
-Nexus Clinical AI Command Center demonstrates five of the required competition concepts.
+Clinical AI Kit demonstrates five of the required competition concepts.
 
 First, it is a Google ADK multi-agent system. The backend contains one root orchestrator and 22 pipeline sub-agents. The image extraction pipeline has nine agent stages, including quality assessment, OCR processing, vision analysis, clinical structuring, a critic/refiner validation loop, review, persistence, and audit. The patient Q&A pipeline has seven stages for validation, context assembly, evidence retrieval, image evidence, citation building, answer synthesis, and audit. The database intelligence pipeline has six stages for schema discovery, natural-language-to-SQL generation, SQL validation, approval, execution, and insight/chart generation. The root agent routes intent across these workflows and exposes a coherent clinical interaction surface.
 
@@ -69,7 +69,7 @@ The project also includes synthetic showcase data and documentation assets. The 
 
 My biggest implementation challenge was balancing demo reliability with real agent architecture. For a capstone judge, the app must work quickly and repeatably. For the technical rubric, the project must still prove real ADK, MCP, security, memory, observability, and deployment structure. The solution was a dual-mode product: deterministic demo adapters for review and a live Capstone tenant for real ADK/Gemini execution. That allowed the app to be judge-friendly without pretending the deterministic path was the live cloud path.
 
-The most important design decision was to make agent behavior visible. Nexus Clinical AI Command Center does not ask reviewers to trust a black-box answer. It shows pipeline stages, tool calls, confidence, evidence, citations, generated SQL, approval gates, storage receipts, audit events, tenant mode, and deployment readiness. That visibility is what turns the project from a chatbot demo into a governed agentic workflow.
+The most important design decision was to make agent behavior visible. Clinical AI Kit does not ask reviewers to trust a black-box answer. It shows pipeline stages, tool calls, confidence, evidence, citations, generated SQL, approval gates, storage receipts, audit events, tenant mode, and deployment readiness. That visibility is what turns the project from a chatbot demo into a governed agentic workflow.
 
 For the capstone, the value is not only that the system uses many agents. The value is that every agent has a boundary the user can inspect. The clinician can see where extraction happened, where validation happened, where the SQL was checked, where the answer got its evidence, and where human approval was required. That is the core lesson I would carry forward into any real clinical agent product: powerful agents need visible control surfaces, not just impressive output.
 
@@ -77,7 +77,7 @@ For the capstone, the value is not only that the system uses many agents. The va
 
 Add these under Attachments -> Project Links:
 
-- GitHub repository: https://github.com/GeorgiNaydenov/nexus-clinical-ai-capstone
+- GitHub repository: https://github.com/GeorgiNaydenov/Google-Capstone-Project
 - Local app after setup: http://localhost:8000
 - Local documentation hub after setup: http://localhost:8000/documentation
 - Optional deployed app URL: add the Cloud Run URL after deployment, if available.

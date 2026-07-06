@@ -24,7 +24,7 @@ container — **and ready for Kaggle submission**.
   Agent Skills. This project demonstrates 5 (ADK 22-agent pipelines, MCP server, 3-layer
   security, Cloud Run deployability, agent skills).
 - Shared code must carry an **OSI-approved license permitting commercial use**.
-- Repo `GeorgiNaydenov/nexus-clinical-ai-capstone` is currently **PRIVATE, no LICENSE** — both
+- Repo `GeorgiNaydenov/Google-Capstone-Project` is currently **PRIVATE, no LICENSE** — both
   must change before judges follow the link.
 
 ### User-fixed decisions

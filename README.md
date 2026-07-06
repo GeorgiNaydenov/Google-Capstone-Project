@@ -1,6 +1,6 @@
-# Nexus Clinical AI Command Center
+# Clinical AI Kit
 
-Nexus Clinical AI Command Center is a clinician-facing AI workspace built with Google ADK for Kaggle's AI Agents: Intensive Vibe Coding Capstone Project. It demonstrates a production-shaped multi-agent clinical workflow with visible evidence, human review, security callbacks, MCP tooling, observability, and deployable packaging.
+Clinical AI Kit is a clinician-facing AI workspace built with Google ADK for Kaggle's AI Agents: Intensive Vibe Coding Capstone Project. It demonstrates a production-shaped multi-agent clinical workflow with visible evidence, human review, security callbacks, MCP tooling, observability, and deployable packaging.
 
 This is a capstone demo, not a medical device. All bundled clinical data is synthetic.
 
@@ -30,7 +30,7 @@ Clinical work is fragmented across notes, scanned intake forms, images, patient 
 
 ## Solution
 
-Nexus Clinical AI Command Center exposes three guided workflows:
+Clinical AI Kit exposes three guided workflows:
 
 1. **Session Image Extraction**: upload clinical images or PDFs, extract structured fields, inspect confidence and source evidence, and approve before persistence.
 2. **Patient-Scoped Multimodal Q&A**: ask a patient-specific question and receive a cited answer grounded in notes, documents, images, and timeline evidence.
@@ -92,8 +92,8 @@ Prerequisites:
 - `uv`
 
 ```powershell
-git clone https://github.com/GeorgiNaydenov/nexus-clinical-ai-capstone.git
-cd nexus-clinical-ai-capstone
+git clone https://github.com/GeorgiNaydenov/Google-Capstone-Project.git
+cd Google-Capstone-Project
 
 uv venv .venv --python 3.11
 uv pip install --python .venv\Scripts\python.exe -r requirements.txt
@@ -135,7 +135,7 @@ Open `http://localhost:8000`.
 
 | URL | Purpose |
 | --- | --- |
-| `http://localhost:8000/` | Nexus Clinical AI Command Center product |
+| `http://localhost:8000/` | Clinical AI Kit product |
 | `http://localhost:8000/documentation` | Standalone documentation hub |
 | `http://localhost:8000/healthz` | Liveness |
 | `http://localhost:8000/readyz` | Readiness with real component checks |
