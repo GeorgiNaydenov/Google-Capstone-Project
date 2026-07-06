@@ -1,0 +1,612 @@
+{
+  "module": "image_extraction",
+  "demo_platform": "demo2",
+  "sample_count": 4,
+  "upload_contract": {
+    "demoMode": "synthetic_picker",
+    "liveRoute": "/api/assets",
+    "contentType": "image/png",
+    "followupRoute": "/api/runs/extraction"
+  },
+  "frontend_contract": {
+    "demoPlatform": "demo2",
+    "syntheticPickerCount": 4,
+    "syntheticPicker": [
+      {
+        "id": "EXT-0001",
+        "label": "Heart failure with reduced EF source 1",
+        "patientId": "PT-X0001",
+        "patientName": "Showcase Patient 001",
+        "previewUrl": "/demo-data/extraction/demo2/images/EXT-0001.png",
+        "filename": "EXT-0001.png",
+        "contentType": "image/png",
+        "expectedFields": [
+          {
+            "field_name": "hba1c_pct",
+            "value": 8.4,
+            "unit": "%",
+            "confidence": 0.75,
+            "needs_review": false
+          },
+          {
+            "field_name": "ejection_fraction_pct",
+            "value": 46.0,
+            "unit": "%",
+            "confidence": 0.98,
+            "needs_review": false
+          },
+          {
+            "field_name": "tumor_size_cm",
+            "value": 6.4,
+            "unit": "cm",
+            "confidence": 0.97,
+            "needs_review": true
+          },
+          {
+            "field_name": "crp",
+            "value": 9.4,
+            "unit": "mg/L",
+            "confidence": 0.76,
+            "needs_review": false
+          }
+        ],
+        "reviewRequired": true
+      },
+      {
+        "id": "EXT-0002",
+        "label": "Heart failure with reduced EF source 2",
+        "patientId": "PT-X0002",
+        "patientName": "Showcase Patient 002",
+        "previewUrl": "/demo-data/extraction/demo2/images/EXT-0002.png",
+        "filename": "EXT-0002.png",
+        "contentType": "image/png",
+        "expectedFields": [
+          {
+            "field_name": "hba1c_pct",
+            "value": 10.8,
+            "unit": "%",
+            "confidence": 0.9,
+            "needs_review": true
+          },
+          {
+            "field_name": "egfr",
+            "value": 26.1,
+            "unit": "mL/min",
+            "confidence": 0.84,
+            "needs_review": false
+          },
+          {
+            "field_name": "bnp",
+            "value": 788.5,
+            "unit": "pg/mL",
+            "confidence": 0.98,
+            "needs_review": false
+          },
+          {
+            "field_name": "ejection_fraction_pct",
+            "value": 33.3,
+            "unit": "%",
+            "confidence": 0.72,
+            "needs_review": false
+          }
+        ],
+        "reviewRequired": true
+      },
+      {
+        "id": "EXT-0003",
+        "label": "Type 2 diabetes with retinopathy source 3",
+        "patientId": "PT-X0003",
+        "patientName": "Showcase Patient 003",
+        "previewUrl": "/demo-data/extraction/demo2/images/EXT-0003.png",
+        "filename": "EXT-0003.png",
+        "contentType": "image/png",
+        "expectedFields": [
+          {
+            "field_name": "hba1c_pct",
+            "value": 7.4,
+            "unit": "%",
+            "confidence": 0.78,
+            "needs_review": false
+          },
+          {
+            "field_name": "crp",
+            "value": 7.6,
+            "unit": "mg/L",
+            "confidence": 0.93,
+            "needs_review": false
+          },
+          {
+            "field_name": "egfr",
+            "value": 70.5,
+            "unit": "mL/min",
+            "confidence": 0.79,
+            "needs_review": false
+          },
+          {
+            "field_name": "tumor_size_cm",
+            "value": 5.8,
+            "unit": "cm",
+            "confidence": 0.89,
+            "needs_review": false
+          }
+        ],
+        "reviewRequired": false
+      },
+      {
+        "id": "EXT-0004",
+        "label": "Type 2 diabetes with retinopathy source 4",
+        "patientId": "PT-X0004",
+        "patientName": "Showcase Patient 004",
+        "previewUrl": "/demo-data/extraction/demo2/images/EXT-0004.png",
+        "filename": "EXT-0004.png",
+        "contentType": "image/png",
+        "expectedFields": [
+          {
+            "field_name": "tumor_size_cm",
+            "value": 2.8,
+            "unit": "cm",
+            "confidence": 0.86,
+            "needs_review": false
+          },
+          {
+            "field_name": "crp",
+            "value": 5.4,
+            "unit": "mg/L",
+            "confidence": 0.97,
+            "needs_review": false
+          },
+          {
+            "field_name": "ejection_fraction_pct",
+            "value": 47.8,
+            "unit": "%",
+            "confidence": 0.82,
+            "needs_review": false
+          },
+          {
+            "field_name": "egfr",
+            "value": 78.1,
+            "unit": "mL/min",
+            "confidence": 0.83,
+            "needs_review": true
+          }
+        ],
+        "reviewRequired": true
+      }
+    ],
+    "dashboardSeed": {
+      "patients": 4,
+      "sourceImages": 4,
+      "pendingReviews": 3,
+      "agentRuns": 4,
+      "storageObjects": 4,
+      "jsonRecords": 4,
+      "vectorRecords": 4,
+      "auditEvents": 12
+    },
+    "storageSeed": {
+      "cloudObjects": 4,
+      "jsonDocuments": 4,
+      "relationalRows": 4,
+      "vectorRecords": 4,
+      "failedRecords": 0
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "EXT-0001",
+      "patient": {
+        "patient_id": "PT-X0001",
+        "mrn": "MRN-X926131",
+        "name": "Showcase Patient 001",
+        "age": 71,
+        "sex": "Female",
+        "diagnosis": "Heart failure with reduced EF",
+        "clinician": "Dr. Elena Park"
+      },
+      "encounter_date": "2026-06-23",
+      "note": "HPI: interval symptoms reviewed with care team.\nMain condition remains Heart failure with reduced EF.\nLatest extracted value: hba1c_pct = 8.4 %.\nTrend attached: 9.5 -> 13.9 across 8 points.\nMedication reconciliation: pending pharmacy callback.\nReview flags: tumor_size_cm.\nPlan: compare source image, table values, and trend before persistence.",
+      "fields": [
+        {
+          "field_name": "hba1c_pct",
+          "value": 8.4,
+          "unit": "%",
+          "confidence": 0.75,
+          "needs_review": false
+        },
+        {
+          "field_name": "ejection_fraction_pct",
+          "value": 46.0,
+          "unit": "%",
+          "confidence": 0.98,
+          "needs_review": false
+        },
+        {
+          "field_name": "tumor_size_cm",
+          "value": 6.4,
+          "unit": "cm",
+          "confidence": 0.97,
+          "needs_review": true
+        },
+        {
+          "field_name": "crp",
+          "value": 9.4,
+          "unit": "mg/L",
+          "confidence": 0.76,
+          "needs_review": false
+        }
+      ],
+      "trend_values": [
+        9.5,
+        10.2,
+        11.2,
+        11.1,
+        12.2,
+        12.7,
+        13.0,
+        13.9
+      ],
+      "expected_agent_output": {
+        "documentType": "Clinical intake sheet with embedded trend chart",
+        "patientMatch": "PT-X0001",
+        "finding": "HPI: interval symptoms reviewed with care team.\nMain condition remains Heart failure with reduced EF.\nLatest extracted value: hba1c_pct = 8.4 %.\nTrend attached: 9.5 -> 13.9 across 8 points.\nMedication reconciliation: pending pharmacy callback.\nReview flags: tumor_size_cm.\nPlan: compare source image, table values, and trend before persistence.",
+        "extractedFields": [
+          {
+            "field_name": "hba1c_pct",
+            "value": 8.4,
+            "unit": "%",
+            "confidence": 0.75,
+            "needs_review": false
+          },
+          {
+            "field_name": "ejection_fraction_pct",
+            "value": 46.0,
+            "unit": "%",
+            "confidence": 0.98,
+            "needs_review": false
+          },
+          {
+            "field_name": "tumor_size_cm",
+            "value": 6.4,
+            "unit": "cm",
+            "confidence": 0.97,
+            "needs_review": true
+          },
+          {
+            "field_name": "crp",
+            "value": 9.4,
+            "unit": "mg/L",
+            "confidence": 0.76,
+            "needs_review": false
+          }
+        ],
+        "visualization": {
+          "type": "line",
+          "points": [
+            9.5,
+            10.2,
+            11.2,
+            11.1,
+            12.2,
+            12.7,
+            13.0,
+            13.9
+          ]
+        },
+        "reviewRequired": true
+      },
+      "asset_path": ".tmp\\demo2-smoke\\extraction\\images\\EXT-0001.png"
+    },
+    {
+      "sample_id": "EXT-0002",
+      "patient": {
+        "patient_id": "PT-X0002",
+        "mrn": "MRN-X890941",
+        "name": "Showcase Patient 002",
+        "age": 57,
+        "sex": "Female",
+        "diagnosis": "Heart failure with reduced EF",
+        "clinician": "Dr. James Patel"
+      },
+      "encounter_date": "2026-06-22",
+      "note": "HPI: interval symptoms reviewed with care team.\nMain condition remains Heart failure with reduced EF.\nLatest extracted value: hba1c_pct = 10.8 %.\nTrend attached: 10.3 -> 13.5 across 8 points.\nMedication reconciliation: pending pharmacy callback.\nReview flags: hba1c_pct.\nPlan: compare source image, table values, and trend before persistence.",
+      "fields": [
+        {
+          "field_name": "hba1c_pct",
+          "value": 10.8,
+          "unit": "%",
+          "confidence": 0.9,
+          "needs_review": true
+        },
+        {
+          "field_name": "egfr",
+          "value": 26.1,
+          "unit": "mL/min",
+          "confidence": 0.84,
+          "needs_review": false
+        },
+        {
+          "field_name": "bnp",
+          "value": 788.5,
+          "unit": "pg/mL",
+          "confidence": 0.98,
+          "needs_review": false
+        },
+        {
+          "field_name": "ejection_fraction_pct",
+          "value": 33.3,
+          "unit": "%",
+          "confidence": 0.72,
+          "needs_review": false
+        }
+      ],
+      "trend_values": [
+        10.3,
+        10.3,
+        10.2,
+        11.0,
+        11.1,
+        11.7,
+        12.3,
+        13.5
+      ],
+      "expected_agent_output": {
+        "documentType": "Clinical intake sheet with embedded trend chart",
+        "patientMatch": "PT-X0002",
+        "finding": "HPI: interval symptoms reviewed with care team.\nMain condition remains Heart failure with reduced EF.\nLatest extracted value: hba1c_pct = 10.8 %.\nTrend attached: 10.3 -> 13.5 across 8 points.\nMedication reconciliation: pending pharmacy callback.\nReview flags: hba1c_pct.\nPlan: compare source image, table values, and trend before persistence.",
+        "extractedFields": [
+          {
+            "field_name": "hba1c_pct",
+            "value": 10.8,
+            "unit": "%",
+            "confidence": 0.9,
+            "needs_review": true
+          },
+          {
+            "field_name": "egfr",
+            "value": 26.1,
+            "unit": "mL/min",
+            "confidence": 0.84,
+            "needs_review": false
+          },
+          {
+            "field_name": "bnp",
+            "value": 788.5,
+            "unit": "pg/mL",
+            "confidence": 0.98,
+            "needs_review": false
+          },
+          {
+            "field_name": "ejection_fraction_pct",
+            "value": 33.3,
+            "unit": "%",
+            "confidence": 0.72,
+            "needs_review": false
+          }
+        ],
+        "visualization": {
+          "type": "line",
+          "points": [
+            10.3,
+            10.3,
+            10.2,
+            11.0,
+            11.1,
+            11.7,
+            12.3,
+            13.5
+          ]
+        },
+        "reviewRequired": true
+      },
+      "asset_path": ".tmp\\demo2-smoke\\extraction\\images\\EXT-0002.png"
+    },
+    {
+      "sample_id": "EXT-0003",
+      "patient": {
+        "patient_id": "PT-X0003",
+        "mrn": "MRN-X544987",
+        "name": "Showcase Patient 003",
+        "age": 44,
+        "sex": "Female",
+        "diagnosis": "Type 2 diabetes with retinopathy",
+        "clinician": "Dr. Sarah Miller"
+      },
+      "encounter_date": "2026-06-21",
+      "note": "HPI: interval symptoms reviewed with care team.\nMain condition remains Type 2 diabetes with retinopathy.\nLatest extracted value: hba1c_pct = 7.4 %.\nTrend attached: 8.7 -> 13.4 across 8 points.\nMedication reconciliation: conflict found.\nReview flags: none above threshold.\nPlan: compare source image, table values, and trend before persistence.",
+      "fields": [
+        {
+          "field_name": "hba1c_pct",
+          "value": 7.4,
+          "unit": "%",
+          "confidence": 0.78,
+          "needs_review": false
+        },
+        {
+          "field_name": "crp",
+          "value": 7.6,
+          "unit": "mg/L",
+          "confidence": 0.93,
+          "needs_review": false
+        },
+        {
+          "field_name": "egfr",
+          "value": 70.5,
+          "unit": "mL/min",
+          "confidence": 0.79,
+          "needs_review": false
+        },
+        {
+          "field_name": "tumor_size_cm",
+          "value": 5.8,
+          "unit": "cm",
+          "confidence": 0.89,
+          "needs_review": false
+        }
+      ],
+      "trend_values": [
+        8.7,
+        9.6,
+        10.8,
+        11.8,
+        11.9,
+        12.0,
+        12.8,
+        13.4
+      ],
+      "expected_agent_output": {
+        "documentType": "Clinical intake sheet with embedded trend chart",
+        "patientMatch": "PT-X0003",
+        "finding": "HPI: interval symptoms reviewed with care team.\nMain condition remains Type 2 diabetes with retinopathy.\nLatest extracted value: hba1c_pct = 7.4 %.\nTrend attached: 8.7 -> 13.4 across 8 points.\nMedication reconciliation: conflict found.\nReview flags: none above threshold.\nPlan: compare source image, table values, and trend before persistence.",
+        "extractedFields": [
+          {
+            "field_name": "hba1c_pct",
+            "value": 7.4,
+            "unit": "%",
+            "confidence": 0.78,
+            "needs_review": false
+          },
+          {
+            "field_name": "crp",
+            "value": 7.6,
+            "unit": "mg/L",
+            "confidence": 0.93,
+            "needs_review": false
+          },
+          {
+            "field_name": "egfr",
+            "value": 70.5,
+            "unit": "mL/min",
+            "confidence": 0.79,
+            "needs_review": false
+          },
+          {
+            "field_name": "tumor_size_cm",
+            "value": 5.8,
+            "unit": "cm",
+            "confidence": 0.89,
+            "needs_review": false
+          }
+        ],
+        "visualization": {
+          "type": "line",
+          "points": [
+            8.7,
+            9.6,
+            10.8,
+            11.8,
+            11.9,
+            12.0,
+            12.8,
+            13.4
+          ]
+        },
+        "reviewRequired": false
+      },
+      "asset_path": ".tmp\\demo2-smoke\\extraction\\images\\EXT-0003.png"
+    },
+    {
+      "sample_id": "EXT-0004",
+      "patient": {
+        "patient_id": "PT-X0004",
+        "mrn": "MRN-X637219",
+        "name": "Showcase Patient 004",
+        "age": 74,
+        "sex": "Female",
+        "diagnosis": "Type 2 diabetes with retinopathy",
+        "clinician": "Dr. James Patel"
+      },
+      "encounter_date": "2026-06-20",
+      "note": "HPI: interval symptoms reviewed with care team.\nMain condition remains Type 2 diabetes with retinopathy.\nLatest extracted value: tumor_size_cm = 2.8 cm.\nTrend attached: 2.2 -> 4.0 across 8 points.\nMedication reconciliation: conflict found.\nReview flags: egfr.\nPlan: compare source image, table values, and trend before persistence.",
+      "fields": [
+        {
+          "field_name": "tumor_size_cm",
+          "value": 2.8,
+          "unit": "cm",
+          "confidence": 0.86,
+          "needs_review": false
+        },
+        {
+          "field_name": "crp",
+          "value": 5.4,
+          "unit": "mg/L",
+          "confidence": 0.97,
+          "needs_review": false
+        },
+        {
+          "field_name": "ejection_fraction_pct",
+          "value": 47.8,
+          "unit": "%",
+          "confidence": 0.82,
+          "needs_review": false
+        },
+        {
+          "field_name": "egfr",
+          "value": 78.1,
+          "unit": "mL/min",
+          "confidence": 0.83,
+          "needs_review": true
+        }
+      ],
+      "trend_values": [
+        2.2,
+        2.5,
+        3.6,
+        3.9,
+        4.1,
+        4.6,
+        3.7,
+        4.0
+      ],
+      "expected_agent_output": {
+        "documentType": "Clinical intake sheet with embedded trend chart",
+        "patientMatch": "PT-X0004",
+        "finding": "HPI: interval symptoms reviewed with care team.\nMain condition remains Type 2 diabetes with retinopathy.\nLatest extracted value: tumor_size_cm = 2.8 cm.\nTrend attached: 2.2 -> 4.0 across 8 points.\nMedication reconciliation: conflict found.\nReview flags: egfr.\nPlan: compare source image, table values, and trend before persistence.",
+        "extractedFields": [
+          {
+            "field_name": "tumor_size_cm",
+            "value": 2.8,
+            "unit": "cm",
+            "confidence": 0.86,
+            "needs_review": false
+          },
+          {
+            "field_name": "crp",
+            "value": 5.4,
+            "unit": "mg/L",
+            "confidence": 0.97,
+            "needs_review": false
+          },
+          {
+            "field_name": "ejection_fraction_pct",
+            "value": 47.8,
+            "unit": "%",
+            "confidence": 0.82,
+            "needs_review": false
+          },
+          {
+            "field_name": "egfr",
+            "value": 78.1,
+            "unit": "mL/min",
+            "confidence": 0.83,
+            "needs_review": true
+          }
+        ],
+        "visualization": {
+          "type": "line",
+          "points": [
+            2.2,
+            2.5,
+            3.6,
+            3.9,
+            4.1,
+            4.6,
+            3.7,
+            4.0
+          ]
+        },
+        "reviewRequired": true
+      },
+      "asset_path": ".tmp\\demo2-smoke\\extraction\\images\\EXT-0004.png"
+    }
+  ]
+}

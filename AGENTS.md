@@ -59,8 +59,13 @@ scripts/
   check_harness.py
   export_diagrams.py        # Export Project Wiki draw.io diagrams into frontend public assets.
   generate_database_showcase.py # Generate a large governed SQLite cohort for the database agent.
-  generate_extraction_showcase.py # Generate synthetic extraction assets for the image extraction agent.
+  generate_database_showcase_demo2.py # Generate the second-platform database intelligence demo dataset.
+  generate_extraction_showcase.py # Generate production-like extraction packets for the extraction agent.
+  generate_extraction_showcase_demo2.py # Generate the second-platform extraction demo asset set.
   generate_multimodal_patient_showcase.py # Generate multimodal patient bundles for the Q&A agent.
+  generate_multimodal_patient_showcase_demo2.py # Generate the second-platform multimodal Q&A demo bundle set.
+  run_clinical_app_dev.py   # Run the clinical FastAPI app from the local Windows dev environment.
+  showcase_clinical_core.py # Shared clinically coherent synthetic cohort engine for all showcase generators.
   sync_harness.py
   sync_wiki.py              # Deterministic Project Wiki and harness synchronization.
 tests/
@@ -79,6 +84,7 @@ tests/
   test_product_orchestration.py # Contract tests for clinician-facing production workflow boundaries.
   test_security.py          # Security test suite — validates all detection and sanitization functions.
   test_showcase_generators.py # Smoke tests for showcase data generators.
+  test_template_generators.py # Unit tests for template-based showcase data generators.
   test_tools.py             # Clinical tool validation tests — ensures consistent I/O contracts.
   test_versioned_api.py     # Unit tests for the versioned API backend endpoints (V1 and V2).
   test_wiki_sync.py         # Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py).

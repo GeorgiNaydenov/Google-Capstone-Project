@@ -42,7 +42,7 @@ export function Landing() {
     },
     {
       number: "03",
-      title: "Database intelligence",
+      title: "Population insights",
       copy: "A population insight flow for cohort questions. Natural language becomes inspectable read-only SQL, then approved tables, charts, and written findings.",
       count: "6 agents",
     },
@@ -55,15 +55,15 @@ export function Landing() {
         <a href="#architecture">Architecture diagrams</a>
         <Link to="/docs-access">How to Access Documentation</Link>
       </nav>
-      <StatusBadge tone="info">Synthetic clinical data</StatusBadge>
+      <StatusBadge tone="info">Synthetic patient records - no real PHI</StatusBadge>
     </header>
     <section className="landing-hero">
       <div className="hero-copy">
-        <span className="eyebrow accent">GOOGLE ADK MULTI-AGENT CLINICAL COMMAND CENTER</span>
+        <span className="eyebrow accent">CLINICAL AI COMMAND CENTER</span>
         <h1>Turn fragmented clinical evidence into decisions clinicians can verify.</h1>
         <p>Clinician AI KIT gives care teams one workspace for document extraction, cited patient Q&A, cohort analytics, review, storage, and audit. The agents do the heavy reading while every consequential action stays visible and clinician-approved.</p>
         <div className="button-row"><button className="button primary large" disabled={busy} onClick={() => void enter()}>{busy ? "Preparing workspace" : "Start clinical workspace"}</button><button className="button subtle large" onClick={() => document.getElementById("architecture")?.scrollIntoView({ behavior: "smooth" })}>Inspect architecture</button></div>
-        <div className="trust-row"><span>No login needed</span><span>Visible ADK agent traces</span><span>Clinician-gated writes</span><span>Synthetic demo data</span></div>
+        <div className="trust-row"><span>No login needed</span><span>Transparent AI reasoning traces</span><span>Clinician-gated writes</span><span>Synthetic demo records</span></div>
       </div>
       <div className="product-preview" aria-label="Application preview">
         <header><span>Clinician dashboard</span><StatusBadge tone="success">Agents operational</StatusBadge></header>
@@ -74,7 +74,7 @@ export function Landing() {
     <section className="landing-section" id="workflows"><header><span className="eyebrow accent">THREE GUIDED WORKFLOWS</span><h2>The agents work in the open.</h2><p>Each workflow shows the plan, specialist agents, tools, evidence, confidence, approval point, storage receipt, and audit event. The product is built for clinical review, not blind automation.</p></header><div className="workflow-showcase">{workflowCards.map(({ number, title, copy, count }) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{copy}</p><StatusBadge tone="info">{count}</StatusBadge></article>)}</div></section>
     <section className="architecture-section" id="architecture">
       <header><span className="eyebrow accent">VISIBLE ARCHITECTURE</span><h2>From clinician intent to governed output.</h2><p>Explore the prepared architecture views from the product surface down to agents, modules, deployment, and protocol boundaries.</p></header>
-      <div className="architecture-flow">{[["Clinician UI", "Role-aware workflow"], ["ADK orchestrator", "Intent and routing"], ["Specialist agents", "Reasoning and tools"], ["Google services", "Object, JSON, SQL, Vector"], ["Verified outputs", "Evidence and audit"]].map(([title, detail], index) => <div key={title}><span>{index + 1}</span><strong>{title}</strong><small>{detail}</small>{index < 4 && <b>feeds</b>}</div>)}</div>
+      <div className="architecture-flow">{[["Clinician UI", "Role-aware workflow"], ["AI orchestration", "Intent and routing"], ["Specialist agents", "Reasoning and tools"], ["Google services", "Object, JSON, SQL, Vector"], ["Verified outputs", "Evidence and audit"]].map(([title, detail], index) => <div key={title}><span>{index + 1}</span><strong>{title}</strong><small>{detail}</small>{index < 4 && <b>feeds</b>}</div>)}</div>
       <div className="diagram-atlas-intro"><div><strong>Architecture diagram atlas</strong><small>Six categories with pan, zoom, fullscreen, SVG rendering, and PNG fallback.</small></div><StatusBadge tone="info">31 views</StatusBadge></div>
       <DiagramAtlas defaultCategory="system"/>
     </section>
@@ -87,9 +87,9 @@ export function RoleSelection() {
   const enter = (role: Role) => { setRole(role); navigate(role === "admin" ? "/app/admin" : "/app/dashboard"); };
 
   return <main className="role-page">
-    <header><div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div><StatusBadge tone="info">Synthetic clinical data</StatusBadge></header>
+    <header><div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div><StatusBadge tone="info">Synthetic patient records - no real PHI</StatusBadge></header>
     <section className="role-intro"><span className="eyebrow accent">SELECT WORKSPACE</span><h1>How are you working today?</h1><p>The same identity can switch roles at any time. Active patient and workflow context follows you.</p></section>
-    <div className="role-dashboard"><section className="role-cards"><button onClick={() => enter("clinician")}><span className="role-icon"><Icon name="activity" size={28}/></span><div><small>CLINICAL OPERATIONS</small><strong>Clinician workspace</strong><p>Patient queue, sessions, extraction, cited Q&A, database intelligence, review, and audit.</p><b>Enter clinician workspace</b></div></button><button onClick={() => enter("admin")}><span className="role-icon"><Icon name="settings" size={28}/></span><div><small>PLATFORM CONTROL</small><strong>Administrator workspace</strong><p>Users, agents, routing, pipelines, storage, indexes, relational data, health, and compliance.</p><b>Enter admin workspace</b></div></button></section><aside><section><h2>Recent agent runs</h2>{[["Image Extraction", "PT-8829", "Completed"], ["Patient Q&A", "PT-1029", "Review"], ["Database Intelligence", "Cohort", "Completed"]].map(([agent, entity, status]) => <div className="role-activity" key={agent}><span className="pulse"/><span><strong>{agent}</strong><small>{entity} moments ago</small></span><StatusBadge tone={status === "Completed" ? "success" : "review"}>{status}</StatusBadge></div>)}</section><section><h2>System status</h2><div className="role-status"><span>ADK orchestrator <StatusBadge tone="success">Ready</StatusBadge></span><span>Clinical data stores <StatusBadge tone="success">Synchronized</StatusBadge></span><span>Audit pipeline <StatusBadge tone="success">Recording</StatusBadge></span></div></section></aside></div>
+    <div className="role-dashboard"><section className="role-cards"><button onClick={() => enter("clinician")}><span className="role-icon"><Icon name="activity" size={28}/></span><div><small>CLINICAL OPERATIONS</small><strong>Clinician workspace</strong><p>Patient queue, sessions, extraction, cited Q&A, population insights, review, and audit.</p><b>Enter clinician workspace</b></div></button><button onClick={() => enter("admin")}><span className="role-icon"><Icon name="settings" size={28}/></span><div><small>PLATFORM CONTROL</small><strong>Administrator workspace</strong><p>Users, care teams, routing, storage, records, system health, and compliance.</p><b>Enter admin workspace</b></div></button></section><aside><section><h2>Recent agent runs</h2>{[["Image Extraction", "PT-8829", "Completed"], ["Patient Q&A", "PT-1029", "Review"], ["Population Insights", "Cohort", "Completed"]].map(([agent, entity, status]) => <div className="role-activity" key={agent}><span className="pulse"/><span><strong>{agent}</strong><small>{entity} moments ago</small></span><StatusBadge tone={status === "Completed" ? "success" : "review"}>{status}</StatusBadge></div>)}</section><section><h2>System status</h2><div className="role-status"><span>AI orchestration <StatusBadge tone="success">Ready</StatusBadge></span><span>Clinical data stores <StatusBadge tone="success">Synchronized</StatusBadge></span><span>Audit trail <StatusBadge tone="success">Recording</StatusBadge></span></div></section></aside></div>
   </main>;
 }
 

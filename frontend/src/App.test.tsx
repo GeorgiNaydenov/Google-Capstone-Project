@@ -16,7 +16,7 @@ describe("clinical product shell", () => {
   it("renders public synthetic demo landing", () => {
     render(<MemoryRouter initialEntries={["/"]}><App/></MemoryRouter>);
     expect(screen.getByRole("heading", { name: /turn fragmented clinical evidence/i })).toBeInTheDocument();
-    expect(screen.getByText(/synthetic clinical data/i)).toBeInTheDocument();
+    expect(screen.getByText(/synthetic patient records/i)).toBeInTheDocument();
     expect(screen.getByText(/architecture diagram atlas/i)).toBeInTheDocument();
     const categoryTabs = within(screen.getByRole("tablist", { name: /diagram categories/i }));
     expect(categoryTabs.getByRole("tab", { name: /^System/i })).toHaveAttribute("aria-selected", "true");
@@ -24,9 +24,19 @@ describe("clinical product shell", () => {
     expect(screen.getByRole("tab", { name: /C4 containers/i })).toBeInTheDocument();
     expect(screen.queryByText(/open draw\.io/i)).not.toBeInTheDocument();
   });
-  it("uses a real upload input", () => {
+  it("uses synthetic extraction choices in demo mode", async () => {
+    render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
+    expect(screen.getByRole("button", { name: /run selected packet/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /packet/i }).length).toBeGreaterThanOrEqual(10);
+    expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /run selected packet/i }));
+    expect(await screen.findByDisplayValue(/Clinical record packet/i)).toBeInTheDocument();
+  });
+  it("keeps real upload input for the live tenant", () => {
+    sessionStorage.setItem("tenant", "capstone");
     render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
     expect(document.querySelector('input[type="file"]')).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /process document/i })).toBeInTheDocument();
   });
   it("opens orchestration with keyboard and reviews all plan fields", () => {
     render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
@@ -34,14 +44,21 @@ describe("clinical product shell", () => {
     expect(screen.getByRole("dialog", { name: /plan a clinical task/i })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/what should nexus do/i), { target: { value: "Extract this image" } });
     fireEvent.click(screen.getByRole("button", { name: /image extraction.*manual workflow/i }));
-    for (const label of ["Intent", "Workflow", "Agents", "Data sources", "Permissions", "Expected output"]) expect(screen.getByText(label)).toBeInTheDocument();
+    for (const label of ["Intent", "Workflow", "Agents", "Data sources", "Permissions", "Expected output"]) expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /run workflow/i })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: /database intelligence.*manual workflow/i }));
+    fireEvent.click(screen.getByRole("button", { name: /population insights.*manual workflow/i }));
     fireEvent.click(screen.getByRole("button", { name: /run workflow/i }));
-    expect(screen.getByRole("heading", { name: /database intelligence/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /population insights/i })).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "k", metaKey: true });
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+  it("shows database schema context only to admins", async () => {
+    render(<MemoryRouter initialEntries={["/app/database"]}><App/></MemoryRouter>);
+    expect(screen.queryByText(/Schema explorer/i)).not.toBeInTheDocument();
+    localStorage.setItem("clinicalRole", "admin");
+    render(<MemoryRouter initialEntries={["/app/database"]}><App/></MemoryRouter>);
+    expect(await screen.findByText(/Schema explorer/i)).toBeInTheDocument();
   });
   it("edits and saves the live agent configuration contract", async () => {
     localStorage.setItem("clinicalRole", "admin");
@@ -61,6 +78,54 @@ describe("clinical product shell", () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === "PUT")).toBe(true));
     const request = fetchMock.mock.calls.find(([, init]) => init?.method === "PUT")?.[1] as RequestInit;
     expect(JSON.parse(String(request.body))).toMatchObject({ autoApprovalThreshold: 90, reviewThreshold: 75, maxConcurrentRuns: 12, databaseEnabled: true });
+  });
+  it("keeps the admin dashboard usable when read APIs return gateway errors", async () => {
+    localStorage.setItem("clinicalRole", "admin");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ detail: "Gateway unavailable" }), { status: 502, headers: { "Content-Type": "application/json" } }));
+    render(<MemoryRouter initialEntries={["/app/admin"]}><App/></MemoryRouter>);
+    expect(await screen.findByRole("heading", { name: /admin dashboard/i })).toBeInTheDocument();
+    expect(screen.getByText(/Clinical database/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Object storage/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/System atlas/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Unable to load this view/i)).not.toBeInTheDocument();
+  });
+  it("renders storage subtabs with concrete provider rows and hides the keyboard hint", async () => {
+    localStorage.setItem("clinicalRole", "admin");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ detail: "Gateway unavailable" }), { status: 502, headers: { "Content-Type": "application/json" } }));
+    render(<MemoryRouter initialEntries={["/app/storage"]}><App/></MemoryRouter>);
+    expect(await screen.findByRole("heading", { name: /data and storage management/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Ctrl K/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /vector search index/i }));
+    expect(await screen.findByText(/Vector Search Index -/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/clinical-evidence/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /sync failures/i }));
+    expect(await screen.findByText(/Sync Failures - 1 record/i)).toBeInTheDocument();
+    expect(screen.getByText(/Refresh provider after API gateway recovers/i)).toBeInTheDocument();
+  });
+  it("keeps Q&A agent output usable when demo mutations return gateway errors", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ detail: "Gateway unavailable" }), { status: 502, headers: { "Content-Type": "application/json" } }));
+    render(<MemoryRouter initialEntries={["/app/qa"]}><App/></MemoryRouter>);
+    fireEvent.change(await screen.findByPlaceholderText(/ask a longitudinal/i), { target: { value: "What changed between the last two sessions?" } });
+    fireEvent.click(screen.getByRole("button", { name: /ask about this patient/i }));
+    expect(await screen.findByText(/Answer \+ table \+ visual evidence/i)).toBeInTheDocument();
+    expect(screen.getByText(/stored knowledge base indicates stable follow-up/i)).toBeInTheDocument();
+    expect(screen.getByText(/Evidence cited in this answer/i)).toBeInTheDocument();
+    const evidenceImage = screen.getByAltText(/cited visual evidence/i) as HTMLImageElement;
+    expect(evidenceImage.getAttribute("src")).toContain("/evidence/demo-retinopathy-intake.png");
+    expect(evidenceImage.getAttribute("src")).not.toContain("/diagrams/");
+    expect(screen.queryByText(/Request failed \(502\)/i)).not.toBeInTheDocument();
+  });
+  it("shows stored multimodal files from the synthetic knowledge base", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ detail: "Gateway unavailable" }), { status: 502, headers: { "Content-Type": "application/json" } }));
+    render(<MemoryRouter initialEntries={["/app/qa"]}><App/></MemoryRouter>);
+    const syntheticTab = await screen.findByRole("button", { name: /document library/i });
+    expect(syntheticTab).toBeInTheDocument();
+    expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument();
+    fireEvent.click(syntheticTab);
+    expect(await screen.findByText(/Patient document library/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/ct-followup-summary\.pdf/i).length).toBeGreaterThan(0);
+    expect(document.body.innerHTML).not.toContain("/diagrams/16-document-ingestion-flow.png");
+    expect(screen.queryByText(/Request failed \(502\)/i)).not.toBeInTheDocument();
   });
   it("renders grouped navigation, searches patients, and opens actionable notifications", async () => {
     localStorage.setItem("clinicalRole", "clinician");

@@ -1,7 +1,7 @@
 ---
 title: Module Inventory
 type: generated
-updated: 2026-07-05
+updated: 2026-07-06
 tags:
   - generated
 ---
@@ -50,8 +50,13 @@ Hand-written companion: [[Module Reference]].
 | `scripts` | `check_harness.py` | (no docstring) |
 | `scripts` | `export_diagrams.py` | Export Project Wiki draw.io diagrams into frontend public assets. |
 | `scripts` | `generate_database_showcase.py` | Generate a large governed SQLite cohort for the database agent. |
-| `scripts` | `generate_extraction_showcase.py` | Generate synthetic extraction assets for the image extraction agent. |
+| `scripts` | `generate_database_showcase_demo2.py` | Generate the second-platform database intelligence demo dataset. |
+| `scripts` | `generate_extraction_showcase.py` | Generate production-like extraction packets for the extraction agent. |
+| `scripts` | `generate_extraction_showcase_demo2.py` | Generate the second-platform extraction demo asset set. |
 | `scripts` | `generate_multimodal_patient_showcase.py` | Generate multimodal patient bundles for the Q&A agent. |
+| `scripts` | `generate_multimodal_patient_showcase_demo2.py` | Generate the second-platform multimodal Q&A demo bundle set. |
+| `scripts` | `run_clinical_app_dev.py` | Run the clinical FastAPI app from the local Windows dev environment. |
+| `scripts` | `showcase_clinical_core.py` | Shared clinically coherent synthetic cohort engine for all showcase generators. |
 | `scripts` | `sync_harness.py` | (no docstring) |
 | `scripts` | `sync_wiki.py` | Deterministic Project Wiki and harness synchronization. |
 | `tests` | `__init__.py` | (no docstring) |
@@ -70,6 +75,7 @@ Hand-written companion: [[Module Reference]].
 | `tests` | `test_product_orchestration.py` | Contract tests for clinician-facing production workflow boundaries. |
 | `tests` | `test_security.py` | Security test suite — validates all detection and sanitization functions. |
 | `tests` | `test_showcase_generators.py` | Smoke tests for showcase data generators. |
+| `tests` | `test_template_generators.py` | Unit tests for template-based showcase data generators. |
 | `tests` | `test_tools.py` | Clinical tool validation tests — ensures consistent I/O contracts. |
 | `tests` | `test_versioned_api.py` | Unit tests for the versioned API backend endpoints (V1 and V2). |
 | `tests` | `test_wiki_sync.py` | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |

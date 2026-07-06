@@ -57,18 +57,18 @@ const steps: TourStep[] = [
     body: "The queue brings structured fields, notes, imaging metadata, and indexed evidence into the same record view. Filters for risk, review state, and completeness help the right patient rise to the top.",
   },
   {
-    id: "extraction", route: "/app/extraction", eyebrow: "AI WORKFLOW 1: MULTIMODAL EXTRACTION", screen: "Extraction workspace",
+    id: "extraction", route: "/app/extraction", eyebrow: "AI WORKFLOW 1: EVIDENCE EXTRACTION", screen: "Extraction workspace",
     title: "Upload a report and let the specialist agents read it.",
     body: "Use a photographed lab slip, referral, MRI report, PNG, JPEG, or PDF. The agents check quality, read text and images, structure findings, score confidence, and pause for your review before anything reaches the patient record.",
     visual: <SimPipeline/>,
   },
   {
-    id: "qa", route: `/app/qa?query=${encodeURIComponent("What changed between the last two sessions?")}`, eyebrow: "AI WORKFLOW 2: MULTIMODAL Q&A", screen: "Patient Q&A",
+    id: "qa", route: `/app/qa?query=${encodeURIComponent("What changed between the last two sessions?")}`, eyebrow: "AI WORKFLOW 2: PATIENT Q&A", screen: "Patient Q&A",
     title: "Ask the record a clinical question.",
     body: "The question field behind this panel is already filled in. Close or step past this panel and press \"Ask Nexus agents\" to see the real agents retrieve across notes, labs, and images, with citations to the exact scan, note, or value.",
   },
   {
-    id: "database", route: `/app/database?query=${encodeURIComponent("Count patients by risk level")}`, eyebrow: "AI WORKFLOW 3: POPULATION INTELLIGENCE", screen: "Database intelligence",
+    id: "database", route: `/app/database?query=${encodeURIComponent("Count patients by risk level")}`, eyebrow: "AI WORKFLOW 3: POPULATION INTELLIGENCE", screen: "Population insights",
     title: "Turn a cohort question into a governed answer.",
     body: "The population question behind this panel is already filled in. Step past this panel and press \"Generate SQL preview\" to see the real read-only SQL, safety review, and — once you approve execution — governed results, charts, and a written insight.",
   },
@@ -80,7 +80,7 @@ const steps: TourStep[] = [
   {
     id: "orchestrator", route: "/app/inbox", eyebrow: "ONE COMMAND BAR", screen: "Workflow planning",
     title: "Describe the task and inspect the plan before it runs.",
-    body: "From any screen, the orchestrator maps your intent to a workflow, agents, permissions, and expected output. The plan is visible first, so clinical context stays under your control.",
+    body: "From any screen, Nexus maps your request to a workflow, care team permissions, and expected output. The plan is visible first, so clinical context stays under your control.",
     visual: <ChipRow flow chips={["Intent", "Workflow", "Agents", "Permissions", "Run"]}/>,
   },
   {

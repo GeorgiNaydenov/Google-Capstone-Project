@@ -1,0 +1,191 @@
+{
+  "demoPlatform": "primary",
+  "dashboardSeed": {
+    "patients": 5,
+    "sessions": 20,
+    "highRiskEstimate": 1,
+    "pendingReviewEstimate": 5,
+    "pendingVerifications": 5,
+    "storedAssets": 5,
+    "agentRuns24h": 12,
+    "auditEvents": 40,
+    "databaseRows": 933,
+    "queryExamples": 19,
+    "openAiAlerts": 5,
+    "failedExtractions": 0,
+    "completeness": 87,
+    "syncRate": 100,
+    "anchorDate": "2026-07-05"
+  },
+  "storageSeed": {
+    "cloudObjects": 5,
+    "jsonDocuments": 88,
+    "relationalRows": 933,
+    "vectorRecords": 26,
+    "auditEvents": 40,
+    "failedRecords": 0
+  },
+  "agentMonitoringSeed": [
+    {
+      "pipeline": "database",
+      "agent": "schema_discovery_agent",
+      "runs": 19,
+      "avgConfidence": 0.94,
+      "failureRate": 0.0,
+      "reviewRate": 0.0,
+      "avgDurationMs": 510
+    },
+    {
+      "pipeline": "database",
+      "agent": "nl_to_sql_agent",
+      "runs": 19,
+      "avgConfidence": 0.91,
+      "failureRate": 0.0,
+      "reviewRate": 0.0,
+      "avgDurationMs": 920
+    },
+    {
+      "pipeline": "database",
+      "agent": "sql_validator_agent",
+      "runs": 19,
+      "avgConfidence": 0.97,
+      "failureRate": 0.0,
+      "reviewRate": 0.0,
+      "avgDurationMs": 340
+    },
+    {
+      "pipeline": "database",
+      "agent": "query_executor_agent",
+      "runs": 19,
+      "avgConfidence": 0.96,
+      "failureRate": 0.0,
+      "reviewRate": 0.0,
+      "avgDurationMs": 680
+    },
+    {
+      "pipeline": "database",
+      "agent": "insight_chart_agent",
+      "runs": 19,
+      "avgConfidence": 0.93,
+      "failureRate": 0.0,
+      "reviewRate": 0.0,
+      "avgDurationMs": 1210
+    }
+  ],
+  "queryCards": [
+    {
+      "question": "Count patients by risk level.",
+      "sql": "SELECT risk_level, COUNT(*) AS patient_count FROM patients_core GROUP BY risk_level ORDER BY patient_count DESC",
+      "rowCount": 1,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_01.png"
+    },
+    {
+      "question": "Which diabetic patients have an HbA1c above 9 percent?",
+      "sql": "SELECT p.patient_id, p.name, MAX(CAST(l.value AS REAL)) AS latest_hba1c, p.assigned_clinician FROM lab_results l JOIN patients_core p USING (patient_id) WHERE l.component = 'HbA1c' AND CAST(l.value AS REAL) > 9.0 AND EXISTS (SELECT 1 FROM patient_conditions c WHERE c.patient_id = p.patient_id AND c.condition_name LIKE '%diabetes%') GROUP BY p.patient_id ORDER BY latest_hba1c DESC LIMIT 15",
+      "rowCount": 1,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_02.png"
+    },
+    {
+      "question": "Which anticoagulated patients have no recent INR result?",
+      "sql": "SELECT p.patient_id, p.name, p.age, p.risk_level FROM patients_core p JOIN medications m USING (patient_id) WHERE m.status = 'active' AND (m.medication_class LIKE '%anticoagulant%' OR m.medication_class = 'Vitamin K antagonist') AND NOT EXISTS (SELECT 1 FROM lab_results l WHERE l.patient_id = p.patient_id AND l.component = 'INR' AND l.result_date >= '2026-01-06') GROUP BY p.patient_id ORDER BY p.age DESC LIMIT 15",
+      "rowCount": 1,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_03.png"
+    },
+    {
+      "question": "Which patients aged 65 and older are missing pneumococcal vaccination?",
+      "sql": "SELECT p.patient_id, p.name, p.age, p.assigned_clinician FROM patients_core p WHERE p.age >= 65 AND NOT EXISTS (SELECT 1 FROM immunizations i WHERE i.patient_id = p.patient_id AND i.vaccine_abbreviation IN ('PPSV23', 'PCV13')) ORDER BY p.age DESC LIMIT 20",
+      "rowCount": 0,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_04.png"
+    },
+    {
+      "question": "Which patients are on 8 or more active medications?",
+      "sql": "SELECT p.patient_id, p.name, COUNT(*) AS active_medications, p.age, p.risk_level FROM medications m JOIN patients_core p USING (patient_id) WHERE m.status = 'active' GROUP BY p.patient_id HAVING COUNT(*) >= 8 ORDER BY active_medications DESC LIMIT 15",
+      "rowCount": 0,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_05.png"
+    },
+    {
+      "question": "Compare uncontrolled hypertension rates by care archetype.",
+      "sql": "SELECT p.care_archetype, ROUND(AVG(v.systolic_bp), 1) AS avg_systolic_bp, ROUND(100.0 * SUM(CASE WHEN v.systolic_bp >= 140 THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_readings_over_140 FROM vital_signs v JOIN patients_core p USING (patient_id) GROUP BY p.care_archetype ORDER BY pct_readings_over_140 DESC",
+      "rowCount": 4,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_06.png"
+    },
+    {
+      "question": "How does appointment no-show rate vary with housing stability?",
+      "sql": "SELECT s.housing_status, COUNT(*) AS past_appointments, ROUND(100.0 * SUM(CASE WHEN a.status = 'No-Show' THEN 1 ELSE 0 END) / COUNT(*), 1) AS no_show_pct FROM appointments a JOIN social_determinants s USING (patient_id) WHERE a.status IN ('Completed', 'Cancelled', 'No-Show', 'Rescheduled') GROUP BY s.housing_status ORDER BY no_show_pct DESC",
+      "rowCount": 2,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_07.png"
+    },
+    {
+      "question": "Which payers cover the most high-risk patients with open care gaps?",
+      "sql": "SELECT i.coverage_type, COUNT(DISTINCT p.patient_id) AS high_risk_patients_with_gaps FROM insurance_policies i JOIN patients_core p USING (patient_id) JOIN care_gaps g ON g.patient_id = p.patient_id AND g.status = 'open' WHERE p.risk_level = 'high' AND i.is_primary = 1 GROUP BY i.coverage_type ORDER BY high_risk_patients_with_gaps DESC",
+      "rowCount": 0,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_08.png"
+    },
+    {
+      "question": "Which medication classes have the lowest adherence scores?",
+      "sql": "SELECT medication_class, ROUND(AVG(adherence_score), 2) AS avg_adherence, COUNT(*) AS medication_count FROM medications WHERE status = 'active' GROUP BY medication_class HAVING COUNT(*) >= 5 ORDER BY avg_adherence ASC LIMIT 10",
+      "rowCount": 0,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_09.png"
+    },
+    {
+      "question": "Which comorbidity categories are most common among high-risk patients?",
+      "sql": "SELECT pc.category, COUNT(*) AS condition_count FROM patient_conditions pc JOIN patients_core p USING (patient_id) WHERE p.risk_level = 'high' AND pc.is_primary = 0 GROUP BY pc.category ORDER BY condition_count DESC",
+      "rowCount": 0,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_10.png"
+    },
+    {
+      "question": "Compare average BMI and blood pressure by risk level.",
+      "sql": "SELECT p.risk_level, ROUND(AVG(p.bmi), 1) AS avg_bmi, ROUND(AVG(v.systolic_bp), 1) AS avg_systolic_bp FROM vital_signs v JOIN patients_core p USING (patient_id) GROUP BY p.risk_level ORDER BY avg_systolic_bp DESC",
+      "rowCount": 1,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_11.png"
+    },
+    {
+      "question": "Which lab components are most often abnormal?",
+      "sql": "SELECT component, COUNT(*) AS abnormal_results FROM lab_results WHERE flag != 'normal' GROUP BY component ORDER BY abnormal_results DESC LIMIT 12",
+      "rowCount": 12,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_12.png"
+    },
+    {
+      "question": "Show open care gaps by priority and owner.",
+      "sql": "SELECT priority, owner, COUNT(*) AS open_gap_count FROM care_gaps WHERE status IN ('open', 'scheduled', 'deferred') GROUP BY priority, owner ORDER BY open_gap_count DESC LIMIT 12",
+      "rowCount": 0,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_13.png"
+    },
+    {
+      "question": "How does evidence completeness vary by language?",
+      "sql": "SELECT preferred_language, ROUND(AVG(data_completeness_score), 2) AS avg_completeness, COUNT(*) AS patient_count FROM patients_core GROUP BY preferred_language ORDER BY avg_completeness ASC",
+      "rowCount": 1,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_14.png"
+    },
+    {
+      "question": "How is the cohort split between synthetic PII and de-identified records?",
+      "sql": "SELECT privacy_class, consent_status, COUNT(*) AS patient_count FROM patients_core GROUP BY privacy_class, consent_status ORDER BY patient_count DESC",
+      "rowCount": 3,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_15.png"
+    },
+    {
+      "question": "Which clinicians have the most pending reviews?",
+      "sql": "SELECT assigned_clinician, COUNT(*) AS pending_reviews FROM patients_core WHERE ai_review_status = 'needs_review' GROUP BY assigned_clinician ORDER BY pending_reviews DESC LIMIT 10",
+      "rowCount": 5,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_16.png"
+    },
+    {
+      "question": "Show average extraction confidence by imaging modality.",
+      "sql": "SELECT i.modality, ROUND(AVG(s.extraction_confidence), 3) AS avg_confidence FROM imaging_studies i JOIN sessions s ON s.session_id = i.session_id GROUP BY i.modality ORDER BY avg_confidence DESC",
+      "rowCount": 5,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_17.png"
+    },
+    {
+      "question": "Show high-risk extraction sessions by year.",
+      "sql": "SELECT strftime('%Y', session_date) AS session_year, COUNT(*) AS high_risk_sessions FROM sessions JOIN patients_core USING (patient_id) WHERE risk_level = 'high' GROUP BY session_year ORDER BY session_year",
+      "rowCount": 0,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_18.png"
+    },
+    {
+      "question": "How many agent audit events exist by pipeline?",
+      "sql": "SELECT agent_name, COUNT(*) AS event_count FROM audit_log GROUP BY agent_name ORDER BY event_count DESC",
+      "rowCount": 2,
+      "chart": ".tmp_showcase_validation\\database\\charts\\query_19.png"
+    }
+  ]
+}

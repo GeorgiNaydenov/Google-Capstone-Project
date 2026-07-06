@@ -1,5 +1,7 @@
 """Session-isolated mutable repository for deterministic product demos."""
 
+import json
+import sqlite3
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -155,6 +157,10 @@ class DemoDataset:
     notifications: list[dict[str, Any]]
     users: list[dict[str, Any]]
     monitor_baseline: list[dict[str, Any]]
+    uploads: dict[str, dict[str, Any]] | None = None
+    dashboard_seed: dict[str, Any] | None = None
+    storage_seed: dict[str, Any] | None = None
+    database_queries: list[dict[str, Any]] | None = None
 
 
 RESEARCH_CLINIC = DemoDataset("research_clinic", PATIENTS, SESSIONS, EVIDENCE, RESEARCH_NOTIFICATIONS, RESEARCH_USERS, MONITOR_BASELINE)
@@ -167,6 +173,393 @@ import os
 # mounted Docker volume) so they persist across restarts; otherwise they sit
 # beside the project for local development. Demo tenants keep no files.
 PROJECT_ROOT = Path(os.environ["CLINICAL_DATA_DIR"]).resolve() if os.environ.get("CLINICAL_DATA_DIR") else Path(__file__).resolve().parents[1]
+
+
+def _read_app_manifest(directory: Path) -> dict[str, Any]:
+    """Read a generated app manifest, falling back to manifest.frontend_contract."""
+
+    app_manifest_path = directory / "app_manifest.json"
+    if app_manifest_path.is_file():
+        with open(app_manifest_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    full_manifest_path = directory / "manifest.json"
+    if full_manifest_path.is_file():
+        with open(full_manifest_path, "r", encoding="utf-8") as f:
+            full_manifest = json.load(f)
+        return full_manifest.get("frontend_contract", {})
+    return {}
+
+
+def _generated_database_path(database_dir: Path) -> Path | None:
+    """Resolve the SQLite file created by a database showcase generator."""
+
+    manifest_path = database_dir / "manifest.json"
+    if manifest_path.is_file():
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        raw = manifest.get("db_path")
+        if raw:
+            candidate = Path(str(raw))
+            candidates = [candidate, PROJECT_ROOT / candidate]
+            for item in candidates:
+                if item.is_file():
+                    return item
+    return next(database_dir.glob("*.db"), None)
+
+
+def _generated_file_path(path_value: Any) -> Path:
+    """Resolve generated manifest paths whether absolute or project-relative."""
+
+    candidate = Path(str(path_value or "").replace("\\", "/"))
+    if candidate.is_absolute():
+        return candidate
+    return PROJECT_ROOT / candidate
+
+
+def _monitor_row(baseline: dict[str, Any]) -> dict[str, Any]:
+    """Normalize generated agent-monitoring seed rows for the app contract."""
+
+    return {
+        "agent": baseline["agent"],
+        "pipeline": baseline["pipeline"],
+        "lastRun": "2m ago",
+        "status": "healthy" if float(baseline.get("failureRate", 0)) < 0.05 else "degraded",
+        "avgConfidence": float(baseline.get("avgConfidence", 0.9)),
+        "failureRate": float(baseline.get("failureRate", 0)),
+        "reviewRate": float(baseline.get("reviewRate", 0)),
+        "avgDurationMs": int(baseline.get("avgDurationMs", 1500)),
+        "linkedPatients": int(baseline.get("linkedPatients", 14)),
+    }
+
+
+def load_showcase_dataset(key: str, base_dir: Path, notifications: list[dict[str, Any]], users: list[dict[str, Any]]) -> DemoDataset | None:
+    """Dynamically load a generated showcase dataset if files exist."""
+
+    db_manifest_path = base_dir / "database" / "app_manifest.json"
+    multimodal_manifest_path = base_dir / "multimodal" / "app_manifest.json"
+    extraction_manifest_path = base_dir / "extraction" / "manifest.json"
+
+    if not db_manifest_path.is_file() and not (base_dir / "database" / "manifest.json").is_file():
+        return None
+    if not multimodal_manifest_path.is_file() and not (base_dir / "multimodal" / "manifest.json").is_file():
+        return None
+
+    try:
+        db_manifest = _read_app_manifest(base_dir / "database")
+        mm_manifest = _read_app_manifest(base_dir / "multimodal")
+        extraction_app_manifest = _read_app_manifest(base_dir / "extraction")
+        if not db_manifest.get("dashboardSeed") or not mm_manifest.get("dashboardSeed"):
+            return None
+        extraction_manifest = {}
+        if extraction_manifest_path.is_file():
+            with open(extraction_manifest_path, "r", encoding="utf-8") as f:
+                extraction_manifest = json.load(f)
+
+        patients_by_id: dict[str, dict[str, Any]] = {}
+        sessions_by_id: dict[str, dict[str, Any]] = {}
+        evidence = {}
+        uploads = {}
+        db_path = _generated_database_path(base_dir / "database")
+        if db_path and db_path.is_file():
+            with sqlite3.connect(db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                for row in conn.execute(
+                    """
+                    SELECT patient_id, name, age, sex, risk_level, primary_diagnosis,
+                           assigned_clinician, last_session_date, data_completeness_score,
+                           open_tasks, ai_review_status
+                    FROM patients_core
+                    ORDER BY CASE risk_level WHEN 'high' THEN 0 WHEN 'needs_review' THEN 1 ELSE 2 END,
+                             last_session_date DESC
+                    LIMIT 750
+                    """
+                ):
+                    patients_by_id[row["patient_id"]] = dict(row)
+                for row in conn.execute(
+                    """
+                    SELECT s.session_id, s.patient_id, s.session_date AS date,
+                           s.uploaded_image_count, s.extraction_confidence,
+                           s.clinician_verification AS clinician_verification_status
+                    FROM sessions s
+                    JOIN patients_core p USING (patient_id)
+                    ORDER BY s.session_date DESC
+                    LIMIT 1200
+                    """
+                ):
+                    item = dict(row)
+                    item["extracted_fields"] = []
+                    sessions_by_id[item["session_id"]] = item
+                for row in conn.execute(
+                    """
+                    SELECT session_id, field_name, field_value AS value, confidence
+                    FROM extracted_fields
+                    WHERE session_id IN (SELECT session_id FROM sessions ORDER BY session_date DESC LIMIT 1200)
+                    """
+                ):
+                    session = sessions_by_id.get(row["session_id"])
+                    if session is not None:
+                        session["extracted_fields"].append({
+                            "field_name": row["field_name"],
+                            "value": row["value"],
+                            "confidence": float(row["confidence"] or 0),
+                        })
+                for row in conn.execute(
+                    """
+                    SELECT note_id, patient_id, note_date, note_text
+                    FROM clinical_notes
+                    WHERE patient_id IN (SELECT patient_id FROM patients_core LIMIT 750)
+                    ORDER BY note_date DESC
+                    LIMIT 1500
+                    """
+                ):
+                    evidence.setdefault(row["patient_id"], []).append({
+                        "source_id": row["note_id"],
+                        "source_type": "text",
+                        "date": row["note_date"],
+                        "text": row["note_text"],
+                    })
+        for sample in extraction_manifest.get("samples", []):
+            patient = sample.get("patient", {})
+            patient_id = patient.get("patient_id")
+            if not patient_id:
+                continue
+            patients_by_id.setdefault(patient_id, {
+                "patient_id": patient_id,
+                "name": patient.get("name", f"Patient {patient_id}"),
+                "age": patient.get("age", 0),
+                "sex": patient.get("sex", "Unknown"),
+                "risk_level": "needs_review" if any(field.get("needs_review") for field in sample.get("fields", [])) else "stable",
+                "primary_diagnosis": patient.get("diagnosis", "Synthetic extraction case"),
+                "assigned_clinician": patient.get("clinician", "Demo clinician"),
+                "last_session_date": sample.get("encounter_date", "2026-07-05"),
+                "data_completeness_score": 0.88,
+                "open_tasks": 1 if any(field.get("needs_review") for field in sample.get("fields", [])) else 0,
+                "ai_review_status": "needs_review" if any(field.get("needs_review") for field in sample.get("fields", [])) else "verified",
+            })
+            asset_path = _generated_file_path(sample.get("asset_path", ""))
+            preview_path = _generated_file_path(sample.get("preview_path", ""))
+            asset_id = sample.get("sample_id", f"EXT-{patient_id}")
+            content_type = sample.get("content_type") or sample.get("sourceContentType") or "application/pdf"
+            source_kind = "document" if content_type == "application/pdf" else "image"
+            preview_url = f"/api/assets/{asset_id}"
+            upload = {
+                "assetId": asset_id,
+                "patientId": patient_id,
+                "filename": asset_path.name if asset_path.name else f"{asset_id}.png",
+                "contentType": content_type,
+                "sizeBytes": asset_path.stat().st_size if asset_path.is_file() else 102400,
+                "previewUrl": preview_url,
+                "createdAt": sample.get("encounter_date", "2026-07-05"),
+                "knowledgeBase": False,
+                "sourceUse": "extraction",
+                "filePath": str(asset_path) if asset_path.is_file() else "",
+                "previewPath": str(preview_path) if preview_path.is_file() else "",
+                "previewContentType": sample.get("preview_content_type", "image/png"),
+                "demoPlatform": extraction_manifest.get("demo_platform", "primary"),
+                "packetId": sample.get("packet_id"),
+                "packetPatientIds": sample.get("packet_patient_ids", []),
+                "patientCountInFile": sample.get("patient_count_in_file", 1),
+                "extracted": {
+                    "type": source_kind,
+                    "documentType": sample.get("expected_agent_output", {}).get("documentType", "Enterprise clinical packet"),
+                    "textPreview": sample.get("note", ""),
+                    "fields": sample.get("fields", []),
+                    "visualization": sample.get("expected_agent_output", {}).get("visualization", {}),
+                    "packetPatientIds": sample.get("packet_patient_ids", []),
+                },
+            }
+            uploads[asset_id] = upload
+            session_id = f"SES-{asset_id}"
+            sessions_by_id[session_id] = {
+                "session_id": session_id,
+                "patient_id": patient_id,
+                "date": sample.get("encounter_date", "2026-07-05"),
+                "uploaded_image_count": 1,
+                "extraction_confidence": round(sum(float(field.get("confidence", 0.85)) for field in sample.get("fields", [])) / max(1, len(sample.get("fields", []))), 2),
+                "clinician_verification_status": "pending" if any(field.get("needs_review") for field in sample.get("fields", [])) else "verified",
+                "extracted_fields": [{"field_name": field.get("field_name", ""), "value": field.get("value", ""), "confidence": field.get("confidence", 0.0)} for field in sample.get("fields", [])],
+            }
+            evidence.setdefault(patient_id, []).append({
+                "source_id": asset_id,
+                "source_type": source_kind,
+                "date": sample.get("encounter_date", "2026-07-05"),
+                "text": sample.get("note", "Synthetic extraction packet evidence."),
+                "asset_id": asset_id,
+            })
+
+        for item in mm_manifest.get("syntheticKnowledgeBase", []):
+            patient_id = item["patientId"]
+            bundle_rel_path = item["bundlePath"]
+            bundle_path = PROJECT_ROOT / bundle_rel_path.replace("\\", "/")
+            if not bundle_path.is_file():
+                continue
+
+            with open(bundle_path, "r", encoding="utf-8") as f:
+                bundle = json.load(f)
+
+            pt = bundle["patient"]
+            patients_by_id[pt["patient_id"]] = {
+                "patient_id": pt["patient_id"],
+                "name": pt["name"],
+                "age": pt["age"],
+                "sex": pt["sex"],
+                "risk_level": pt["risk_level"],
+                "primary_diagnosis": pt["primary_diagnosis"],
+                "assigned_clinician": pt["assigned_clinician"],
+                "last_session_date": "2026-07-05",
+                "data_completeness_score": pt.get("data_completeness_score", 0.95),
+                "open_tasks": 2 if pt["risk_level"] in ("high", "needs_review") else 0,
+                "ai_review_status": "needs_review" if pt["risk_level"] in ("high", "needs_review") else "verified"
+            }
+
+            evidence_list = evidence.setdefault(pt["patient_id"], [])
+            for note in bundle.get("notes", []):
+                evidence_list.append({
+                    "source_id": note["note_id"],
+                    "source_type": "text",
+                    "date": note["date"],
+                    "text": note["text"]
+                })
+
+            for pdf in bundle.get("pdf_documents", []):
+                evidence_list.append({
+                    "source_id": pdf["document_id"],
+                    "source_type": "document",
+                    "date": pdf["date"],
+                    "text": f"PDF Clinical Evidence Document containing: {', '.join(pdf['contains'])}"
+                })
+            for pdf in bundle.get("pdf_documents", []):
+                session_id = f"SES-{pt['patient_id'][3:]}-{pdf['document_id'].split('-')[-1]}"
+                sessions_by_id[session_id] = {
+                    "session_id": session_id,
+                    "patient_id": pt["patient_id"],
+                    "date": pdf["date"],
+                    "uploaded_image_count": 1 if "image_evidence_summary" in pdf["contains"] or "trend_chart" in pdf["contains"] else 0,
+                    "extraction_confidence": 0.92,
+                    "clinician_verification_status": "verified" if pdf["date"] < "2026-07-01" else "pending",
+                    "extracted_fields": []
+                }
+
+            for doc in bundle.get("knowledge_base_documents", []):
+                doc_id = doc["document_id"]
+                # The generated file exists on disk; keep its resolved path so
+                # the asset route can stream real bytes for previews instead
+                # of 404ing on a seeded upload with no in-memory contents.
+                doc_path = PROJECT_ROOT / doc["path"].replace("\\", "/")
+                uploads[doc_id] = {
+                    "assetId": doc_id,
+                    "patientId": doc["patient_id"],
+                    "filename": Path(doc["path"]).name,
+                    "contentType": doc["content_type"],
+                    "sizeBytes": doc_path.stat().st_size if doc_path.is_file() else 102400,
+                    "previewUrl": f"/api/assets/{doc_id}",
+                    "createdAt": datetime.now(UTC).isoformat(),
+                    "knowledgeBase": True,
+                    "filePath": str(doc_path) if doc_path.is_file() else "",
+                    "extracted": {
+                        "type": "pdf" if doc["content_type"] == "application/pdf" else "document",
+                        "pageCount": doc.get("page_count", 1),
+                        "textPreview": f"Synthetic knowledge base file {doc_id} for patient {doc['patient_id']}."
+                    }
+                }
+
+        monitor_baseline = []
+        for manifest in (db_manifest, extraction_app_manifest, mm_manifest):
+            monitor_baseline.extend(_monitor_row(baseline) for baseline in manifest.get("agentMonitoringSeed", []))
+
+        if not monitor_baseline:
+            monitor_baseline = MONITOR_BASELINE
+
+        db_dashboard = db_manifest.get("dashboardSeed", {})
+        extraction_dashboard = extraction_app_manifest.get("dashboardSeed", {})
+        mm_dashboard = mm_manifest.get("dashboardSeed", {})
+        total_patients = int(db_dashboard.get("patients", 0)) or len(patients_by_id)
+        total_sessions = (
+            int(db_dashboard.get("sessions", 0))
+            + int(extraction_dashboard.get("sessions", 0))
+            + int(mm_dashboard.get("sessions", 0))
+        ) or len(sessions_by_id)
+        high_risk = max(
+            int(db_dashboard.get("highRiskEstimate", 0)),
+            int(extraction_dashboard.get("highRiskEstimate", 0)),
+            int(mm_dashboard.get("highRiskEstimate", 0)),
+            sum(1 for patient in patients_by_id.values() if patient.get("risk_level") == "high"),
+        )
+        pending_review = max(
+            int(db_dashboard.get("pendingReviewEstimate", 0)),
+            int(extraction_dashboard.get("pendingReviewEstimate", 0)),
+            int(mm_dashboard.get("pendingReviewEstimate", 0)),
+            sum(1 for patient in patients_by_id.values() if patient.get("ai_review_status") == "needs_review" or patient.get("risk_level") in {"high", "needs_review"}),
+        )
+        completeness_values = [float(patient.get("data_completeness_score") or 0) for patient in patients_by_id.values()]
+        storage_total = (
+            db_manifest.get("storageSeed", {}).get("cloudObjects", 0) +
+            extraction_app_manifest.get("storageSeed", {}).get("cloudObjects", 0) +
+            mm_manifest.get("storageSeed", {}).get("cloudObjects", 0)
+        )
+        combined_dashboard = {
+            **db_dashboard,
+            "patients": total_patients,
+            "sessions": total_sessions,
+            "highRiskEstimate": high_risk,
+            "pendingReviewEstimate": pending_review,
+            "pendingVerifications": pending_review,
+            "storedAssets": storage_total,
+            "imageExtractionsToday": extraction_dashboard.get("imageExtractionsToday", extraction_dashboard.get("sourceImages", 0)),
+            "agentRuns24h": db_dashboard.get("agentRuns24h", 0) + extraction_dashboard.get("agentRuns", 0) + mm_dashboard.get("agentRuns24h", 0),
+            "auditEvents": db_dashboard.get("auditEvents", 0) + extraction_dashboard.get("auditEvents", 0) + mm_dashboard.get("auditEvents", 0),
+            "databaseRows": db_dashboard.get("databaseRows", 0),
+            "queryExamples": db_dashboard.get("queryExamples", 0),
+            "sourcePackets": extraction_dashboard.get("sourcePackets", 0),
+            "patientsPerFile": extraction_dashboard.get("patientsPerFile", 0),
+            "qaPrompts": mm_dashboard.get("qaPrompts", 0),
+            "knowledgeBaseDocuments": mm_dashboard.get("knowledgeBaseDocuments", 0),
+            "citations": mm_dashboard.get("citations", 0),
+            "openAiAlerts": db_dashboard.get("openAiAlerts", 0) + extraction_dashboard.get("openAiAlerts", 0) + mm_dashboard.get("openAiAlerts", 0),
+            "failedExtractions": db_dashboard.get("failedExtractions", 0) + extraction_dashboard.get("failedExtractions", 0) + mm_dashboard.get("failedExtractions", 0),
+            "completeness": round(sum(completeness_values) / max(1, len(completeness_values)) * 100),
+            "syncRate": 100,
+        }
+        db_storage = db_manifest.get("storageSeed", {})
+        extraction_storage = extraction_app_manifest.get("storageSeed", {})
+        mm_storage = mm_manifest.get("storageSeed", {})
+        combined_storage = {
+            "cloudObjects": db_storage.get("cloudObjects", 0) + extraction_storage.get("cloudObjects", 0) + mm_storage.get("cloudObjects", 0),
+            "jsonDocuments": db_storage.get("jsonDocuments", 0) + extraction_storage.get("jsonDocuments", 0) + mm_storage.get("jsonDocuments", 0),
+            "relationalRows": db_storage.get("relationalRows", 0) + extraction_storage.get("relationalRows", 0) + mm_storage.get("relationalRows", 0),
+            "vectorRecords": db_storage.get("vectorRecords", 0) + extraction_storage.get("vectorRecords", 0) + mm_storage.get("vectorRecords", 0),
+            "auditEvents": db_storage.get("auditEvents", 0) + mm_storage.get("auditEvents", 0),
+            "failedRecords": db_storage.get("failedRecords", 0) + extraction_storage.get("failedRecords", 0) + mm_storage.get("failedRecords", 0),
+        }
+        return DemoDataset(
+            key=key,
+            patients=list(patients_by_id.values()),
+            sessions=list(sessions_by_id.values()),
+            evidence=evidence,
+            notifications=notifications,
+            users=users,
+            monitor_baseline=monitor_baseline,
+            uploads=uploads,
+            dashboard_seed=combined_dashboard,
+            storage_seed=combined_storage,
+            database_queries=db_manifest.get("queryCards", [])
+        )
+    except Exception as exc:
+        print(f"Error loading generated showcase dataset from {base_dir}: {exc}")
+        return None
+
+
+# Try loading generated showcase datasets for both demo tenants. The primary
+# scripts feed Research Clinic; the demo2 scripts feed Northstar Health.
+GENERATED_RESEARCH = load_showcase_dataset("research_clinic", PROJECT_ROOT / "showcase_data", RESEARCH_NOTIFICATIONS, RESEARCH_USERS)
+if GENERATED_RESEARCH:
+    RESEARCH_CLINIC = GENERATED_RESEARCH
+    DATASETS["research_clinic"] = RESEARCH_CLINIC
+
+DEMO2_NORTHSTAR = load_showcase_dataset("northstar", PROJECT_ROOT / "showcase_data" / "demo2", NORTHSTAR_NOTIFICATIONS, NORTHSTAR_USERS)
+if DEMO2_NORTHSTAR:
+    NORTHSTAR = DEMO2_NORTHSTAR
+    DATASETS["northstar"] = NORTHSTAR
 
 
 def now() -> str:
@@ -222,10 +615,11 @@ def derive_monitoring(runs: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
 class DemoRepository:
     """Mutable state belonging to exactly one browser demo session."""
 
-    def __init__(self, dataset: DemoDataset = RESEARCH_CLINIC) -> None:
+    def __init__(self, dataset: DemoDataset = RESEARCH_CLINIC, db_path: Path | None = None) -> None:
         self.session_id = ""
         self.is_demo = True
         self._dataset = dataset
+        self.db_path = db_path
         self.reset()
 
     def reset(self) -> None:
@@ -241,12 +635,69 @@ class DemoRepository:
                     asset_id = evidence["source_id"]
                     self.source_assets[asset_id] = (f"DEMO IMAGE {patient_id} {asset_id}".encode(), "image/png")
                     evidence["asset_id"] = asset_id
-        self.uploads: dict[str, dict[str, Any]] = {}
+        self.uploads: dict[str, dict[str, Any]] = deepcopy(self._dataset.uploads) if self._dataset.uploads else {}
         self.asset_contents: dict[str, bytes] = {}
         self.runs: dict[str, dict[str, Any]] = {}
         self.previews: dict[str, dict[str, Any]] = {}
         self.query_history: list[dict[str, Any]] = []
         self.audit: list[dict[str, Any]] = []
+        if self._dataset.dashboard_seed:
+            ds = self._dataset.dashboard_seed
+            seeded_activity = [
+                (
+                    "showcase_database_loaded",
+                    "database_intelligence_pipeline",
+                    "RUN-SEED-DB",
+                    {"patients": ds.get("patients", 0), "sessions": ds.get("sessions", 0), "databaseRows": ds.get("databaseRows", 0)},
+                ),
+                (
+                    "showcase_extraction_assets_loaded",
+                    "image_extraction_pipeline",
+                    "RUN-SEED-EXT",
+                    {"imageExtractionsToday": ds.get("imageExtractionsToday", 0), "pendingReview": ds.get("pendingReviewEstimate", 0)},
+                ),
+                (
+                    "showcase_multimodal_corpus_loaded",
+                    "patient_qa_pipeline",
+                    "RUN-SEED-QA",
+                    {"knowledgeBaseDocuments": ds.get("knowledgeBaseDocuments", 0), "citations": ds.get("citations", 0), "qaPrompts": ds.get("qaPrompts", 0)},
+                ),
+            ]
+            self.audit = [
+                {
+                    "audit_id": f"AUD-SEED-{index:03d}",
+                    "timestamp": now(),
+                    "action": action,
+                    "actor": actor,
+                    "role": "system",
+                    "details": {"run_id": run_id, "result": "recorded", **details},
+                }
+                for index, (action, actor, run_id, details) in enumerate(seeded_activity, 1)
+            ]
+            # Materialize the bootstrap runs the seeded audit events reference so
+            # /runs/{id} navigation from any log entry resolves instead of 404ing.
+            # "seeded" excludes them from /runs listing (they are not conversation
+            # turns) and "persisted": False keeps them out of the /storage scan.
+            workflow_by_run = {"RUN-SEED-DB": "database", "RUN-SEED-EXT": "extraction", "RUN-SEED-QA": "qa"}
+            for index, (action, actor, run_id, details) in enumerate(seeded_activity, 1):
+                self.runs[run_id] = {
+                    "id": run_id,
+                    "workflow": workflow_by_run[run_id],
+                    "status": "completed",
+                    "agentName": actor,
+                    "confidence": 0.97,
+                    "createdAt": now(),
+                    "auditId": f"AUD-SEED-{index:03d}",
+                    "traceId": f"TRACE-{run_id}",
+                    "seeded": True,
+                    "steps": [
+                        {"id": f"{run_id}-S1", "name": "Showcase dataset generation", "status": "completed", "detail": "Deterministic generator produced governed synthetic assets", "timestamp": now()},
+                        {"id": f"{run_id}-S2", "name": "Tenant bootstrap load", "status": "completed", "detail": action.replace("_", " "), "timestamp": now()},
+                    ],
+                    "evidence": [],
+                    "result": {"persisted": False, "storageReceipts": [], "summary": dict(details)},
+                    "review": None,
+                }
         self.agent_config: dict[str, Any] = {
             "version": 1,
             "autoApprovalThreshold": 90,
@@ -258,6 +709,9 @@ class DemoRepository:
         self.users = deepcopy(self._dataset.users)
         self.permissions = {"roles": list(system_module.ROLES), "matrix": deepcopy(system_module.DEFAULT_PERMISSIONS), "version": 1}
         self.sequence = 0
+        self.dashboard_seed = self._dataset.dashboard_seed
+        self.storage_seed = self._dataset.storage_seed
+        self.database_queries = deepcopy(self._dataset.database_queries) if self._dataset.database_queries else []
 
     def identifier(self, prefix: str) -> str:
         """Create deterministic identifier within session state."""
@@ -522,7 +976,8 @@ class RepositoryRegistry:
                 db_path=PROJECT_ROOT / (tenant.db_filename or "clinical.db"),
                 uploads_root=PROJECT_ROOT / (tenant.uploads_dirname or "uploads"),
             )
-        return DemoRepository(DATASETS[tenant.dataset or "research_clinic"])
+        db_path = PROJECT_ROOT / tenant.db_filename if tenant.db_filename else None
+        return DemoRepository(DATASETS[tenant.dataset or "research_clinic"], db_path=db_path)
 
     def get(self, session_id: str, tenant: TenantConfig | None = None) -> DemoRepository | LiveRepository:
         """Return existing repository or create tenant-appropriate session state."""
@@ -544,20 +999,29 @@ class RepositoryRegistry:
                 self._items.popitem(last=False)
             return repository
 
-    def find(self, session_id: str) -> DemoRepository | LiveRepository | None:
-        """Find existing session without creating state for invalid capability URLs."""
+    def find(self, session_id: str, asset_id: str | None = None) -> DemoRepository | LiveRepository | None:
+        """Find existing session without creating state for invalid capability URLs.
+
+        When asset_id is given, prefer the repository that actually holds the
+        asset: two tenants can share one browser session id, and header-less
+        capability URLs (image tags) cannot say which tenant they meant.
+        """
 
         suffix = f"::{session_id}"
         with self._lock:
             current = monotonic()
+            fallback: DemoRepository | LiveRepository | None = None
             # Most-recently-used entries sit at the end of the OrderedDict, so
             # scan in reverse to prefer the tenant the caller last touched.
-            for key in reversed(self._items):
-                if not key.endswith(suffix):
-                    continue
+            for key in [item for item in reversed(self._items) if item.endswith(suffix)]:
                 repository, touched = self._items[key]
                 if current - touched > self._ttl_seconds:
                     self._items.pop(key, None)
-                    return None
-                return repository
+                    continue
+                if asset_id is None:
+                    return repository
+                if asset_id in repository.asset_contents or asset_id in repository.source_assets or asset_id in repository.uploads:
+                    return repository
+                fallback = fallback or repository
+            return fallback
             return None

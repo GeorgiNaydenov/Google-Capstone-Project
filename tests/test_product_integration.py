@@ -32,27 +32,33 @@ def api() -> TestClient:
     return TestClient(create_app())
 
 
-def upload_image(api: TestClient, request_headers: dict[str, str]) -> str:
+def first_patient_id(api: TestClient, request_headers: dict[str, str]) -> str:
+    """Return a real patient id from the tenant's loaded roster."""
+
+    return api.get("/api/patients", headers=request_headers).json()[0]["id"]
+
+
+def upload_image(api: TestClient, request_headers: dict[str, str], patient_id: str) -> str:
     """Upload a small, browser-renderable image and return its asset ID."""
 
     response = api.post(
         "/api/assets",
         headers=request_headers,
-        data={"patient_id": PATIENT_ID},
+        data={"patient_id": patient_id},
         files={"file": ("evidence.png", b"\x89PNG\r\n\x1a\nsynthetic", "image/png")},
     )
     assert response.status_code == 201
     return response.json()["assetId"]
 
 
-def start_extraction(api: TestClient, request_headers: dict[str, str]) -> dict[str, Any]:
+def start_extraction(api: TestClient, request_headers: dict[str, str], patient_id: str) -> dict[str, Any]:
     """Upload evidence and start the review-gated extraction workflow."""
 
-    asset_id = upload_image(api, request_headers)
+    asset_id = upload_image(api, request_headers, patient_id)
     response = api.post(
         "/api/runs/extraction",
         headers=request_headers,
-        json={"assetId": asset_id, "patientId": PATIENT_ID},
+        json={"assetId": asset_id, "patientId": patient_id},
     )
     assert response.status_code == 201
     run = response.json()
@@ -61,26 +67,26 @@ def start_extraction(api: TestClient, request_headers: dict[str, str]) -> dict[s
 
 
 @pytest.mark.parametrize(
-    ("query", "role", "patient_id", "workflow", "route"),
+    ("query", "role", "needs_patient", "workflow", "route"),
     [
-        ("Extract this uploaded image", "clinician", PATIENT_ID, "extraction", "/app/extraction"),
-        ("What changed in recent evidence?", "clinician", PATIENT_ID, "qa", "/app/qa"),
-        ("Count patients by risk", "clinician", None, "database", "/app/database"),
+        ("Extract this uploaded image", "clinician", True, "extraction", "/app/extraction"),
+        ("What changed in recent evidence?", "clinician", True, "qa", "/app/qa"),
+        ("Count patients by risk", "clinician", False, "database", "/app/database"),
     ],
 )
 def test_orchestration_returns_browser_routes(
     api: TestClient,
     query: str,
     role: str,
-    patient_id: str | None,
+    needs_patient: bool,
     workflow: str,
     route: str,
 ) -> None:
     """Auto orchestration must navigate to UI screens, never POST-only API URLs."""
 
     payload: dict[str, str] = {"query": query}
-    if patient_id:
-        payload["patientId"] = patient_id
+    if needs_patient:
+        payload["patientId"] = first_patient_id(api, headers(role))
     response = api.post("/api/orchestrate", headers=headers(role), json=payload)
     assert response.status_code == 201
     assert response.json()["workflow"] == workflow
@@ -120,7 +126,7 @@ def test_extraction_approval_preserves_fields_and_updates_patient_state(api: Tes
     sessions_before = api.get(
         "/api/sessions", headers=request_headers, params={"patient_id": PATIENT_ID}
     ).json()
-    run = start_extraction(api, request_headers)
+    run = start_extraction(api, request_headers, PATIENT_ID)
     reviewed_fields = {
         "documentType": "Verified CT",
         "patientMatch": PATIENT_ID,
@@ -173,7 +179,7 @@ def test_extraction_rejection_does_not_persist_or_create_records(api: TestClient
     sessions_before = api.get(
         "/api/sessions", headers=request_headers, params={"patient_id": PATIENT_ID}
     ).json()
-    run = start_extraction(api, request_headers)
+    run = start_extraction(api, request_headers, PATIENT_ID)
     rejected = api.post(
         f"/api/runs/{run['id']}/review",
         headers=request_headers,

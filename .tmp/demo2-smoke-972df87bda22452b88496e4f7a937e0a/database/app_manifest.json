@@ -1,0 +1,91 @@
+{
+  "demoPlatform": "demo2",
+  "dashboardSeed": {
+    "patients": 5,
+    "sessions": 20,
+    "highRiskEstimate": 1,
+    "pendingReviewEstimate": 2,
+    "storedAssets": 5,
+    "agentRuns24h": 12,
+    "auditEvents": 40,
+    "databaseRows": 350,
+    "queryExamples": 6,
+    "anchorDate": "2026-07-05"
+  },
+  "storageSeed": {
+    "cloudObjects": 5,
+    "jsonDocuments": 100,
+    "relationalRows": 145,
+    "vectorRecords": 15,
+    "auditEvents": 40,
+    "failedRecords": 0
+  },
+  "agentMonitoringSeed": [
+    {
+      "pipeline": "database",
+      "agent": "schema_discovery_agent",
+      "runs": 6,
+      "avgConfidence": 0.94,
+      "failureRate": 0.0
+    },
+    {
+      "pipeline": "database",
+      "agent": "nl_to_sql_agent",
+      "runs": 6,
+      "avgConfidence": 0.91,
+      "failureRate": 0.0
+    },
+    {
+      "pipeline": "database",
+      "agent": "query_executor_agent",
+      "runs": 6,
+      "avgConfidence": 0.96,
+      "failureRate": 0.0
+    },
+    {
+      "pipeline": "database",
+      "agent": "insight_chart_agent",
+      "runs": 6,
+      "avgConfidence": 0.93,
+      "failureRate": 0.0
+    }
+  ],
+  "queryCards": [
+    {
+      "question": "Count patients by risk level.",
+      "sql": "SELECT risk_level, COUNT(*) AS patient_count FROM patients_core GROUP BY risk_level ORDER BY patient_count DESC",
+      "rowCount": 3,
+      "chart": "C:\\Users\\User\\Downloads\\Google Capstone Project\\.tmp\\demo2-smoke-972df87bda22452b88496e4f7a937e0a\\database\\charts\\query_01.png"
+    },
+    {
+      "question": "Which clinicians have the most pending reviews?",
+      "sql": "SELECT assigned_clinician, COUNT(*) AS pending_reviews FROM patients_core WHERE ai_review_status = 'needs_review' GROUP BY assigned_clinician ORDER BY pending_reviews DESC LIMIT 10",
+      "rowCount": 1,
+      "chart": "C:\\Users\\User\\Downloads\\Google Capstone Project\\.tmp\\demo2-smoke-972df87bda22452b88496e4f7a937e0a\\database\\charts\\query_02.png"
+    },
+    {
+      "question": "Show average extraction confidence by imaging modality.",
+      "sql": "SELECT i.modality, ROUND(AVG(s.extraction_confidence), 3) AS avg_confidence FROM imaging_studies i JOIN sessions s ON s.session_id = i.session_id GROUP BY i.modality ORDER BY avg_confidence DESC",
+      "rowCount": 5,
+      "chart": "C:\\Users\\User\\Downloads\\Google Capstone Project\\.tmp\\demo2-smoke-972df87bda22452b88496e4f7a937e0a\\database\\charts\\query_03.png"
+    },
+    {
+      "question": "Which lab components are most often abnormal?",
+      "sql": "SELECT component, COUNT(*) AS abnormal_results FROM lab_results WHERE flag != 'normal' GROUP BY component ORDER BY abnormal_results DESC",
+      "rowCount": 6,
+      "chart": "C:\\Users\\User\\Downloads\\Google Capstone Project\\.tmp\\demo2-smoke-972df87bda22452b88496e4f7a937e0a\\database\\charts\\query_04.png"
+    },
+    {
+      "question": "Show high-risk extraction sessions by year.",
+      "sql": "SELECT strftime('%Y', session_date) AS session_year, COUNT(*) AS high_risk_sessions FROM sessions JOIN patients_core USING (patient_id) WHERE risk_level = 'high' GROUP BY session_year ORDER BY session_year",
+      "rowCount": 2,
+      "chart": "C:\\Users\\User\\Downloads\\Google Capstone Project\\.tmp\\demo2-smoke-972df87bda22452b88496e4f7a937e0a\\database\\charts\\query_05.png"
+    },
+    {
+      "question": "How many agent audit events exist by pipeline?",
+      "sql": "SELECT agent_name, COUNT(*) AS event_count FROM audit_log GROUP BY agent_name ORDER BY event_count DESC",
+      "rowCount": 2,
+      "chart": "C:\\Users\\User\\Downloads\\Google Capstone Project\\.tmp\\demo2-smoke-972df87bda22452b88496e4f7a937e0a\\database\\charts\\query_06.png"
+    }
+  ]
+}

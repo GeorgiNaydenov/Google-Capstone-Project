@@ -1,0 +1,25 @@
+[
+  {
+    "patient": {
+      "patient_id": "",
+      "mrn": "",
+      "name": "",
+      "age": 0,
+      "sex": "",
+      "diagnosis": "",
+      "clinician": ""
+    },
+    "encounter_date": "",
+    "note": "",
+    "fields": [
+      {
+        "field_name": "",
+        "value": 0.0,
+        "unit": "",
+        "confidence": 0.0,
+        "needs_review": false
+      }
+    ],
+    "trend_values": []
+  }
+]

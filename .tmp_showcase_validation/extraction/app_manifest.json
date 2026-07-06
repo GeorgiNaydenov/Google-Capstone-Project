@@ -1,0 +1,529 @@
+{
+  "demoPlatform": "primary",
+  "syntheticPickerCount": 5,
+  "syntheticPicker": [
+    {
+      "id": "EXT-0001",
+      "label": "Type 2 diabetes with cardiometabolic complications packet PKT-EXT-0001",
+      "patientId": "PT-D00001",
+      "patientName": "Patient DEID-987BAEC4",
+      "previewUrl": "/demo-data/extraction/primary/images/EXT-0001.png",
+      "filename": "PKT-EXT-0001.pdf",
+      "packetFilename": "PKT-EXT-0001.pdf",
+      "contentType": "application/pdf",
+      "sourceContentType": "application/pdf",
+      "previewContentType": "image/png",
+      "expectedFields": [
+        {
+          "field_name": "glucose",
+          "label": "Glucose",
+          "panel": "Endocrine",
+          "value": "147.4",
+          "unit": "mg/dL",
+          "referenceRange": "70-99",
+          "flag": "high",
+          "confidence": 0.76,
+          "needs_review": true
+        },
+        {
+          "field_name": "crp",
+          "label": "CRP",
+          "panel": "Inflammation",
+          "value": "0.1",
+          "unit": "mg/L",
+          "referenceRange": "<5",
+          "flag": "normal",
+          "confidence": 0.87,
+          "needs_review": false
+        },
+        {
+          "field_name": "bnp",
+          "label": "BNP",
+          "panel": "Cardiac",
+          "value": "143.8",
+          "unit": "pg/mL",
+          "referenceRange": "<100",
+          "flag": "high",
+          "confidence": 0.97,
+          "needs_review": true
+        },
+        {
+          "field_name": "hemoglobin",
+          "label": "Hemoglobin",
+          "panel": "CBC",
+          "value": "15.1",
+          "unit": "g/dL",
+          "referenceRange": "13.5-17.5",
+          "flag": "normal",
+          "confidence": 0.9,
+          "needs_review": false
+        },
+        {
+          "field_name": "cea",
+          "label": "CEA",
+          "panel": "Oncology",
+          "value": "2.8",
+          "unit": "ng/mL",
+          "referenceRange": "<3",
+          "flag": "normal",
+          "confidence": 0.97,
+          "needs_review": false
+        },
+        {
+          "field_name": "egfr",
+          "label": "eGFR",
+          "panel": "CMP",
+          "value": "68.8",
+          "unit": "mL/min",
+          "referenceRange": ">60",
+          "flag": "normal",
+          "confidence": 0.78,
+          "needs_review": true
+        }
+      ],
+      "reviewRequired": true,
+      "packetId": "PKT-EXT-0001",
+      "patientsInFile": 5,
+      "batchPatientIds": [
+        "PT-D00001",
+        "PT-D00002",
+        "PT-D00003",
+        "PT-D00004",
+        "PT-D00005"
+      ]
+    },
+    {
+      "id": "EXT-0002",
+      "label": "Non-small cell lung cancer on surveillance packet PKT-EXT-0001",
+      "patientId": "PT-D00002",
+      "patientName": "Patient DEID-9F70AFA0",
+      "previewUrl": "/demo-data/extraction/primary/images/EXT-0002.png",
+      "filename": "PKT-EXT-0001.pdf",
+      "packetFilename": "PKT-EXT-0001.pdf",
+      "contentType": "application/pdf",
+      "sourceContentType": "application/pdf",
+      "previewContentType": "image/png",
+      "expectedFields": [
+        {
+          "field_name": "crp",
+          "label": "CRP",
+          "panel": "Inflammation",
+          "value": "29.3",
+          "unit": "mg/L",
+          "referenceRange": "<5",
+          "flag": "high",
+          "confidence": 0.96,
+          "needs_review": true
+        },
+        {
+          "field_name": "hemoglobin",
+          "label": "Hemoglobin",
+          "panel": "CBC",
+          "value": "12.0",
+          "unit": "g/dL",
+          "referenceRange": "13.5-17.5",
+          "flag": "normal",
+          "confidence": 0.79,
+          "needs_review": true
+        },
+        {
+          "field_name": "glucose",
+          "label": "Glucose",
+          "panel": "Endocrine",
+          "value": "63.2",
+          "unit": "mg/dL",
+          "referenceRange": "70-99",
+          "flag": "normal",
+          "confidence": 0.77,
+          "needs_review": true
+        },
+        {
+          "field_name": "wbc",
+          "label": "WBC",
+          "panel": "CBC",
+          "value": "12.8",
+          "unit": "K/uL",
+          "referenceRange": "4.5-11.0",
+          "flag": "high",
+          "confidence": 0.84,
+          "needs_review": true
+        },
+        {
+          "field_name": "potassium",
+          "label": "Potassium",
+          "panel": "CMP",
+          "value": "4.1",
+          "unit": "mEq/L",
+          "referenceRange": "3.5-5.1",
+          "flag": "normal",
+          "confidence": 0.88,
+          "needs_review": false
+        },
+        {
+          "field_name": "cea",
+          "label": "CEA",
+          "panel": "Oncology",
+          "value": "8.9",
+          "unit": "ng/mL",
+          "referenceRange": "<3",
+          "flag": "high",
+          "confidence": 0.74,
+          "needs_review": true
+        }
+      ],
+      "reviewRequired": true,
+      "packetId": "PKT-EXT-0001",
+      "patientsInFile": 5,
+      "batchPatientIds": [
+        "PT-D00001",
+        "PT-D00002",
+        "PT-D00003",
+        "PT-D00004",
+        "PT-D00005"
+      ]
+    },
+    {
+      "id": "EXT-0003",
+      "label": "Type 2 diabetes with cardiometabolic complications packet PKT-EXT-0001",
+      "patientId": "PT-D00003",
+      "patientName": "Declan Okafor",
+      "previewUrl": "/demo-data/extraction/primary/images/EXT-0003.png",
+      "filename": "PKT-EXT-0001.pdf",
+      "packetFilename": "PKT-EXT-0001.pdf",
+      "contentType": "application/pdf",
+      "sourceContentType": "application/pdf",
+      "previewContentType": "image/png",
+      "expectedFields": [
+        {
+          "field_name": "hba1c",
+          "label": "HbA1c",
+          "panel": "Endocrine",
+          "value": "8.8",
+          "unit": "%",
+          "referenceRange": "<5.7",
+          "flag": "high",
+          "confidence": 0.93,
+          "needs_review": true
+        },
+        {
+          "field_name": "cea",
+          "label": "CEA",
+          "panel": "Oncology",
+          "value": "3.4",
+          "unit": "ng/mL",
+          "referenceRange": "<3",
+          "flag": "high",
+          "confidence": 0.92,
+          "needs_review": true
+        },
+        {
+          "field_name": "creatinine",
+          "label": "Creatinine",
+          "panel": "CMP",
+          "value": "0.8",
+          "unit": "mg/dL",
+          "referenceRange": "0.6-1.2",
+          "flag": "normal",
+          "confidence": 0.78,
+          "needs_review": true
+        },
+        {
+          "field_name": "glucose",
+          "label": "Glucose",
+          "panel": "Endocrine",
+          "value": "198.2",
+          "unit": "mg/dL",
+          "referenceRange": "70-99",
+          "flag": "high",
+          "confidence": 0.76,
+          "needs_review": true
+        },
+        {
+          "field_name": "ldl",
+          "label": "LDL",
+          "panel": "Lipid",
+          "value": "155.4",
+          "unit": "mg/dL",
+          "referenceRange": "<100",
+          "flag": "high",
+          "confidence": 0.75,
+          "needs_review": true
+        },
+        {
+          "field_name": "hemoglobin",
+          "label": "Hemoglobin",
+          "panel": "CBC",
+          "value": "14.0",
+          "unit": "g/dL",
+          "referenceRange": "13.5-17.5",
+          "flag": "normal",
+          "confidence": 0.78,
+          "needs_review": true
+        }
+      ],
+      "reviewRequired": true,
+      "packetId": "PKT-EXT-0001",
+      "patientsInFile": 5,
+      "batchPatientIds": [
+        "PT-D00001",
+        "PT-D00002",
+        "PT-D00003",
+        "PT-D00004",
+        "PT-D00005"
+      ]
+    },
+    {
+      "id": "EXT-0004",
+      "label": "Non-small cell lung cancer on surveillance packet PKT-EXT-0001",
+      "patientId": "PT-D00004",
+      "patientName": "Sarah Martin",
+      "previewUrl": "/demo-data/extraction/primary/images/EXT-0004.png",
+      "filename": "PKT-EXT-0001.pdf",
+      "packetFilename": "PKT-EXT-0001.pdf",
+      "contentType": "application/pdf",
+      "sourceContentType": "application/pdf",
+      "previewContentType": "image/png",
+      "expectedFields": [
+        {
+          "field_name": "bnp",
+          "label": "BNP",
+          "panel": "Cardiac",
+          "value": "16.3",
+          "unit": "pg/mL",
+          "referenceRange": "<100",
+          "flag": "normal",
+          "confidence": 0.88,
+          "needs_review": false
+        },
+        {
+          "field_name": "creatinine",
+          "label": "Creatinine",
+          "panel": "CMP",
+          "value": "1.2",
+          "unit": "mg/dL",
+          "referenceRange": "0.6-1.2",
+          "flag": "high",
+          "confidence": 0.95,
+          "needs_review": true
+        },
+        {
+          "field_name": "hemoglobin",
+          "label": "Hemoglobin",
+          "panel": "CBC",
+          "value": "15.3",
+          "unit": "g/dL",
+          "referenceRange": "13.5-17.5",
+          "flag": "normal",
+          "confidence": 0.92,
+          "needs_review": false
+        },
+        {
+          "field_name": "crp",
+          "label": "CRP",
+          "panel": "Inflammation",
+          "value": "19.2",
+          "unit": "mg/L",
+          "referenceRange": "<5",
+          "flag": "high",
+          "confidence": 0.83,
+          "needs_review": true
+        },
+        {
+          "field_name": "cea",
+          "label": "CEA",
+          "panel": "Oncology",
+          "value": "12.0",
+          "unit": "ng/mL",
+          "referenceRange": "<3",
+          "flag": "high",
+          "confidence": 0.74,
+          "needs_review": true
+        },
+        {
+          "field_name": "egfr",
+          "label": "eGFR",
+          "panel": "CMP",
+          "value": "62.0",
+          "unit": "mL/min",
+          "referenceRange": ">60",
+          "flag": "normal",
+          "confidence": 0.89,
+          "needs_review": false
+        }
+      ],
+      "reviewRequired": true,
+      "packetId": "PKT-EXT-0001",
+      "patientsInFile": 5,
+      "batchPatientIds": [
+        "PT-D00001",
+        "PT-D00002",
+        "PT-D00003",
+        "PT-D00004",
+        "PT-D00005"
+      ]
+    },
+    {
+      "id": "EXT-0005",
+      "label": "Type 2 diabetes with cardiometabolic complications packet PKT-EXT-0001",
+      "patientId": "PT-D00005",
+      "patientName": "Patient DEID-253DCFC2",
+      "previewUrl": "/demo-data/extraction/primary/images/EXT-0005.png",
+      "filename": "PKT-EXT-0001.pdf",
+      "packetFilename": "PKT-EXT-0001.pdf",
+      "contentType": "application/pdf",
+      "sourceContentType": "application/pdf",
+      "previewContentType": "image/png",
+      "expectedFields": [
+        {
+          "field_name": "glucose",
+          "label": "Glucose",
+          "panel": "Endocrine",
+          "value": "149.4",
+          "unit": "mg/dL",
+          "referenceRange": "70-99",
+          "flag": "high",
+          "confidence": 0.85,
+          "needs_review": true
+        },
+        {
+          "field_name": "cea",
+          "label": "CEA",
+          "panel": "Oncology",
+          "value": "3.0",
+          "unit": "ng/mL",
+          "referenceRange": "<3",
+          "flag": "high",
+          "confidence": 0.84,
+          "needs_review": true
+        },
+        {
+          "field_name": "ldl",
+          "label": "LDL",
+          "panel": "Lipid",
+          "value": "114.8",
+          "unit": "mg/dL",
+          "referenceRange": "<100",
+          "flag": "high",
+          "confidence": 0.95,
+          "needs_review": true
+        },
+        {
+          "field_name": "crp",
+          "label": "CRP",
+          "panel": "Inflammation",
+          "value": "14.8",
+          "unit": "mg/L",
+          "referenceRange": "<5",
+          "flag": "high",
+          "confidence": 0.83,
+          "needs_review": true
+        },
+        {
+          "field_name": "egfr",
+          "label": "eGFR",
+          "panel": "CMP",
+          "value": "59.2",
+          "unit": "mL/min",
+          "referenceRange": ">60",
+          "flag": "low",
+          "confidence": 0.82,
+          "needs_review": true
+        },
+        {
+          "field_name": "creatinine",
+          "label": "Creatinine",
+          "panel": "CMP",
+          "value": "1.2",
+          "unit": "mg/dL",
+          "referenceRange": "0.6-1.2",
+          "flag": "normal",
+          "confidence": 0.87,
+          "needs_review": false
+        }
+      ],
+      "reviewRequired": true,
+      "packetId": "PKT-EXT-0001",
+      "patientsInFile": 5,
+      "batchPatientIds": [
+        "PT-D00001",
+        "PT-D00002",
+        "PT-D00003",
+        "PT-D00004",
+        "PT-D00005"
+      ]
+    }
+  ],
+  "patientsPerFile": 5,
+  "sourcePacketCount": 1,
+  "dashboardSeed": {
+    "patients": 5,
+    "sessions": 5,
+    "highRiskEstimate": 5,
+    "pendingReviewEstimate": 5,
+    "pendingVerifications": 5,
+    "sourceImages": 5,
+    "sourcePackets": 1,
+    "sourceDocuments": 1,
+    "patientsPerFile": 5,
+    "pendingReviews": 5,
+    "imageExtractionsToday": 5,
+    "agentRuns": 5,
+    "agentRuns24h": 5,
+    "storageObjects": 1,
+    "storedAssets": 1,
+    "jsonRecords": 5,
+    "vectorRecords": 20,
+    "averageConfidence": 0.85,
+    "completeness": 94,
+    "auditEvents": 20,
+    "failedExtractions": 0,
+    "openAiAlerts": 5,
+    "syncRate": 100
+  },
+  "storageSeed": {
+    "cloudObjects": 1,
+    "jsonDocuments": 5,
+    "relationalRows": 30,
+    "vectorRecords": 20,
+    "auditEvents": 20,
+    "failedRecords": 0
+  },
+  "agentMonitoringSeed": [
+    {
+      "pipeline": "extraction",
+      "agent": "quality_assessor_agent",
+      "runs": 5,
+      "avgConfidence": 0.87,
+      "failureRate": 0.0,
+      "reviewRate": 1.0,
+      "avgDurationMs": 760
+    },
+    {
+      "pipeline": "extraction",
+      "agent": "pdf_packet_parser_agent",
+      "runs": 1,
+      "avgConfidence": 0.85,
+      "failureRate": 0.0,
+      "reviewRate": 1.0,
+      "avgDurationMs": 1360
+    },
+    {
+      "pipeline": "extraction",
+      "agent": "vision_analyzer_agent",
+      "runs": 5,
+      "avgConfidence": 0.82,
+      "failureRate": 0.0,
+      "reviewRate": 1.0,
+      "avgDurationMs": 1610
+    },
+    {
+      "pipeline": "extraction",
+      "agent": "clinical_review_gate_agent",
+      "runs": 5,
+      "avgConfidence": 0.9,
+      "failureRate": 0.0,
+      "reviewRate": 1.0,
+      "avgDurationMs": 460
+    }
+  ]
+}

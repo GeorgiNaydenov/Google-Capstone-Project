@@ -85,6 +85,10 @@ def init_db(*, seed: bool | None = None):
     with _INIT_LOCK:
         if path_key in _INITIALIZED_PATHS:
             return
+        # Tenant databases may live in directories that do not exist yet
+        # (e.g. showcase_data/ under a relocated data root); sqlite cannot
+        # create missing parents itself.
+        Path(path_key).parent.mkdir(parents=True, exist_ok=True)
         with get_connection() as conn:
             cursor = conn.cursor()
 

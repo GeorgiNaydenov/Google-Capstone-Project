@@ -1,0 +1,180 @@
+{
+  "module": "multimodal_patient_qa",
+  "demo_platform": "primary",
+  "patient_prefix": "PT-D",
+  "focus_patient_ids": [
+    "PT-D00001"
+  ],
+  "bundle_count": 1,
+  "pdf_count": 1,
+  "knowledge_base_document_count": 2,
+  "bundles": [
+    {
+      "patient_id": "PT-D00001",
+      "risk_level": "stable",
+      "completeness": 0.89,
+      "organization": "Research Clinic",
+      "source_systems": [
+        "Claims",
+        "EHR",
+        "Patient Portal",
+        "RPM",
+        "Pharmacy"
+      ],
+      "path": ".tmp_showcase_validation\\multimodal\\PT-D00001\\bundle.json",
+      "pdf_directory": ".tmp_showcase_validation\\multimodal\\PT-D00001\\documents",
+      "knowledge_base_directory": ".tmp_showcase_validation\\multimodal\\PT-D00001\\knowledge_base",
+      "row_counts": {
+        "labs": 84,
+        "images": 18,
+        "pdf_documents": 1,
+        "knowledge_base_documents": 2,
+        "notes": 72,
+        "timeline": 160,
+        "comparators": 5,
+        "citations": 31
+      }
+    }
+  ],
+  "upload_contract": {
+    "route": "/api/assets",
+    "contentType": "application/pdf",
+    "batchPattern": "Upload files from each bundle documents/ directory, then ask one patient-scoped Q&A prompt."
+  },
+  "knowledge_base_contract": {
+    "route": "/api/knowledge-base/assets",
+    "extensions": [
+      ".pdf",
+      ".docx",
+      ".md",
+      ".txt",
+      ".json"
+    ],
+    "contentTypes": [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/markdown",
+      "text/plain",
+      "application/json"
+    ],
+    "followupRoute": "/api/runs/qa",
+    "sourceTypes": [
+      "document"
+    ]
+  },
+  "frontend_contract": {
+    "views": [
+      "Patient profile",
+      "Multimodal patient Q&A",
+      "Evidence citations",
+      "Chart builder"
+    ],
+    "needs": [
+      "dense patient detail",
+      "PDF source viewer",
+      "multiple Plotly panels",
+      "citation table"
+    ],
+    "demoPlatform": "primary",
+    "dashboardSeed": {
+      "patients": 1,
+      "sessions": 160,
+      "highRiskEstimate": 0,
+      "pendingReviewEstimate": 0,
+      "storedFiles": 3,
+      "storedAssets": 3,
+      "imageEvidence": 18,
+      "notes": 72,
+      "citations": 31,
+      "comparators": 5,
+      "knowledgeBaseDocuments": 2,
+      "qaPrompts": 5,
+      "agentRuns24h": 8,
+      "auditEvents": 12,
+      "openAiAlerts": 0,
+      "completeness": 89,
+      "failedExtractions": 0
+    },
+    "storageSeed": {
+      "cloudObjects": 3,
+      "jsonDocuments": 1,
+      "relationalRows": 244,
+      "vectorRecords": 103,
+      "auditEvents": 12,
+      "failedRecords": 0
+    },
+    "syntheticKnowledgeBase": [
+      {
+        "patientId": "PT-D00001",
+        "bundlePath": ".tmp_showcase_validation\\multimodal\\PT-D00001\\bundle.json",
+        "pdfDirectory": ".tmp_showcase_validation\\multimodal\\PT-D00001\\documents",
+        "knowledgeBaseDirectory": ".tmp_showcase_validation\\multimodal\\PT-D00001\\knowledge_base",
+        "rowCounts": {
+          "labs": 84,
+          "images": 18,
+          "pdf_documents": 1,
+          "knowledge_base_documents": 2,
+          "notes": 72,
+          "timeline": 160,
+          "comparators": 5,
+          "citations": 31
+        },
+        "organization": "Research Clinic",
+        "sourceSystems": [
+          "Claims",
+          "EHR",
+          "Patient Portal",
+          "RPM",
+          "Pharmacy"
+        ]
+      }
+    ],
+    "agentMonitoringSeed": [
+      {
+        "pipeline": "qa",
+        "agent": "context_assembly_agent",
+        "runs": 3,
+        "avgConfidence": 0.92,
+        "failureRate": 0.0,
+        "reviewRate": 0.0,
+        "avgDurationMs": 620
+      },
+      {
+        "pipeline": "qa",
+        "agent": "evidence_retrieval_agent",
+        "runs": 3,
+        "avgConfidence": 0.9,
+        "failureRate": 0.0,
+        "reviewRate": 0.0,
+        "avgDurationMs": 1380
+      },
+      {
+        "pipeline": "qa",
+        "agent": "image_evidence_agent",
+        "runs": 2,
+        "avgConfidence": 0.88,
+        "failureRate": 0.0,
+        "reviewRate": 0.0,
+        "avgDurationMs": 1660
+      },
+      {
+        "pipeline": "qa",
+        "agent": "citation_builder_agent",
+        "runs": 3,
+        "avgConfidence": 0.93,
+        "failureRate": 0.0,
+        "reviewRate": 0.0,
+        "avgDurationMs": 840
+      },
+      {
+        "pipeline": "qa",
+        "agent": "answer_synthesis_agent",
+        "runs": 3,
+        "avgConfidence": 0.91,
+        "failureRate": 0.0,
+        "reviewRate": 0.0,
+        "avgDurationMs": 1810
+      }
+    ]
+  }
+}

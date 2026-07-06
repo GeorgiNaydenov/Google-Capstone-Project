@@ -1,0 +1,12 @@
+{
+  "patients_core": [],
+  "sessions": [],
+  "extracted_fields": [],
+  "clinical_notes": [],
+  "lab_results": [],
+  "imaging_studies": [],
+  "audit_log": [],
+  "documents": [],
+  "document_chunks": [],
+  "qa_memory": []
+}

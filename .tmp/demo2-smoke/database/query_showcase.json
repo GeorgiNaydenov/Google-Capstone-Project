@@ -1,0 +1,643 @@
+[
+  {
+    "question": "Count patients by risk level.",
+    "sql": "SELECT risk_level, COUNT(*) AS patient_count FROM patients_core GROUP BY risk_level ORDER BY patient_count DESC",
+    "insight": "Count patients by risk level. Top segment is stable with 12; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "risk_level": "stable",
+        "patient_count": 12
+      },
+      {
+        "risk_level": "needs_review",
+        "patient_count": 10
+      },
+      {
+        "risk_level": "high",
+        "patient_count": 3
+      }
+    ],
+    "row_count": 3,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "stable",
+            "needs_review",
+            "high"
+          ],
+          "y": [
+            12,
+            10,
+            3
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Count patients by risk level.",
+        "xaxis": {
+          "title": "risk_level"
+        },
+        "yaxis": {
+          "title": "patient_count"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_01.png"
+  },
+  {
+    "question": "Which clinicians have the most pending reviews?",
+    "sql": "SELECT assigned_clinician, COUNT(*) AS pending_reviews FROM patients_core WHERE ai_review_status = 'needs_review' GROUP BY assigned_clinician ORDER BY pending_reviews DESC LIMIT 10",
+    "insight": "Which clinicians have the most pending reviews? Top segment is Dr. Elena Park with 5; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "assigned_clinician": "Dr. Elena Park",
+        "pending_reviews": 5
+      },
+      {
+        "assigned_clinician": "Dr. Sarah Miller",
+        "pending_reviews": 2
+      },
+      {
+        "assigned_clinician": "Dr. James Patel",
+        "pending_reviews": 2
+      },
+      {
+        "assigned_clinician": "Dr. Miguel Torres",
+        "pending_reviews": 1
+      }
+    ],
+    "row_count": 4,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "Dr. Elena Park",
+            "Dr. Sarah Miller",
+            "Dr. James Patel",
+            "Dr. Miguel Torres"
+          ],
+          "y": [
+            5,
+            2,
+            2,
+            1
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Which clinicians have the most pending reviews?",
+        "xaxis": {
+          "title": "assigned_clinician"
+        },
+        "yaxis": {
+          "title": "pending_reviews"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_02.png"
+  },
+  {
+    "question": "Show average extraction confidence by imaging modality.",
+    "sql": "SELECT i.modality, ROUND(AVG(s.extraction_confidence), 3) AS avg_confidence FROM imaging_studies i JOIN sessions s ON s.session_id = i.session_id GROUP BY i.modality ORDER BY avg_confidence DESC",
+    "insight": "Show average extraction confidence by imaging modality. Top segment is CT with 0.846; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "modality": "CT",
+        "avg_confidence": 0.846
+      },
+      {
+        "modality": "X-Ray",
+        "avg_confidence": 0.833
+      },
+      {
+        "modality": "MRI",
+        "avg_confidence": 0.826
+      },
+      {
+        "modality": "Document",
+        "avg_confidence": 0.825
+      },
+      {
+        "modality": "Fundoscopy",
+        "avg_confidence": 0.82
+      }
+    ],
+    "row_count": 5,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "CT",
+            "X-Ray",
+            "MRI",
+            "Document",
+            "Fundoscopy"
+          ],
+          "y": [
+            0.846,
+            0.833,
+            0.826,
+            0.825,
+            0.82
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Show average extraction confidence by imaging modality.",
+        "xaxis": {
+          "title": "modality"
+        },
+        "yaxis": {
+          "title": "avg_confidence"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_03.png"
+  },
+  {
+    "question": "Which lab components are most often abnormal?",
+    "sql": "SELECT component, COUNT(*) AS abnormal_results FROM lab_results WHERE flag != 'normal' GROUP BY component ORDER BY abnormal_results DESC",
+    "insight": "Which lab components are most often abnormal? Top segment is BNP with 95; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "component": "BNP",
+        "abnormal_results": 95
+      },
+      {
+        "component": "CRP",
+        "abnormal_results": 87
+      },
+      {
+        "component": "Creatinine",
+        "abnormal_results": 67
+      },
+      {
+        "component": "eGFR",
+        "abnormal_results": 59
+      },
+      {
+        "component": "Hemoglobin",
+        "abnormal_results": 47
+      },
+      {
+        "component": "WBC",
+        "abnormal_results": 39
+      }
+    ],
+    "row_count": 6,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "BNP",
+            "CRP",
+            "Creatinine",
+            "eGFR",
+            "Hemoglobin",
+            "WBC"
+          ],
+          "y": [
+            95,
+            87,
+            67,
+            59,
+            47,
+            39
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Which lab components are most often abnormal?",
+        "xaxis": {
+          "title": "component"
+        },
+        "yaxis": {
+          "title": "abnormal_results"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_04.png"
+  },
+  {
+    "question": "Show high-risk extraction sessions by year.",
+    "sql": "SELECT strftime('%Y', session_date) AS session_year, COUNT(*) AS high_risk_sessions FROM sessions JOIN patients_core USING (patient_id) WHERE risk_level = 'high' GROUP BY session_year ORDER BY session_year",
+    "insight": "Show high-risk extraction sessions by year. Top segment is 2024 with 3; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "session_year": "2024",
+        "high_risk_sessions": 3
+      },
+      {
+        "session_year": "2025",
+        "high_risk_sessions": 6
+      },
+      {
+        "session_year": "2026",
+        "high_risk_sessions": 3
+      }
+    ],
+    "row_count": 3,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "2024",
+            "2025",
+            "2026"
+          ],
+          "y": [
+            3,
+            6,
+            3
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Show high-risk extraction sessions by year.",
+        "xaxis": {
+          "title": "session_year"
+        },
+        "yaxis": {
+          "title": "high_risk_sessions"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_05.png"
+  },
+  {
+    "question": "How many agent audit events exist by pipeline?",
+    "sql": "SELECT agent_name, COUNT(*) AS event_count FROM audit_log GROUP BY agent_name ORDER BY event_count DESC",
+    "insight": "How many agent audit events exist by pipeline? Top segment is database_intelligence_pipeline with 100; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "agent_name": "database_intelligence_pipeline",
+        "event_count": 100
+      },
+      {
+        "agent_name": "image_extraction_pipeline",
+        "event_count": 100
+      }
+    ],
+    "row_count": 2,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "database_intelligence_pipeline",
+            "image_extraction_pipeline"
+          ],
+          "y": [
+            100,
+            100
+          ]
+        }
+      ],
+      "layout": {
+        "title": "How many agent audit events exist by pipeline?",
+        "xaxis": {
+          "title": "agent_name"
+        },
+        "yaxis": {
+          "title": "event_count"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_06.png"
+  },
+  {
+    "question": "Which comorbidity categories are most common among high-risk patients?",
+    "sql": "SELECT pc.category, COUNT(*) AS condition_count FROM patient_conditions pc JOIN patients_core p USING (patient_id) WHERE p.risk_level = 'high' AND pc.is_primary = 0 GROUP BY pc.category ORDER BY condition_count DESC",
+    "insight": "Which comorbidity categories are most common among high-risk patients? Top segment is oncology with 2; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "category": "oncology",
+        "condition_count": 2
+      },
+      {
+        "category": "cardiometabolic",
+        "condition_count": 2
+      },
+      {
+        "category": "behavioral",
+        "condition_count": 2
+      },
+      {
+        "category": "cardiac",
+        "condition_count": 1
+      },
+      {
+        "category": "autoimmune",
+        "condition_count": 1
+      }
+    ],
+    "row_count": 5,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "oncology",
+            "cardiometabolic",
+            "behavioral",
+            "cardiac",
+            "autoimmune"
+          ],
+          "y": [
+            2,
+            2,
+            2,
+            1,
+            1
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Which comorbidity categories are most common among high-risk patients?",
+        "xaxis": {
+          "title": "category"
+        },
+        "yaxis": {
+          "title": "condition_count"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_07.png"
+  },
+  {
+    "question": "Compare average BMI and blood pressure by risk level.",
+    "sql": "SELECT p.risk_level, ROUND(AVG(v.bmi), 1) AS avg_bmi, ROUND(AVG(v.systolic_bp), 1) AS avg_systolic_bp FROM vital_signs v JOIN patients_core p USING (patient_id) GROUP BY p.risk_level ORDER BY avg_systolic_bp DESC",
+    "insight": "Compare average BMI and blood pressure by risk level. Top segment is stable with 29.2; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "risk_level": "stable",
+        "avg_bmi": 29.2,
+        "avg_systolic_bp": 140.1
+      },
+      {
+        "risk_level": "needs_review",
+        "avg_bmi": 30.6,
+        "avg_systolic_bp": 136.7
+      },
+      {
+        "risk_level": "high",
+        "avg_bmi": 31.8,
+        "avg_systolic_bp": 132.2
+      }
+    ],
+    "row_count": 3,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "stable",
+            "needs_review",
+            "high"
+          ],
+          "y": [
+            29.2,
+            30.6,
+            31.8
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Compare average BMI and blood pressure by risk level.",
+        "xaxis": {
+          "title": "risk_level"
+        },
+        "yaxis": {
+          "title": "avg_bmi"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_08.png"
+  },
+  {
+    "question": "Which medication classes have the lowest adherence scores?",
+    "sql": "SELECT medication_class, ROUND(AVG(adherence_score), 2) AS avg_adherence, COUNT(*) AS medication_count FROM medications WHERE status = 'active' GROUP BY medication_class ORDER BY avg_adherence ASC LIMIT 10",
+    "insight": "Which medication classes have the lowest adherence scores? Top segment is Loop diuretic with 0.72; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "medication_class": "Loop diuretic",
+        "avg_adherence": 0.72,
+        "medication_count": 8
+      },
+      {
+        "medication_class": "Statin",
+        "avg_adherence": 0.72,
+        "medication_count": 8
+      },
+      {
+        "medication_class": "Anticoagulant",
+        "avg_adherence": 0.74,
+        "medication_count": 10
+      },
+      {
+        "medication_class": "ACE inhibitor",
+        "avg_adherence": 0.77,
+        "medication_count": 6
+      },
+      {
+        "medication_class": "Biguanide",
+        "avg_adherence": 0.79,
+        "medication_count": 10
+      },
+      {
+        "medication_class": "Immunotherapy",
+        "avg_adherence": 0.82,
+        "medication_count": 11
+      }
+    ],
+    "row_count": 6,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "Loop diuretic",
+            "Statin",
+            "Anticoagulant",
+            "ACE inhibitor",
+            "Biguanide",
+            "Immunotherapy"
+          ],
+          "y": [
+            0.72,
+            0.72,
+            0.74,
+            0.77,
+            0.79,
+            0.82
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Which medication classes have the lowest adherence scores?",
+        "xaxis": {
+          "title": "medication_class"
+        },
+        "yaxis": {
+          "title": "avg_adherence"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_09.png"
+  },
+  {
+    "question": "Show open care gaps by priority and owner.",
+    "sql": "SELECT priority, owner, COUNT(*) AS open_gap_count FROM care_gaps WHERE status IN ('open', 'scheduled', 'deferred') GROUP BY priority, owner ORDER BY open_gap_count DESC LIMIT 12",
+    "insight": "Show open care gaps by priority and owner. Top segment is medium with Dr. Elena Park; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "priority": "medium",
+        "owner": "Dr. Elena Park",
+        "open_gap_count": 6
+      },
+      {
+        "priority": "medium",
+        "owner": "Dr. James Patel",
+        "open_gap_count": 5
+      },
+      {
+        "priority": "medium",
+        "owner": "Dr. Sarah Miller",
+        "open_gap_count": 3
+      },
+      {
+        "priority": "high",
+        "owner": "Dr. Elena Park",
+        "open_gap_count": 2
+      },
+      {
+        "priority": "medium",
+        "owner": "Dr. Miguel Torres",
+        "open_gap_count": 2
+      },
+      {
+        "priority": "medium",
+        "owner": "Dr. Priya Rao",
+        "open_gap_count": 2
+      },
+      {
+        "priority": "high",
+        "owner": "Dr. Sarah Miller",
+        "open_gap_count": 1
+      }
+    ],
+    "row_count": 7,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "medium",
+            "medium",
+            "medium",
+            "high",
+            "medium",
+            "medium",
+            "high"
+          ],
+          "y": [
+            6,
+            5,
+            3,
+            2,
+            2,
+            2,
+            1
+          ]
+        }
+      ],
+      "layout": {
+        "title": "Show open care gaps by priority and owner.",
+        "xaxis": {
+          "title": "priority"
+        },
+        "yaxis": {
+          "title": "open_gap_count"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_10.png"
+  },
+  {
+    "question": "How does evidence completeness vary by language?",
+    "sql": "SELECT preferred_language, ROUND(AVG(data_completeness_score), 2) AS avg_completeness, COUNT(*) AS patient_count FROM patients_core GROUP BY preferred_language ORDER BY avg_completeness ASC",
+    "insight": "How does evidence completeness vary by language? Top segment is Mandarin with 0.74; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "preferred_language": "Mandarin",
+        "avg_completeness": 0.74,
+        "patient_count": 2
+      },
+      {
+        "preferred_language": "Spanish",
+        "avg_completeness": 0.74,
+        "patient_count": 1
+      },
+      {
+        "preferred_language": "English",
+        "avg_completeness": 0.78,
+        "patient_count": 3
+      },
+      {
+        "preferred_language": "Hindi",
+        "avg_completeness": 0.79,
+        "patient_count": 3
+      },
+      {
+        "preferred_language": "Portuguese",
+        "avg_completeness": 0.79,
+        "patient_count": 7
+      },
+      {
+        "preferred_language": "Arabic",
+        "avg_completeness": 0.84,
+        "patient_count": 9
+      }
+    ],
+    "row_count": 6,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "Mandarin",
+            "Spanish",
+            "English",
+            "Hindi",
+            "Portuguese",
+            "Arabic"
+          ],
+          "y": [
+            0.74,
+            0.74,
+            0.78,
+            0.79,
+            0.79,
+            0.84
+          ]
+        }
+      ],
+      "layout": {
+        "title": "How does evidence completeness vary by language?",
+        "xaxis": {
+          "title": "preferred_language"
+        },
+        "yaxis": {
+          "title": "avg_completeness"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp\\demo2-smoke\\database\\charts\\query_11.png"
+  }
+]

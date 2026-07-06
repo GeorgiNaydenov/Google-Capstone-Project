@@ -59,7 +59,7 @@ describe("first-run onboarding tour", () => {
     fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     expect(screen.getByRole("dialog", { name: /specialist agents read it/i })).toBeInTheDocument();
     expect(document.body.dataset.tourStep).toBe("extraction");
-    expect(await screen.findByRole("heading", { name: /session image extraction agent/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /clinical evidence extraction/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
     expect(screen.getByRole("dialog", { name: /clinical question/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^next$/i }));

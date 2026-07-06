@@ -1,0 +1,39 @@
+[
+  {
+    "_instructions": {
+      "patient": "Demographic information of the patient used for image rendering and metadata mapping.",
+      "encounter_date": "The date of the encounter in YYYY-MM-DD format.",
+      "note": "Multi-line clinical text that will be rendered onto the intake sheet as the OCR target.",
+      "fields": "Structured measurements matching the table on the intake sheet. Used as ground truth.",
+      "trend_values": "A list of float/integer values mapped to the embedded chart at the bottom of the intake sheet."
+    },
+    "patient": {
+      "patient_id": "PT-T0002",
+      "mrn": "MRN-556102",
+      "name": "Nora Evans",
+      "age": 50,
+      "sex": "Female",
+      "diagnosis": "Heart failure with reduced EF",
+      "clinician": "Dr. Sarah Miller"
+    },
+    "encounter_date": "2026-07-05",
+    "note": "HPI: Nora presents with mild exertional dyspnea.\nEjection fraction is evaluated via echocardiogram.\nEjection fraction = 32% (severe reduction).\nNo lower extremity edema noted.\nReconciliation of furosemide complete.",
+    "fields": [
+      {
+        "field_name": "ejection_fraction_pct",
+        "value": 32.0,
+        "unit": "%",
+        "confidence": 0.96,
+        "needs_review": true
+      },
+      {
+        "field_name": "furosemide_dose_mg",
+        "value": 40.0,
+        "unit": "mg",
+        "confidence": 0.91,
+        "needs_review": false
+      }
+    ],
+    "trend_values": [45.0, 42.0, 38.0, 35.0, 32.0, 32.0]
+  }
+]

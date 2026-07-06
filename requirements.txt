@@ -37,6 +37,9 @@ Pillow
 # --- Clinical visualization exports and analysis notebooks ---
 matplotlib
 
+# --- Enterprise showcase generation (clinical record PDF volumes) ---
+reportlab
+
 # --- Documentation hub build (scripts/build_docs_site.py renders the Obsidian
 #     Project Wiki and the Karpathy LLM Wiki to static HTML) ---
 markdown-it-py

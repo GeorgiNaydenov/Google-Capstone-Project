@@ -43,12 +43,14 @@ TENANTS: dict[str, TenantConfig] = {
         display_name="Research Clinic",
         kind=TenantKind.DEMO,
         dataset="research_clinic",
+        db_filename="showcase_data/database/clinical_showcase.db",
     ),
     "northstar-health": TenantConfig(
         id="northstar-health",
         display_name="Northstar Health",
         kind=TenantKind.DEMO,
         dataset="northstar",
+        db_filename="showcase_data/demo2/database/clinical_showcase_demo2.db",
     ),
     "capstone": TenantConfig(
         id="capstone",

@@ -62,6 +62,7 @@ def test_validate_upload_rejects_unsupported_file_type() -> None:
         ("note.txt", b"plain clinical text", "text/plain", "text/plain"),
         ("facts.json", json.dumps({"care_gap": "BNP follow-up"}).encode(), "application/json", "application/json"),
         ("packet.docx", docx_bytes("DOCX clinical care gap"), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        ("scan.png", PNG_BYTES, "image/png", "image/png"),
     ],
 )
 def test_knowledge_base_upload_accepts_searchable_formats(filename: str, contents: bytes, content_type: str, expected_type: str) -> None:

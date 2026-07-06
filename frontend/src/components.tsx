@@ -1,5 +1,6 @@
 import { Component, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { AgentRun, AuditEvent, Evidence, Patient, Role, ToolCall } from "./types";
+import { api } from "./api";
+import type { AgentRun, AuditEvent, AuditEventDetail, Evidence, Patient, Role, ToolCall } from "./types";
 
 export class ErrorBoundary extends Component<{ children: ReactNode; label?: string }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -114,12 +115,16 @@ export function ConfidenceMeter({ value = 0 }: { value?: number }) {
 }
 
 export function KpiStrip({ values }: { values: Array<{ label: string; value: string | number; meta?: string; tone?: string }> }) {
-  return <div className="kpi-strip">{values.map(item => <Card key={item.label} className={item.tone ? `kpi-${item.tone}` : ""}><span className="eyebrow">{item.label}</span><strong className="kpi-value">{item.value}</strong>{item.meta && <small>{item.meta}</small>}</Card>)}</div>;
+  return <div className="kpi-strip">{values.map(item => {
+    const formatted = typeof item.value === "number" ? new Intl.NumberFormat().format(item.value) : item.value;
+    return <Card key={item.label} className={item.tone ? `kpi-${item.tone}` : ""}><span className="eyebrow">{item.label}</span><strong className="kpi-value">{formatted}</strong>{item.meta && <small>{item.meta}</small>}</Card>;
+  })}</div>;
 }
 
-export function DenseTable({ columns, rows, onRow }: { columns: Array<{ key: string; label: string; render?: (row: Record<string, unknown>) => ReactNode }>; rows: Array<Record<string, unknown>>; onRow?: (row: Record<string, unknown>) => void }) {
+export function DenseTable({ columns, rows, onRow, limit }: { columns: Array<{ key: string; label: string; render?: (row: Record<string, unknown>) => ReactNode }>; rows: Array<Record<string, unknown>>; onRow?: (row: Record<string, unknown>) => void; limit?: number }) {
   if (!rows.length) return <EmptyState />;
-  return <div className="table-wrap"><table><thead><tr>{columns.map(c => <th key={c.key}>{c.label}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={String(row.id ?? index)} onClick={() => onRow?.(row)} onKeyDown={event => { if (onRow && (event.key === "Enter" || event.key === " ")) onRow(row); }} tabIndex={onRow ? 0 : undefined} className={onRow ? "clickable" : ""}>{columns.map(c => <td key={c.key}>{c.render ? c.render(row) : String(row[c.key] ?? "-")}</td>)}</tr>)}</tbody></table></div>;
+  const visibleRows = limit ? rows.slice(0, limit) : rows;
+  return <div className="table-wrap"><table><thead><tr>{columns.map(c => <th key={c.key}>{c.label}</th>)}</tr></thead><tbody>{visibleRows.map((row, index) => <tr key={String(row.id ?? index)} onClick={() => onRow?.(row)} onKeyDown={event => { if (onRow && (event.key === "Enter" || event.key === " ")) onRow(row); }} tabIndex={onRow ? 0 : undefined} className={onRow ? "clickable" : ""}>{columns.map(c => <td key={c.key} title={c.render ? undefined : String(row[c.key] ?? "")}>{c.render ? c.render(row) : String(row[c.key] ?? "-")}</td>)}</tr>)}</tbody></table>{limit && rows.length > visibleRows.length && <small className="table-note">Showing {visibleRows.length} of {rows.length} records</small>}</div>;
 }
 
 export function AgentStepper({ steps = [], toolCalls = [] }: { steps?: AgentRun["steps"]; toolCalls?: ToolCall[] }) {
@@ -128,7 +133,8 @@ export function AgentStepper({ steps = [], toolCalls = [] }: { steps?: AgentRun[
     const isOpen = expanded === step.id;
     const stepTools = toolCalls.filter(tc => (tc.toolName ?? tc.tool ?? "").toLowerCase().includes(step.name.toLowerCase().split(" ")[0]));
     const hasDetail = stepTools.length > 0 || step.detail;
-    return <li key={step.id} className={step.status}><button className="stepper-toggle" onClick={() => hasDetail && setExpanded(isOpen ? null : step.id)}><span>{step.status === "completed" ? "done" : step.status === "running" ? "..." : index + 1}</span><div><strong>{step.name}</strong><small>{step.detail ?? step.status}{stepTools.length > 0 && ` - ${stepTools.length} tool call${stepTools.length > 1 ? "s" : ""}`}</small></div>{hasDetail && <span className="stepper-chevron">{isOpen ? "v" : ">"}</span>}</button>{isOpen && stepTools.length > 0 && <div className="stepper-detail">{stepTools.map((tc, i) => <div key={i} className="tool-call-row"><code className="tool-name">{tc.toolName ?? tc.tool}</code>{tc.durationMs != null && <span className="tool-duration">{tc.durationMs}ms</span>}{tc.args && <details><summary>Input</summary><pre>{JSON.stringify(tc.args, null, 2)}</pre></details>}{tc.output != null && <details><summary>Output</summary><pre>{typeof tc.output === "string" ? tc.output : JSON.stringify(tc.output, null, 2)}</pre></details>}</div>)}</div>}</li>;
+    const marker = step.status === "completed" ? "" : step.status === "running" ? "" : String(index + 1);
+    return <li key={step.id} className={step.status}><button className="stepper-toggle" onClick={() => hasDetail && setExpanded(isOpen ? null : step.id)}><span aria-label={step.status}>{marker}</span><div><strong>{step.name}</strong><small>{step.detail ?? step.status}{stepTools.length > 0 && ` - ${stepTools.length} tool call${stepTools.length > 1 ? "s" : ""}`}</small></div>{hasDetail && <span className="stepper-chevron">{isOpen ? "v" : ">"}</span>}</button>{isOpen && stepTools.length > 0 && <div className="stepper-detail">{stepTools.map((tc, i) => <div key={i} className="tool-call-row"><code className="tool-name">{tc.toolName ?? tc.tool}</code>{tc.durationMs != null && <span className="tool-duration">{tc.durationMs}ms</span>}{tc.args && <details><summary>Input</summary><pre>{JSON.stringify(tc.args, null, 2)}</pre></details>}{tc.output != null && <details><summary>Output</summary><pre>{typeof tc.output === "string" ? tc.output : JSON.stringify(tc.output, null, 2)}</pre></details>}</div>)}</div>}</li>;
   })}</ol>;
 }
 
@@ -145,8 +151,38 @@ export function SourceViewer({ evidence, onClose }: { evidence: Evidence | null;
   return <div className="modal-backdrop" onClick={onClose}><section className="source-viewer" role="dialog" aria-modal="true" aria-label="Evidence source" onClick={event => event.stopPropagation()}><header><div><span className="eyebrow">Authorized source</span><h2>{evidence.label}</h2></div><button className="icon-button" onClick={onClose} aria-label="Close source">x</button></header>{evidence.kind === "image" && evidence.sourceUrl ? <img src={evidence.sourceUrl} alt={evidence.label} /> : <div className="source-text">{evidence.excerpt ?? "Source preview unavailable."}</div>}<footer><code>{evidence.id}</code><div>{evidence.page && <span>Page {evidence.page}</span>}{evidence.sourceUrl && <a className="button subtle" href={evidence.sourceUrl} target="_blank" rel="noreferrer">Open original source</a>}</div></footer></section></div>;
 }
 
-export function AuditTimeline({ events = [] }: { events?: AuditEvent[] }) {
-  return <ol className="timeline">{events.map(event => <li key={event.id}><i /><div><span>{event.event}</span><small>{event.actor} - {event.entity}</small></div><div><StatusBadge tone="success">{event.result}</StatusBadge><time>{event.timestamp}</time></div></li>)}</ol>;
+export function AuditTimeline({ events = [], onSelect }: { events?: AuditEvent[]; onSelect?: (event: AuditEvent) => void }) {
+  return <ol className="timeline">{events.map(event => <li key={event.id} className={onSelect ? "clickable" : undefined} tabIndex={onSelect ? 0 : undefined} onClick={onSelect ? () => onSelect(event) : undefined} onKeyDown={event_ => { if (onSelect && (event_.key === "Enter" || event_.key === " ")) onSelect(event); }}><i /><div><span>{event.event}</span><small>{event.actor} - {event.entity}</small></div><div><StatusBadge tone="success">{event.result}</StatusBadge><time>{event.timestamp}</time></div></li>)}</ol>;
+}
+
+/** Modal drill-down for one audit event. Fetches the enriched detail (linked
+ * run and patient) from GET /audit/{id}; when the backend cannot serve it
+ * (e.g. failover snapshot rows), the modal degrades to the row's own fields. */
+export function AuditDetailModal({ event, onClose }: { event: AuditEvent | null; onClose: () => void }) {
+  const [detail, setDetail] = useState<AuditEventDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!event) { setDetail(null); return; }
+    let cancelled = false;
+    setLoading(true);
+    api.auditEvent(event.id)
+      .then(payload => { if (!cancelled) setDetail(payload); })
+      .catch(() => { if (!cancelled) setDetail(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [event?.id]);
+  if (!event) return null;
+  const run = detail?.run;
+  return <div className="modal-backdrop" onClick={onClose}><section className="source-viewer" role="dialog" aria-modal="true" aria-label="Audit event detail" onClick={click => click.stopPropagation()}>
+    <header><div><span className="eyebrow">Audit event</span><h2>{event.event.replaceAll("_", " ")}</h2></div><button className="icon-button" onClick={onClose} aria-label="Close audit detail">x</button></header>
+    <div className="agent-meta"><div><span className="eyebrow">Actor</span><strong>{event.actor}</strong></div><div><span className="eyebrow">Entity</span><code>{event.entity}</code></div><div><span className="eyebrow">Result</span><StatusBadge tone="success">{event.result}</StatusBadge></div><div><span className="eyebrow">Recorded</span><code>{event.timestamp}</code></div></div>
+    {loading ? <div className="loading"><i/><i/><i/>Loading event detail</div> : <>
+      <JsonViewer value={detail?.details ?? { id: event.id, event: event.event, actor: event.actor, entity: event.entity, result: event.result }}/>
+      {run && <div className="audit-linked-run"><div><span className="eyebrow">Linked run</span><code>{run.id}</code><StatusBadge tone={run.status === "completed" ? "success" : run.status}>{run.status}</StatusBadge></div><small>{run.agentName} - {run.workflow} workflow{run.confidence != null ? ` - ${Math.round(run.confidence * 100)}% confidence` : ""}</small><ol>{run.steps.map(step => <li key={step.name}><strong>{step.name}</strong><span>{step.detail || step.status}</span></li>)}</ol></div>}
+      {detail?.patient && <div className="audit-linked-run"><div><span className="eyebrow">Patient</span><code>{detail.patient.id}</code></div><small>{detail.patient.name}</small></div>}
+    </>}
+    <footer><code>{event.id}</code></footer>
+  </section></div>;
 }
 
 export function SqlPreview({ sql, safe }: { sql: string; safe: boolean }) {
@@ -168,6 +204,14 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
   const total = points.reduce((sum, point) => sum + point.value, 0);
   const largest = points.reduce((top, point) => point.value > top.value ? point : top, points[0] ?? { label: "none", value: 0 });
   const chartKind = variant.toLowerCase();
+  // When rows expose two or more numeric columns, heatmaps render a real
+  // label-by-metric matrix instead of a single undifferentiated value strip.
+  const matrix = useMemo(() => {
+    const sample = rows.slice(0, 10);
+    if (!sample.length) return null;
+    const keys = Object.keys(sample[0]).filter(key => key !== "id" && sample.every(row => row[key] !== null && row[key] !== "" && !Number.isNaN(Number(row[key]))));
+    return keys.length >= 2 ? { keys, z: sample.map(row => keys.map(key => Number(row[key]))) } : null;
+  }, [rows]);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -184,20 +228,33 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       hovertemplate: "%{label}<br>%{value} records<extra></extra>",
     } : chartKind.includes("treemap") ? {
       type: "treemap",
-      labels,
-      parents: labels.map(() => ""),
-      values,
+      labels: ["Total", ...labels],
+      ids: ["total", ...points.map(point => point.id)],
+      parents: ["", ...labels.map(() => "total")],
+      values: [total, ...values],
+      branchvalues: "total",
       textinfo: "label+value",
       marker: { colors },
       hovertemplate: "%{label}<br>%{value} records<extra></extra>",
-    } : chartKind.includes("heatmap") ? {
+    } : chartKind.includes("heatmap") ? (matrix ? {
+      type: "heatmap",
+      x: matrix.keys,
+      y: labels,
+      z: matrix.z,
+      colorscale: "Blues",
+      showscale: true,
+      texttemplate: "%{z}",
+      hovertemplate: "%{y} - %{x}<br>%{z}<extra></extra>",
+    } : {
       type: "heatmap",
       x: labels,
       y: ["records"],
       z: [values],
       colorscale: "Blues",
+      showscale: true,
+      texttemplate: "%{z}",
       hovertemplate: "%{x}<br>%{z} records<extra></extra>",
-    } : chartKind.includes("box") ? {
+    }) : chartKind.includes("box") ? {
       type: "box",
       y: values,
       x: labels,
@@ -217,15 +274,15 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       y: values,
       text: values.map(value => String(value)),
       textposition: "outside",
-      marker: { color: "#2563eb" },
+      marker: { color: chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area") || chartKind.includes("scatter") ? "#2563eb" : labels.map((_, index) => colors[index % colors.length]) },
       hovertemplate: "%{x}<br>%{y} records<extra></extra>",
     };
     const isCartesian = !["pie", "treemap", "heatmap"].some(type => chartKind.includes(type));
     void import("plotly.js-dist-min").then(({ default: Plotly }) => {
       if (cancelled || !chartRef.current) return;
       void Plotly.react(chartRef.current, [trace], {
-      margin: { t: 16, r: 12, b: 54, l: 44 },
-      height: 250,
+      margin: chartKind.includes("treemap") || chartKind.includes("pie") ? { t: 12, r: 8, b: 12, l: 8 } : { t: 16, r: 12, b: 54, l: 44 },
+      height: chartKind.includes("treemap") ? 300 : 250,
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "#f8fafc",
       font: { family: "Inter, system-ui, sans-serif", size: 11, color: "#334155" },
@@ -239,9 +296,9 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       const element = chartRef.current;
       if (element) void import("plotly.js-dist-min").then(({ default: Plotly }) => Plotly.purge(element));
     };
-  }, [chartKind, largest.label, largest.value, points, variant]);
+  }, [chartKind, largest.label, largest.value, matrix, points, variant]);
 
-  return <figure className="plotly-chart" aria-label="Annotated Plotly query result chart"><figcaption><strong>{variant} - executed SQL visualization</strong><span>{total} records across {points.length} segment{points.length === 1 ? "" : "s"}</span></figcaption><div ref={chartRef}/><p>Largest segment: {largest.label} ({largest.value}). Values come from the executed query rows.</p></figure>;
+  return <figure className="plotly-chart" aria-label="Annotated Plotly query result chart"><figcaption><strong>{variant} - executed SQL visualization</strong><span>{total} records across {points.length} segment{points.length === 1 ? "" : "s"}</span></figcaption><div ref={chartRef} className={chartKind.includes("treemap") ? "treemap-plot" : undefined}/><p>Largest segment: {largest.label} ({largest.value}). Values come from the executed query rows.</p></figure>;
 }
 
 export function JsonViewer({ value }: { value: unknown }) { return <pre className="json"><code>{JSON.stringify(value, null, 2)}</code></pre>; }

@@ -105,6 +105,12 @@ export interface AuditEvent {
   result: string;
 }
 
+export interface AuditEventDetail extends AuditEvent {
+  details: Record<string, unknown>;
+  run?: { id: string; workflow: string; status: string; agentName: string; confidence?: number | null; steps: Array<{ name: string; status: string; detail: string }> } | null;
+  patient?: { id: string; name: string } | null;
+}
+
 export interface DashboardData {
   metrics?: Record<string, number | string>;
   patients?: Patient[];
@@ -123,6 +129,7 @@ export interface StorageData {
   sqlCount?: number;
   vectorCount?: number;
   auditCount?: number;
+  failedCount?: number;
 }
 
 export interface ClinicalUser {
@@ -236,4 +243,38 @@ export interface EvidenceItem {
   date: string;
   excerpt: string;
   sourceUrl?: string;
+}
+
+export interface KnowledgeBaseAsset {
+  assetId: string;
+  patientId: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  previewUrl?: string;
+  evidenceId: string;
+  createdAt: string;
+  extracted?: Record<string, unknown>;
+}
+
+export interface ExtractionSource {
+  id?: string;
+  assetId: string;
+  patientId: string;
+  patientName?: string;
+  label: string;
+  filename: string;
+  packetFilename?: string;
+  packetId?: string;
+  patientsInFile?: number;
+  batchPatientIds?: string[];
+  contentType: string;
+  sourceContentType?: string;
+  previewContentType?: string;
+  sourceUrl?: string;
+  previewUrl: string;
+  fallbackPreviewUrl?: string;
+  expectedFields?: Array<Record<string, unknown>>;
+  reviewRequired?: boolean;
+  extracted?: Record<string, unknown>;
 }

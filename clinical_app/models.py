@@ -124,6 +124,14 @@ class AuditEventResponse(BaseModel):
     result: str = Field(description="Verification result: 'recorded', 'blocked'")
 
 
+class AuditEventDetailResponse(AuditEventResponse):
+    """Single audit event enriched with the run and patient it references."""
+
+    details: dict[str, Any] = Field(default_factory=dict, description="Raw structured audit payload recorded with the event")
+    run: dict[str, Any] | None = Field(default=None, description="Linked agent run summary when the event references a run")
+    patient: dict[str, Any] | None = Field(default=None, description="Linked patient summary when the event is patient-scoped")
+
+
 class DashboardResponse(BaseModel):
     """Structured dashboard data response contract."""
 

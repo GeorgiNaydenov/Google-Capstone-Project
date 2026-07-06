@@ -1,0 +1,801 @@
+[
+  {
+    "question": "Count patients by risk level.",
+    "sql": "SELECT risk_level, COUNT(*) AS patient_count FROM patients_core GROUP BY risk_level ORDER BY patient_count DESC",
+    "insight": "Count patients by risk level. Top segment is needs_review with 5; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "risk_level": "needs_review",
+        "patient_count": 5
+      }
+    ],
+    "row_count": 1,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "needs_review"
+          ],
+          "y": [
+            5
+          ],
+          "marker": {
+            "color": [
+              "#2563eb"
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "title": "Count patients by risk level.",
+        "xaxis": {
+          "title": "risk_level"
+        },
+        "yaxis": {
+          "title": "patient_count"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_01.png"
+  },
+  {
+    "question": "Which diabetic patients have an HbA1c above 9 percent?",
+    "sql": "SELECT p.patient_id, p.name, MAX(CAST(l.value AS REAL)) AS latest_hba1c, p.assigned_clinician FROM lab_results l JOIN patients_core p USING (patient_id) WHERE l.component = 'HbA1c' AND CAST(l.value AS REAL) > 9.0 AND EXISTS (SELECT 1 FROM patient_conditions c WHERE c.patient_id = p.patient_id AND c.condition_name LIKE '%diabetes%') GROUP BY p.patient_id ORDER BY latest_hba1c DESC LIMIT 15",
+    "insight": "Which diabetic patients have an HbA1c above 9 percent? Top segment is PT-D00002 with Mark Rossi; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "patient_id": "PT-D00002",
+        "name": "Mark Rossi",
+        "latest_hba1c": 9.4,
+        "assigned_clinician": "Dr. Noah Nair"
+      }
+    ],
+    "row_count": 1,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "PT-D00002"
+          ],
+          "y": [
+            9.4
+          ],
+          "marker": {
+            "color": [
+              "#2563eb"
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "title": "Which diabetic patients have an HbA1c above 9 percent?",
+        "xaxis": {
+          "title": "patient_id"
+        },
+        "yaxis": {
+          "title": "latest_hba1c"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_02.png"
+  },
+  {
+    "question": "Which anticoagulated patients have no recent INR result?",
+    "sql": "SELECT p.patient_id, p.name, p.age, p.risk_level FROM patients_core p JOIN medications m USING (patient_id) WHERE m.status = 'active' AND (m.medication_class LIKE '%anticoagulant%' OR m.medication_class = 'Vitamin K antagonist') AND NOT EXISTS (SELECT 1 FROM lab_results l WHERE l.patient_id = p.patient_id AND l.component = 'INR' AND l.result_date >= '2026-01-06') GROUP BY p.patient_id ORDER BY p.age DESC LIMIT 15",
+    "insight": "Which anticoagulated patients have no recent INR result? Top segment is PT-D00004 with Patient DEID-BD26382C; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "patient_id": "PT-D00004",
+        "name": "Patient DEID-BD26382C",
+        "age": 47,
+        "risk_level": "needs_review"
+      }
+    ],
+    "row_count": 1,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "PT-D00004"
+          ],
+          "y": [
+            47
+          ],
+          "marker": {
+            "color": [
+              "#2563eb"
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "title": "Which anticoagulated patients have no recent INR result?",
+        "xaxis": {
+          "title": "patient_id"
+        },
+        "yaxis": {
+          "title": "age"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_03.png"
+  },
+  {
+    "question": "Which patients aged 65 and older are missing pneumococcal vaccination?",
+    "sql": "SELECT p.patient_id, p.name, p.age, p.assigned_clinician FROM patients_core p WHERE p.age >= 65 AND NOT EXISTS (SELECT 1 FROM immunizations i WHERE i.patient_id = p.patient_id AND i.vaccine_abbreviation IN ('PPSV23', 'PCV13')) ORDER BY p.age DESC LIMIT 20",
+    "insight": "Which patients aged 65 and older are missing pneumococcal vaccination? No matching rows were returned for this synthetic cohort.",
+    "rows": [],
+    "row_count": 0,
+    "plotly": {
+      "data": [],
+      "layout": {
+        "title": "Which patients aged 65 and older are missing pneumococcal vaccination?"
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_04.png"
+  },
+  {
+    "question": "Which patients are on 8 or more active medications?",
+    "sql": "SELECT p.patient_id, p.name, COUNT(*) AS active_medications, p.age, p.risk_level FROM medications m JOIN patients_core p USING (patient_id) WHERE m.status = 'active' GROUP BY p.patient_id HAVING COUNT(*) >= 8 ORDER BY active_medications DESC LIMIT 15",
+    "insight": "Which patients are on 8 or more active medications? No matching rows were returned for this synthetic cohort.",
+    "rows": [],
+    "row_count": 0,
+    "plotly": {
+      "data": [],
+      "layout": {
+        "title": "Which patients are on 8 or more active medications?"
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_05.png"
+  },
+  {
+    "question": "Compare uncontrolled hypertension rates by care archetype.",
+    "sql": "SELECT p.care_archetype, ROUND(AVG(v.systolic_bp), 1) AS avg_systolic_bp, ROUND(100.0 * SUM(CASE WHEN v.systolic_bp >= 140 THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_readings_over_140 FROM vital_signs v JOIN patients_core p USING (patient_id) GROUP BY p.care_archetype ORDER BY pct_readings_over_140 DESC",
+    "insight": "Compare uncontrolled hypertension rates by care archetype. Top segment is complex_multimorbidity with 155.9; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "care_archetype": "complex_multimorbidity",
+        "avg_systolic_bp": 155.9,
+        "pct_readings_over_140": 100.0
+      },
+      {
+        "care_archetype": "cardiometabolic",
+        "avg_systolic_bp": 151.2,
+        "pct_readings_over_140": 93.8
+      },
+      {
+        "care_archetype": "behavioral_health",
+        "avg_systolic_bp": 135.0,
+        "pct_readings_over_140": 28.6
+      },
+      {
+        "care_archetype": "oncology_surveillance",
+        "avg_systolic_bp": 110.8,
+        "pct_readings_over_140": 0.0
+      }
+    ],
+    "row_count": 4,
+    "plotly": {
+      "data": [
+        {
+          "type": "heatmap",
+          "x": [
+            "avg_systolic_bp",
+            "pct_readings_over_140"
+          ],
+          "y": [
+            "complex_multimorbidity",
+            "cardiometabolic",
+            "behavioral_health",
+            "oncology_surveillance"
+          ],
+          "z": [
+            [
+              155.9,
+              100.0
+            ],
+            [
+              151.2,
+              93.8
+            ],
+            [
+              135.0,
+              28.6
+            ],
+            [
+              110.8,
+              0.0
+            ]
+          ],
+          "colorscale": "Blues",
+          "showscale": true
+        }
+      ],
+      "layout": {
+        "title": "Compare uncontrolled hypertension rates by care archetype.",
+        "xaxis": {
+          "title": "metric"
+        },
+        "yaxis": {
+          "title": "care_archetype"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_06.png"
+  },
+  {
+    "question": "How does appointment no-show rate vary with housing stability?",
+    "sql": "SELECT s.housing_status, COUNT(*) AS past_appointments, ROUND(100.0 * SUM(CASE WHEN a.status = 'No-Show' THEN 1 ELSE 0 END) / COUNT(*), 1) AS no_show_pct FROM appointments a JOIN social_determinants s USING (patient_id) WHERE a.status IN ('Completed', 'Cancelled', 'No-Show', 'Rescheduled') GROUP BY s.housing_status ORDER BY no_show_pct DESC",
+    "insight": "How does appointment no-show rate vary with housing stability? Top segment is temporary housing with 9; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "housing_status": "temporary housing",
+        "past_appointments": 9,
+        "no_show_pct": 11.1
+      },
+      {
+        "housing_status": "stable housing",
+        "past_appointments": 30,
+        "no_show_pct": 0.0
+      }
+    ],
+    "row_count": 2,
+    "plotly": {
+      "data": [
+        {
+          "type": "heatmap",
+          "x": [
+            "past_appointments",
+            "no_show_pct"
+          ],
+          "y": [
+            "temporary housing",
+            "stable housing"
+          ],
+          "z": [
+            [
+              9.0,
+              11.1
+            ],
+            [
+              30.0,
+              0.0
+            ]
+          ],
+          "colorscale": "Blues",
+          "showscale": true
+        }
+      ],
+      "layout": {
+        "title": "How does appointment no-show rate vary with housing stability?",
+        "xaxis": {
+          "title": "metric"
+        },
+        "yaxis": {
+          "title": "housing_status"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_07.png"
+  },
+  {
+    "question": "Which payers cover the most high-risk patients with open care gaps?",
+    "sql": "SELECT i.coverage_type, COUNT(DISTINCT p.patient_id) AS high_risk_patients_with_gaps FROM insurance_policies i JOIN patients_core p USING (patient_id) JOIN care_gaps g ON g.patient_id = p.patient_id AND g.status = 'open' WHERE p.risk_level = 'high' AND i.is_primary = 1 GROUP BY i.coverage_type ORDER BY high_risk_patients_with_gaps DESC",
+    "insight": "Which payers cover the most high-risk patients with open care gaps? No matching rows were returned for this synthetic cohort.",
+    "rows": [],
+    "row_count": 0,
+    "plotly": {
+      "data": [],
+      "layout": {
+        "title": "Which payers cover the most high-risk patients with open care gaps?"
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_08.png"
+  },
+  {
+    "question": "Which medication classes have the lowest adherence scores?",
+    "sql": "SELECT medication_class, ROUND(AVG(adherence_score), 2) AS avg_adherence, COUNT(*) AS medication_count FROM medications WHERE status = 'active' GROUP BY medication_class HAVING COUNT(*) >= 5 ORDER BY avg_adherence ASC LIMIT 10",
+    "insight": "Which medication classes have the lowest adherence scores? No matching rows were returned for this synthetic cohort.",
+    "rows": [],
+    "row_count": 0,
+    "plotly": {
+      "data": [],
+      "layout": {
+        "title": "Which medication classes have the lowest adherence scores?"
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_09.png"
+  },
+  {
+    "question": "Which comorbidity categories are most common among high-risk patients?",
+    "sql": "SELECT pc.category, COUNT(*) AS condition_count FROM patient_conditions pc JOIN patients_core p USING (patient_id) WHERE p.risk_level = 'high' AND pc.is_primary = 0 GROUP BY pc.category ORDER BY condition_count DESC",
+    "insight": "Which comorbidity categories are most common among high-risk patients? No matching rows were returned for this synthetic cohort.",
+    "rows": [],
+    "row_count": 0,
+    "plotly": {
+      "data": [],
+      "layout": {
+        "title": "Which comorbidity categories are most common among high-risk patients?"
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_10.png"
+  },
+  {
+    "question": "Compare average BMI and blood pressure by risk level.",
+    "sql": "SELECT p.risk_level, ROUND(AVG(p.bmi), 1) AS avg_bmi, ROUND(AVG(v.systolic_bp), 1) AS avg_systolic_bp FROM vital_signs v JOIN patients_core p USING (patient_id) GROUP BY p.risk_level ORDER BY avg_systolic_bp DESC",
+    "insight": "Compare average BMI and blood pressure by risk level. Top segment is needs_review with 29.1; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "risk_level": "needs_review",
+        "avg_bmi": 29.1,
+        "avg_systolic_bp": 142.4
+      }
+    ],
+    "row_count": 1,
+    "plotly": {
+      "data": [
+        {
+          "type": "heatmap",
+          "x": [
+            "avg_bmi",
+            "avg_systolic_bp"
+          ],
+          "y": [
+            "needs_review"
+          ],
+          "z": [
+            [
+              29.1,
+              142.4
+            ]
+          ],
+          "colorscale": "Blues",
+          "showscale": true
+        }
+      ],
+      "layout": {
+        "title": "Compare average BMI and blood pressure by risk level.",
+        "xaxis": {
+          "title": "metric"
+        },
+        "yaxis": {
+          "title": "risk_level"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_11.png"
+  },
+  {
+    "question": "Which lab components are most often abnormal?",
+    "sql": "SELECT component, COUNT(*) AS abnormal_results FROM lab_results WHERE flag != 'normal' GROUP BY component ORDER BY abnormal_results DESC LIMIT 12",
+    "insight": "Which lab components are most often abnormal? Top segment is BUN with 3; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "component": "BUN",
+        "abnormal_results": 3
+      },
+      {
+        "component": "Fasting Glucose",
+        "abnormal_results": 3
+      },
+      {
+        "component": "HbA1c",
+        "abnormal_results": 3
+      },
+      {
+        "component": "LDL Cholesterol",
+        "abnormal_results": 2
+      },
+      {
+        "component": "ALT",
+        "abnormal_results": 1
+      },
+      {
+        "component": "BNP",
+        "abnormal_results": 1
+      },
+      {
+        "component": "CO2 (Bicarbonate)",
+        "abnormal_results": 1
+      },
+      {
+        "component": "Calcium",
+        "abnormal_results": 1
+      },
+      {
+        "component": "Chloride",
+        "abnormal_results": 1
+      },
+      {
+        "component": "Creatinine",
+        "abnormal_results": 1
+      },
+      {
+        "component": "Free T4",
+        "abnormal_results": 1
+      },
+      {
+        "component": "Glucose",
+        "abnormal_results": 1
+      }
+    ],
+    "row_count": 12,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "BUN",
+            "Fasting Glucose",
+            "HbA1c",
+            "LDL Cholesterol",
+            "ALT",
+            "BNP",
+            "CO2 (Bicarbonate)",
+            "Calcium",
+            "Chloride",
+            "Creatinine",
+            "Free T4",
+            "Glucose"
+          ],
+          "y": [
+            3,
+            3,
+            3,
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "marker": {
+            "color": [
+              "#2563eb",
+              "#16a34a",
+              "#b45309",
+              "#dc2626",
+              "#0284c7",
+              "#7c3aed",
+              "#0f766e",
+              "#2563eb",
+              "#16a34a",
+              "#b45309",
+              "#dc2626",
+              "#0284c7"
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "title": "Which lab components are most often abnormal?",
+        "xaxis": {
+          "title": "component"
+        },
+        "yaxis": {
+          "title": "abnormal_results"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_12.png"
+  },
+  {
+    "question": "Show open care gaps by priority and owner.",
+    "sql": "SELECT priority, owner, COUNT(*) AS open_gap_count FROM care_gaps WHERE status IN ('open', 'scheduled', 'deferred') GROUP BY priority, owner ORDER BY open_gap_count DESC LIMIT 12",
+    "insight": "Show open care gaps by priority and owner. No matching rows were returned for this synthetic cohort.",
+    "rows": [],
+    "row_count": 0,
+    "plotly": {
+      "data": [],
+      "layout": {
+        "title": "Show open care gaps by priority and owner."
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_13.png"
+  },
+  {
+    "question": "How does evidence completeness vary by language?",
+    "sql": "SELECT preferred_language, ROUND(AVG(data_completeness_score), 2) AS avg_completeness, COUNT(*) AS patient_count FROM patients_core GROUP BY preferred_language ORDER BY avg_completeness ASC",
+    "insight": "How does evidence completeness vary by language? Top segment is English with 0.87; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "preferred_language": "English",
+        "avg_completeness": 0.87,
+        "patient_count": 5
+      }
+    ],
+    "row_count": 1,
+    "plotly": {
+      "data": [
+        {
+          "type": "heatmap",
+          "x": [
+            "avg_completeness",
+            "patient_count"
+          ],
+          "y": [
+            "English"
+          ],
+          "z": [
+            [
+              0.87,
+              5.0
+            ]
+          ],
+          "colorscale": "Blues",
+          "showscale": true
+        }
+      ],
+      "layout": {
+        "title": "How does evidence completeness vary by language?",
+        "xaxis": {
+          "title": "metric"
+        },
+        "yaxis": {
+          "title": "preferred_language"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_14.png"
+  },
+  {
+    "question": "How is the cohort split between synthetic PII and de-identified records?",
+    "sql": "SELECT privacy_class, consent_status, COUNT(*) AS patient_count FROM patients_core GROUP BY privacy_class, consent_status ORDER BY patient_count DESC",
+    "insight": "How is the cohort split between synthetic PII and de-identified records? Top segment is DEIDENTIFIED with full; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "privacy_class": "DEIDENTIFIED",
+        "consent_status": "full",
+        "patient_count": 3
+      },
+      {
+        "privacy_class": "DEIDENTIFIED",
+        "consent_status": "limited_research",
+        "patient_count": 1
+      },
+      {
+        "privacy_class": "PII",
+        "consent_status": "limited_research",
+        "patient_count": 1
+      }
+    ],
+    "row_count": 3,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "DEIDENTIFIED",
+            "DEIDENTIFIED",
+            "PII"
+          ],
+          "y": [
+            3,
+            1,
+            1
+          ],
+          "marker": {
+            "color": [
+              "#2563eb",
+              "#16a34a",
+              "#b45309"
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "title": "How is the cohort split between synthetic PII and de-identified records?",
+        "xaxis": {
+          "title": "privacy_class"
+        },
+        "yaxis": {
+          "title": "patient_count"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_15.png"
+  },
+  {
+    "question": "Which clinicians have the most pending reviews?",
+    "sql": "SELECT assigned_clinician, COUNT(*) AS pending_reviews FROM patients_core WHERE ai_review_status = 'needs_review' GROUP BY assigned_clinician ORDER BY pending_reviews DESC LIMIT 10",
+    "insight": "Which clinicians have the most pending reviews? Top segment is Dr. Owen Martin with 1; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "assigned_clinician": "Dr. Owen Martin",
+        "pending_reviews": 1
+      },
+      {
+        "assigned_clinician": "Dr. Noah Nair",
+        "pending_reviews": 1
+      },
+      {
+        "assigned_clinician": "Dr. Luis Reed",
+        "pending_reviews": 1
+      },
+      {
+        "assigned_clinician": "Dr. Leila Garcia",
+        "pending_reviews": 1
+      },
+      {
+        "assigned_clinician": "Dr. Fatima Alvarez",
+        "pending_reviews": 1
+      }
+    ],
+    "row_count": 5,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "Dr. Owen Martin",
+            "Dr. Noah Nair",
+            "Dr. Luis Reed",
+            "Dr. Leila Garcia",
+            "Dr. Fatima Alvarez"
+          ],
+          "y": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "marker": {
+            "color": [
+              "#2563eb",
+              "#16a34a",
+              "#b45309",
+              "#dc2626",
+              "#0284c7"
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "title": "Which clinicians have the most pending reviews?",
+        "xaxis": {
+          "title": "assigned_clinician"
+        },
+        "yaxis": {
+          "title": "pending_reviews"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_16.png"
+  },
+  {
+    "question": "Show average extraction confidence by imaging modality.",
+    "sql": "SELECT i.modality, ROUND(AVG(s.extraction_confidence), 3) AS avg_confidence FROM imaging_studies i JOIN sessions s ON s.session_id = i.session_id GROUP BY i.modality ORDER BY avg_confidence DESC",
+    "insight": "Show average extraction confidence by imaging modality. Top segment is X-Ray with 0.844; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "modality": "X-Ray",
+        "avg_confidence": 0.844
+      },
+      {
+        "modality": "Fundoscopy",
+        "avg_confidence": 0.84
+      },
+      {
+        "modality": "Document",
+        "avg_confidence": 0.834
+      },
+      {
+        "modality": "MRI",
+        "avg_confidence": 0.824
+      },
+      {
+        "modality": "CT",
+        "avg_confidence": 0.82
+      }
+    ],
+    "row_count": 5,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "X-Ray",
+            "Fundoscopy",
+            "Document",
+            "MRI",
+            "CT"
+          ],
+          "y": [
+            0.844,
+            0.84,
+            0.834,
+            0.824,
+            0.82
+          ],
+          "marker": {
+            "color": [
+              "#2563eb",
+              "#16a34a",
+              "#b45309",
+              "#dc2626",
+              "#0284c7"
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "title": "Show average extraction confidence by imaging modality.",
+        "xaxis": {
+          "title": "modality"
+        },
+        "yaxis": {
+          "title": "avg_confidence"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_17.png"
+  },
+  {
+    "question": "Show high-risk extraction sessions by year.",
+    "sql": "SELECT strftime('%Y', session_date) AS session_year, COUNT(*) AS high_risk_sessions FROM sessions JOIN patients_core USING (patient_id) WHERE risk_level = 'high' GROUP BY session_year ORDER BY session_year",
+    "insight": "Show high-risk extraction sessions by year. No matching rows were returned for this synthetic cohort.",
+    "rows": [],
+    "row_count": 0,
+    "plotly": {
+      "data": [],
+      "layout": {
+        "title": "Show high-risk extraction sessions by year."
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_18.png"
+  },
+  {
+    "question": "How many agent audit events exist by pipeline?",
+    "sql": "SELECT agent_name, COUNT(*) AS event_count FROM audit_log GROUP BY agent_name ORDER BY event_count DESC",
+    "insight": "How many agent audit events exist by pipeline? Top segment is database_intelligence_pipeline with 20; review table rows and chart before using this as demo evidence.",
+    "rows": [
+      {
+        "agent_name": "database_intelligence_pipeline",
+        "event_count": 20
+      },
+      {
+        "agent_name": "image_extraction_pipeline",
+        "event_count": 20
+      }
+    ],
+    "row_count": 2,
+    "plotly": {
+      "data": [
+        {
+          "type": "bar",
+          "x": [
+            "database_intelligence_pipeline",
+            "image_extraction_pipeline"
+          ],
+          "y": [
+            20,
+            20
+          ],
+          "marker": {
+            "color": [
+              "#2563eb",
+              "#16a34a"
+            ]
+          }
+        }
+      ],
+      "layout": {
+        "title": "How many agent audit events exist by pipeline?",
+        "xaxis": {
+          "title": "agent_name"
+        },
+        "yaxis": {
+          "title": "event_count"
+        }
+      }
+    },
+    "matplotlib_png": ".tmp_showcase_validation\\database\\charts\\query_19.png"
+  }
+]

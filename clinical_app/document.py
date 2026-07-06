@@ -32,6 +32,9 @@ SUPPORTED_KNOWLEDGE_BASE_TYPES = {
     "text/markdown": "Markdown",
     "text/plain": "Plain text",
     "application/json": "JSON",
+    "image/jpeg": "JPEG image",
+    "image/png": "PNG image",
+    "image/webp": "WEBP image",
 }
 KNOWLEDGE_BASE_EXTENSION_MIME_TYPES = {
     ".pdf": "application/pdf",
@@ -39,6 +42,10 @@ KNOWLEDGE_BASE_EXTENSION_MIME_TYPES = {
     ".md": "text/markdown",
     ".txt": "text/plain",
     ".json": "application/json",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
 }
 
 
@@ -102,7 +109,7 @@ def validate_knowledge_base_upload(contents: bytes, content_type: str, filename:
     extension = Path(filename or "").suffix.lower()
     expected_type = KNOWLEDGE_BASE_EXTENSION_MIME_TYPES.get(extension)
     if expected_type is None:
-        raise UnsupportedUploadTypeError("Knowledge-base uploads support DOCX, PDF, MD, TXT, and JSON files up to 10 MB")
+        raise UnsupportedUploadTypeError("Knowledge-base uploads support DOCX, PDF, MD, TXT, JSON, JPEG, PNG, and WEBP files up to 10 MB")
 
     normalized_type = _normalize_content_type(content_type)
     declared_type = _coerce_knowledge_base_type(normalized_type, expected_type)
@@ -123,6 +130,8 @@ def validate_knowledge_base_upload(contents: bytes, content_type: str, filename:
             _decode_text(contents)
         except UnicodeDecodeError as exc:
             raise UploadPolicyError("Text document could not be decoded as UTF-8") from exc
+    if expected_type.startswith("image/") and _detect_mime(contents) != expected_type:
+        raise UploadPolicyError("Image signature does not match the filename extension")
 
     return {
         "filename": filename or f"upload{extension}",
@@ -154,6 +163,10 @@ def parse_knowledge_base_upload(contents: bytes, content_type: str, filename: st
     extension = Path(filename or "").suffix.lower()
     if extension == ".pdf":
         parsed = _parse_pdf(contents, metadata)
+        parsed["knowledgeBase"] = True
+        return parsed
+    if extension in {".jpg", ".jpeg", ".png", ".webp"}:
+        parsed = _parse_image(contents, metadata)
         parsed["knowledgeBase"] = True
         return parsed
     if extension == ".docx":
