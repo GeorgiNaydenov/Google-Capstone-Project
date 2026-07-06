@@ -10,7 +10,7 @@ from typing import Annotated, Any
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Response, UploadFile, APIRouter
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Response, UploadFile, APIRouter, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from time import monotonic
@@ -468,7 +468,7 @@ def create_app() -> FastAPI:
 
     @v1_router.post("/assets", status_code=201, tags=["Assets"], responses={201: {"description": "Asset uploaded and recorded successfully"}, **COMMON_RESPONSES})
     async def create_asset(ctx: Context, file: UploadFile = File(...), patient_id: str = Form(...)) -> dict[str, Any]:
-        """Store uploaded bytes inside caller demo session."""
+        """Store uploaded bytes inside caller demo session or process through live agent ETL."""
 
         repo, role, user, _tenant = ctx
         patient_or_404(repo, patient_id)
@@ -484,10 +484,50 @@ def create_app() -> FastAPI:
         ct = str(upload_meta["contentType"])
         fn = str(upload_meta["filename"])
         asset_id = repo.identifier("AST")
-        repo.asset_contents[asset_id] = contents
         preview_url = f"/api/assets/{asset_id}?session={repo.session_id}"
         extracted = parse_upload(contents, ct, fn)
-        repo.uploads[asset_id] = {"assetId": asset_id, "patientId": patient_id, "filename": fn, "contentType": ct, "sizeBytes": len(contents), "previewUrl": preview_url, "createdAt": now(), "extracted": extracted}
+
+        if not repo.is_demo:
+            from capstone_agent import database as capstone_db
+            from capstone_agent.document_processor import process_document
+            
+            # Save file to uploads root on disk for live tenant
+            uploads_dir = Path(capstone_db.active_uploads_root())
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+            dest_filename = f"{asset_id}_{fn}"
+            dest_path = uploads_dir / dest_filename
+            with open(dest_path, "wb") as f:
+                f.write(contents)
+            
+            # Run document processor ETL (parsing, chunking, Gemini structure)
+            try:
+                res = process_document(dest_path, patient_id)
+                if "error" not in res:
+                    extracted["textPreview"] = res.get("text_preview", extracted.get("textPreview", ""))
+                    extracted["pageCount"] = res.get("page_count", extracted.get("pageCount", 1))
+            except Exception:
+                preview_text = extracted.get("textPreview") or f"Document text fallback for {fn}"
+                capstone_db.store_document(
+                    document_id=asset_id,
+                    filename=fn,
+                    content_type=ct,
+                    file_path=str(dest_path),
+                    raw_text=preview_text,
+                    page_count=extracted.get("pageCount", 1),
+                    patient_id=patient_id,
+                    gemini_analysis="Mock clinical analysis fallback (no credentials)."
+                )
+                from capstone_agent.document_processor import chunk_text
+                chunks = chunk_text(preview_text)
+                chunk_dicts = [{"index": c["index"], "text": c["text"], "page": 1} for c in chunks]
+                capstone_db.store_document_chunks(asset_id, chunk_dicts, patient_id)
+
+            repo.asset_contents[asset_id] = contents
+            repo.uploads[asset_id] = {"assetId": asset_id, "patientId": patient_id, "filename": fn, "contentType": ct, "sizeBytes": len(contents), "previewUrl": preview_url, "createdAt": now(), "extracted": extracted, "filePath": str(dest_path)}
+        else:
+            repo.asset_contents[asset_id] = contents
+            repo.uploads[asset_id] = {"assetId": asset_id, "patientId": patient_id, "filename": fn, "contentType": ct, "sizeBytes": len(contents), "previewUrl": preview_url, "createdAt": now(), "extracted": extracted}
+
         repo.log("asset_uploaded", user, role, patient_id=patient_id, asset_id=asset_id)
         return {"assetId": asset_id, "previewUrl": preview_url, "extracted": extracted}
 
@@ -512,6 +552,48 @@ def create_app() -> FastAPI:
         asset_id = repo.identifier("KB")
         preview_url = f"/api/assets/{asset_id}?session={repo.session_id}"
         extracted = parse_knowledge_base_upload(contents, ct, fn)
+
+        if not repo.is_demo:
+            from capstone_agent import database as capstone_db
+            from capstone_agent.document_processor import process_document
+
+            # Save file to uploads root on disk for live tenant
+            uploads_dir = Path(capstone_db.active_uploads_root())
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+            dest_filename = f"{asset_id}_{fn}"
+            dest_path = uploads_dir / dest_filename
+            with open(dest_path, "wb") as f:
+                f.write(contents)
+
+            # Run document processor ETL
+            try:
+                res = process_document(dest_path, patient_id)
+                if "error" not in res:
+                    extracted["textPreview"] = res.get("text_preview", extracted.get("textPreview", ""))
+                    extracted["pageCount"] = res.get("page_count", extracted.get("pageCount", 1))
+            except Exception:
+                preview_text = extracted.get("textPreview") or f"Document text fallback for {fn}"
+                capstone_db.store_document(
+                    document_id=asset_id,
+                    filename=fn,
+                    content_type=ct,
+                    file_path=str(dest_path),
+                    raw_text=preview_text,
+                    page_count=extracted.get("pageCount", 1),
+                    patient_id=patient_id,
+                    gemini_analysis="Mock clinical analysis fallback (no credentials)."
+                )
+                from capstone_agent.document_processor import chunk_text
+                chunks = chunk_text(preview_text)
+                chunk_dicts = [{"index": c["index"], "text": c["text"], "page": 1} for c in chunks]
+                capstone_db.store_document_chunks(asset_id, chunk_dicts, patient_id)
+
+            repo.asset_contents[asset_id] = contents
+            repo.uploads[asset_id] = {"assetId": asset_id, "patientId": patient_id, "filename": fn, "contentType": ct, "sizeBytes": len(contents), "previewUrl": preview_url, "createdAt": now(), "extracted": extracted, "knowledgeBase": True, "filePath": str(dest_path)}
+        else:
+            repo.asset_contents[asset_id] = contents
+            repo.uploads[asset_id] = {"assetId": asset_id, "patientId": patient_id, "filename": fn, "contentType": ct, "sizeBytes": len(contents), "previewUrl": preview_url, "createdAt": now(), "extracted": extracted, "knowledgeBase": True}
+
         preview_text = str(extracted.get("textPreview") or "").strip()
         if not preview_text:
             pages = extracted.get("pages") if isinstance(extracted.get("pages"), list) else []
@@ -519,11 +601,163 @@ def create_app() -> FastAPI:
         if not preview_text:
             preview_text = f"{fn} indexed without local text preview."
 
-        repo.asset_contents[asset_id] = contents
-        repo.uploads[asset_id] = {"assetId": asset_id, "patientId": patient_id, "filename": fn, "contentType": ct, "sizeBytes": len(contents), "previewUrl": preview_url, "createdAt": now(), "extracted": extracted, "knowledgeBase": True}
         repo.evidence.setdefault(patient_id, []).insert(0, {"source_id": asset_id, "source_type": "document", "date": now()[:10], "text": f"{fn}: {preview_text}", "asset_id": asset_id, "filename": fn})
         repo.log("knowledge_base_asset_uploaded", user, role, patient_id=patient_id, asset_id=asset_id)
         return {"assetId": asset_id, "patientId": patient_id, "previewUrl": preview_url, "evidenceId": asset_id, "extracted": extracted}
+
+    @v1_router.post("/import", status_code=201, tags=["Admin"], responses={201: {"description": "Ingested and went through the ETL of a PDF, image, or database intelligence cohort"}, **COMMON_RESPONSES})
+    async def import_data(
+        ctx: Context,
+        request: Request,
+        import_type: str | None = Form(None),  # "document" or "database"
+        patient_id: str = Form(""),
+        file: UploadFile | None = File(None)
+    ) -> dict[str, Any]:
+        """Import PDF/image documents or seed database intelligence cohort."""
+
+        repo, role, user, _tenant = ctx
+        if repo.is_demo:
+            raise HTTPException(400, "Import is only supported in live (real tenant) mode.")
+
+        # If Content-Type is application/json, parse JSON body
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            body = await request.json()
+            import_type = body.get("import_type") or body.get("importType")
+            patient_id = body.get("patient_id") or body.get("patientId", "")
+
+        if not import_type:
+            raise HTTPException(422, "import_type is required")
+
+        from capstone_agent import database as capstone_db
+
+        if import_type == "document":
+            if not file:
+                raise HTTPException(422, "File is required for document import")
+            if not patient_id:
+                raise HTTPException(422, "patientId is required for document import")
+            
+            contents = await file.read()
+            if not contents:
+                raise HTTPException(422, "Uploaded file is empty")
+            
+            ct = file.content_type or "application/octet-stream"
+            fn = file.filename or "upload"
+            
+            try:
+                upload_meta = validate_upload(contents, ct, fn)
+            except UploadPolicyError:
+                try:
+                    upload_meta = validate_knowledge_base_upload(contents, ct, fn)
+                except UploadPolicyError as exc2:
+                    raise HTTPException(exc2.status_code, str(exc2)) from exc2
+            
+            ct = str(upload_meta["contentType"])
+            fn = str(upload_meta["filename"])
+            asset_id = repo.identifier("AST")
+            
+            # Save file to disk
+            uploads_dir = Path(capstone_db.active_uploads_root())
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+            dest_filename = f"{asset_id}_{fn}"
+            dest_path = uploads_dir / dest_filename
+            with open(dest_path, "wb") as f:
+                f.write(contents)
+                
+            # Process via document_processor ETL
+            from capstone_agent.document_processor import process_document
+            
+            preview_url = f"/api/assets/{asset_id}?session={repo.session_id}"
+            extracted = parse_upload(contents, ct, fn)
+            
+            try:
+                res = process_document(dest_path, patient_id)
+                if "error" in res:
+                    raise RuntimeError(res["error"])
+                doc_id = res.get("document_id")
+                page_count = res.get("page_count")
+                chunk_count = res.get("chunk_count")
+                extracted["textPreview"] = res.get("text_preview", extracted.get("textPreview", ""))
+                extracted["pageCount"] = res.get("page_count", extracted.get("pageCount", 1))
+            except Exception:
+                doc_id = asset_id
+                page_count = extracted.get("pageCount", 1)
+                chunk_count = 1
+                preview_text = extracted.get("textPreview") or f"Document text fallback for {fn}"
+                
+                capstone_db.store_document(
+                    document_id=doc_id,
+                    filename=fn,
+                    content_type=ct,
+                    file_path=str(dest_path),
+                    raw_text=preview_text,
+                    page_count=page_count,
+                    patient_id=patient_id,
+                    gemini_analysis="Mock clinical analysis fallback (no credentials)."
+                )
+                from capstone_agent.document_processor import chunk_text
+                chunks = chunk_text(preview_text)
+                chunk_dicts = [{"index": c["index"], "text": c["text"], "page": 1} for c in chunks]
+                capstone_db.store_document_chunks(doc_id, chunk_dicts, patient_id)
+            
+            repo.asset_contents[asset_id] = contents
+            repo.uploads[asset_id] = {
+                "assetId": asset_id,
+                "patientId": patient_id,
+                "filename": fn,
+                "contentType": ct,
+                "sizeBytes": len(contents),
+                "previewUrl": preview_url,
+                "createdAt": now(),
+                "extracted": extracted,
+                "filePath": str(dest_path),
+            }
+            repo.log("asset_imported", user, role, patient_id=patient_id, asset_id=asset_id)
+            return {
+                "status": "success",
+                "message": f"Successfully imported and ran ETL on document '{fn}'",
+                "assetId": asset_id,
+                "documentId": doc_id,
+                "pageCount": page_count,
+                "chunkCount": chunk_count
+            }
+            
+        elif import_type == "database":
+            import sqlite3
+            from datetime import date
+            
+            db_path = capstone_db.active_db_path()
+            try:
+                from scripts.generate_database_showcase import seed_database
+                
+                # Initialize the database schema if it doesn't exist
+                capstone_db.init_db(seed=False)
+                
+                with sqlite3.connect(db_path) as conn:
+                    conn.row_factory = sqlite3.Row
+                    row_counts = seed_database(
+                        conn=conn,
+                        patient_count=5,
+                        seed=12345,
+                        anchor_date=date(2026, 7, 5),
+                        years=4,
+                        patient_prefix="PT-L",
+                        demo_platform="primary"
+                    )
+                
+                repo._hydrate_from_database()
+                repo.log("database_intelligence_imported", user, role, details=json.dumps(row_counts))
+                
+                return {
+                    "status": "success",
+                    "message": "Successfully imported and ran ETL on database intelligence cohort",
+                    "rowCounts": row_counts
+                }
+            except Exception as e:
+                raise HTTPException(500, f"Database import failed: {e}")
+        else:
+            raise HTTPException(422, f"Unsupported import type: {import_type}")
+
 
     @v1_router.get("/knowledge-base/assets", tags=["Assets"], responses={200: {"description": "List indexed knowledge-base documents, optionally scoped to one patient"}, **COMMON_RESPONSES})
     def knowledge_base_assets(ctx: Context, patient_id: str | None = None) -> list[dict[str, Any]]:
@@ -638,7 +872,7 @@ def create_app() -> FastAPI:
             file_bytes = repo.asset_contents.get(asset_ids[0])
             file_mime = repo.uploads[asset_ids[0]].get("contentType", "application/octet-stream")
             extracted_meta = repo.uploads[asset_ids[0]].get("extracted", {})
-            item = {"id": run_id, "workflow": "extraction", "status": "running", "agentName": "image_extraction_pipeline", "confidence": 0.0, "createdAt": now(), "auditId": audit["audit_id"], "traceId": f"TRACE-{run_id}", "steps": [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "running", "detail": "ADK orchestrator routing to extraction pipeline", "timestamp": now()}], "evidence": evidence_list, "result": {"patientId": patient_id, "fields": {}, "toolCalls": [], "storageReceipts": [], "persisted": False, "extractedContent": extracted_meta}, "review": None}
+            item = {"id": run_id, "workflow": "extraction", "status": "running", "agentName": "image_extraction_pipeline", "confidence": 0.0, "createdAt": now(), "auditId": audit["audit_id"], "traceId": f"TRACE-{run_id}", "steps": [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "running", "detail": "Routing to the clinical evidence extraction pipeline", "timestamp": now()}], "evidence": evidence_list, "result": {"patientId": patient_id, "fields": {}, "toolCalls": [], "storageReceipts": [], "persisted": False, "extractedContent": extracted_meta}, "review": None}
             repo.runs[run_id] = item
             try:
                 live_result = await execute_live(
@@ -851,6 +1085,10 @@ def create_app() -> FastAPI:
         """Execute evidence-grounded Q&A — live agent or deterministic demo."""
 
         repo, role, user, _tenant = ctx
+        if repo.is_demo:
+            # Validate before logging so a 404 never produces a fake
+            # "question_answered" audit event for a request that never ran.
+            patient_or_404(repo, body.patient_id)
         run_id = repo.identifier("RUN")
         audit = repo.log("question_answered", user, role, patient_id=body.patient_id, run_id=run_id)
 
@@ -858,7 +1096,7 @@ def create_app() -> FastAPI:
             source_types_str = ",".join(body.source_types) if body.source_types else "all"
             local_evidence = repo.evidence.get(body.patient_id, [])
             evidence_views = [{"id": e["source_id"], "label": f"{e['source_type'].title()} evidence - {e['date']}", "kind": e["source_type"], "excerpt": e["text"], **({"sourceUrl": f"/api/assets/{e['asset_id']}?session={repo.session_id}"} if e.get("asset_id") else {})} for e in local_evidence[:5]]
-            item = {"id": run_id, "workflow": "qa", "status": "running", "agentName": "patient_qa_pipeline", "confidence": 0.0, "createdAt": now(), "auditId": audit["audit_id"], "traceId": f"TRACE-{run_id}", "steps": [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "running", "detail": "ADK orchestrator routing to Q&A pipeline", "timestamp": now()}], "evidence": evidence_views, "result": {"answer": "", "question": body.question, "patientId": body.patient_id, "toolCalls": []}}
+            item = {"id": run_id, "workflow": "qa", "status": "running", "agentName": "patient_qa_pipeline", "confidence": 0.0, "createdAt": now(), "auditId": audit["audit_id"], "traceId": f"TRACE-{run_id}", "steps": [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "running", "detail": "Routing to the patient Q&A pipeline", "timestamp": now()}], "evidence": evidence_views, "result": {"answer": "", "question": body.question, "patientId": body.patient_id, "toolCalls": []}}
             repo.runs[run_id] = item
             patient_data = repo.patients.get(body.patient_id, {})
             evidence_text = "\n".join(e["text"] for e in local_evidence[:10])
@@ -883,7 +1121,7 @@ def create_app() -> FastAPI:
                 raise HTTPException(500, f"Live agent execution failed: {exc}")
             return item
 
-        patient = patient_or_404(repo, body.patient_id)
+        patient = repo.patients[body.patient_id]
         source_filter = list(body.source_types)
         requested_source = body.filters.get("source")
         if not source_filter and requested_source not in (None, "", "all"):
@@ -912,7 +1150,7 @@ def create_app() -> FastAPI:
         audit = repo.log("database_preview_generated", user, role, run_id=run_id)
 
         if not repo.is_demo:
-            item = {"id": run_id, "workflow": "database", "status": "running", "agentName": "db_intelligence_pipeline", "createdAt": now(), "auditId": audit["audit_id"], "traceId": f"TRACE-{run_id}", "steps": [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "running", "detail": "ADK orchestrator routing to database pipeline", "timestamp": now()}], "evidence": [], "result": {"question": body.question, "sql": "", "safe": False, "readOnly": True, "tables": [], "toolCalls": []}}
+            item = {"id": run_id, "workflow": "database", "status": "running", "agentName": "db_intelligence_pipeline", "createdAt": now(), "auditId": audit["audit_id"], "traceId": f"TRACE-{run_id}", "steps": [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "running", "detail": "Routing to the population insights pipeline", "timestamp": now()}], "evidence": [], "result": {"question": body.question, "sql": "", "safe": False, "readOnly": True, "tables": [], "toolCalls": []}}
             repo.runs[run_id] = item
             try:
                 live_result = await execute_live(
@@ -984,7 +1222,6 @@ def create_app() -> FastAPI:
             raise HTTPException(400, f"SQL rejected: {verdict['reason']}")
 
         item["status"] = "running"
-        item["steps"].append({"id": f"{run_id}-S{len(item['steps']) + 1}", "name": "Query execution", "status": "running", "detail": "Executing approved read-only SQL", "timestamp": now()})
 
         res = clinical_schemas.execute_query(sql)
         if res.get("error"):

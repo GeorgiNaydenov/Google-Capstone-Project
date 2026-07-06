@@ -42,7 +42,8 @@ steps:
       - '--port=8080'
       - '--memory=1Gi'
       - '--max-instances=1'
-      - '--set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,HIPAA_MODE=TRUE'
+      - '--set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=FALSE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,HIPAA_MODE=TRUE,MEMORY_BACKEND=vertex,SESSION_BACKEND=memory,ENABLE_TRACING=TRUE,TRACE_EXPORTER=gcp,CLINICAL_DATA_DIR=/data'
+      - '--update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest'
 
 images:
   - 'gcr.io/$PROJECT_ID/clinical-ai-command-center'

@@ -661,7 +661,7 @@ def generate_clinical_note(rng: random.Random, patient: dict[str, Any], diagnosi
     """Compose a realistic multi-paragraph clinician progress note."""
 
     pronoun = "He" if patient["sex"] == "Male" else "She"
-    display = f"{patient['last_name']}, {patient['first_name']}"
+    display = patient["deid_token"] if patient["privacy_class"] == "DEIDENTIFIED" else patient["name"]
     symptom = rng.choice(["mild fatigue", "occasional dyspnea on exertion",
                           "intermittent headaches", "mild lower extremity edema",
                           "stable appetite with no weight change"])

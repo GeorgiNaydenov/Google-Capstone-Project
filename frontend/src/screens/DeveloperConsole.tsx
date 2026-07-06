@@ -19,6 +19,7 @@ const PRESET_ENDPOINTS: Endpoint[] = [
   { method: "POST", path: "/api/v1/orchestrate", description: "Classify user natural language request and output a workflow plan", defaultBody: JSON.stringify({ query: "show me all patients with high risk of lung cancer", patientId: "PT-8829" }, null, 2) },
   { method: "POST", path: "/api/v1/runs/qa", description: "Execute patient-scoped grounded Q&A", defaultBody: JSON.stringify({ patientId: "PT-8829", question: "What is the primary tumor size?", source_types: ["text", "image"], filters: { dateRange: "30d" } }, null, 2) },
   { method: "POST", path: "/api/v1/runs/database/preview", description: "Generate safe read-only SQL query for population questions", defaultBody: JSON.stringify({ question: "How many patients are active?" }, null, 2) },
+  { method: "POST", path: "/api/v1/import", description: "Import patient-cohort data or documents through agent ETL (live mode only)", defaultBody: JSON.stringify({ importType: "database" }, null, 2) },
   { method: "GET", path: "/api/v2/health", description: "Fetch advanced system health checking database and storage connectivity" },
   { method: "GET", path: "/api/v2/mcp/tools", description: "List all dynamic tools registered on the FastMCP clinical server" },
   { method: "GET", path: "/api/v2/a2a/card", description: "Retrieve Agent Card metadata for Agent-to-Agent discovery" },

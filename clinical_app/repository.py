@@ -75,7 +75,7 @@ EVIDENCE = {
 
 RESEARCH_NOTIFICATIONS = [
     {"id": "NTF-001", "title": "Diuretic change below confidence", "detail": "PT-1029 extraction scored 76%; clinician verification required.", "severity": "critical", "agent": "Validation Agent", "read": False, "route": "/app/inbox"},
-    {"id": "NTF-002", "title": "High-risk cohort increased", "detail": "Four patients crossed the high-risk threshold this week.", "severity": "info", "agent": "Database Intelligence Agent", "read": False, "route": "/app/overview"},
+    {"id": "NTF-002", "title": "High-risk cohort increased", "detail": "Four patients crossed the high-risk threshold this week.", "severity": "info", "agent": "Population Insights Agent", "read": False, "route": "/app/overview"},
     {"id": "NTF-003", "title": "Re-run extraction with high resolution OCR", "detail": "PT-8829 has a prior extraction below the preferred confidence target.", "severity": "warning", "agent": "Image Quality Agent", "read": False, "route": "/app/extraction?patient=PT-8829"},
 ]
 
@@ -112,8 +112,8 @@ NORTHSTAR_EVIDENCE = {
 
 NORTHSTAR_NOTIFICATIONS = [
     {"id": "NTF-N01", "title": "Hepatitis staging below confidence", "detail": "PT-8216 fibrosis staging scored 71%; clinician verification required.", "severity": "critical", "agent": "Validation Agent", "read": False, "route": "/app/inbox"},
-    {"id": "NTF-N02", "title": "AAA surveillance interval exceeded", "detail": "PT-6934 aneurysm grew 4mm in six months; vascular review recommended.", "severity": "warning", "agent": "Database Intelligence Agent", "read": False, "route": "/app/overview"},
-    {"id": "NTF-N03", "title": "Weekly cohort export completed", "detail": "Northstar Health population export finished with 12 patient records.", "severity": "info", "agent": "Database Intelligence Agent", "read": False, "route": "/app/database"},
+    {"id": "NTF-N02", "title": "AAA surveillance interval exceeded", "detail": "PT-6934 aneurysm grew 4mm in six months; vascular review recommended.", "severity": "warning", "agent": "Population Insights Agent", "read": False, "route": "/app/overview"},
+    {"id": "NTF-N03", "title": "Weekly cohort export completed", "detail": "Northstar Health population export finished with 12 patient records.", "severity": "info", "agent": "Population Insights Agent", "read": False, "route": "/app/database"},
 ]
 
 

@@ -416,7 +416,7 @@ progress.success::-webkit-progress-value { background: var(--green); }
 
 /* Extraction */
 .extraction-layout { display: grid; grid-template-columns: 280px minmax(520px, 1fr) 290px; align-items: start; gap: 12px; }
-.wizard-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+.wizard-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
 .wizard-steps button { display: grid; min-height: 58px; grid-template-columns: 26px minmax(0, 1fr); gap: 2px 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 6px; background: #fff; color: #334155; text-align: left; }
 .wizard-steps button:not(:disabled):hover { border-color: #93c5fd; background: #f8fbff; }
 .wizard-steps button.active { border-color: var(--blue); background: #eff6ff; box-shadow: inset 0 -2px var(--blue); }
@@ -426,36 +426,30 @@ progress.success::-webkit-progress-value { background: var(--green); }
 .wizard-steps strong, .wizard-steps small { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wizard-steps strong { font-size: 13px; }
 .wizard-steps small { font-size: 11px; }
+/* Exactly one of the three columns is shown per wizard step. Every hide
+   rule below targets .extraction-source / .extraction-center /
+   .extraction-review by class - never the bare `aside` tag, since both
+   side columns are <aside> elements and a tag selector would match both. */
 .wizard-layout { grid-template-columns: minmax(0, 1fr); }
 .wizard-layout.step-source > .extraction-center, .wizard-layout.step-source > .extraction-review,
-.wizard-layout.step-execution > aside, .wizard-layout.step-execution > .extraction-review,
-.wizard-layout.step-output > aside, .wizard-layout.step-output > .extraction-review,
-.wizard-layout.step-review > aside, .wizard-layout.step-review > .extraction-center { display: none; }
-.wizard-layout.step-execution .output-tabs, .wizard-layout.step-execution .output-tabs + .card,
-.wizard-layout.step-output .extraction-center > .card:first-child { display: none; }
-.wizard-layout.step-source > aside { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 12px; }
-.wizard-layout.step-source > aside > .card:first-child { grid-column: 1 / -1; }
-.wizard-layout.step-source .synthetic-source-panel { grid-template-columns: minmax(0, 1fr) 310px; align-items: start; }
-.wizard-layout.step-source .synthetic-preview { min-height: clamp(420px, 62vh, 720px); }
-.wizard-layout.step-source .synthetic-preview img { max-height: clamp(420px, 62vh, 720px); }
-.wizard-layout.step-source .synthetic-source-grid { max-height: clamp(320px, 50vh, 540px); grid-template-columns: minmax(0, 1fr); overflow: auto; padding-right: 2px; }
-.wizard-layout.step-source .synthetic-source-panel > .muted { grid-column: 2; margin: 0; font-size: 11px; line-height: 1.45; }
-.wizard-layout.step-source .upload-zone { min-height: clamp(420px, 58vh, 680px); }
-.wizard-layout.step-source .upload-zone img { max-height: clamp(390px, 54vh, 640px); }
-.wizard-layout.step-source .card:first-child .button.full { justify-self: end; width: min(340px, calc(100% - 24px)); }
+.wizard-layout.step-execution > .extraction-source, .wizard-layout.step-execution > .extraction-review,
+.wizard-layout.step-review > .extraction-source { display: none; }
+.wizard-layout.step-execution .output-tabs, .wizard-layout.step-execution .output-tabs + .card { display: none; }
+.wizard-layout.step-review .extraction-center > .card:first-child { display: none; }
 .extraction-layout aside .card, .extraction-center .card { margin-bottom: 12px; }
 .extraction-layout .card > label { margin: 12px; }
-.upload-zone { display: grid; min-height: 210px; place-items: center; align-content: center; gap: 7px; padding: 12px; border: 1px dashed #94a3b8; border-radius: 5px; background: #f8fafc; color: #475569; text-align: center; }
+.upload-zone { display: grid; min-height: clamp(300px, 42vh, 520px); min-width: 0; place-items: center; align-content: center; gap: 7px; padding: 12px; border: 1px dashed #94a3b8; border-radius: 5px; background: #f8fafc; color: #475569; text-align: center; overflow: hidden; }
 .upload-zone.dragging { border-color: var(--blue); background: #eff6ff; }
 .upload-zone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.upload-zone img { width: 100%; max-height: 210px; object-fit: contain; }
+.upload-zone img { max-width: 100%; min-width: 0; max-height: clamp(280px, 38vh, 480px); object-fit: contain; }
 .upload-zone strong { font-size: 13px; }
 .upload-zone small { font-size: 11px; }
 .upload-icon { display: inline-flex; align-items: center; justify-content: center; min-width: 58px; height: 26px; padding: 0 10px; border-radius: 99px; background: var(--blue-soft); color: var(--blue-dark); font-size: 11px; font-weight: 800; text-transform: uppercase; }
-.synthetic-source-panel { display: grid; gap: 10px; margin: 0 12px 12px; }
-.synthetic-preview { display: grid; min-height: 168px; place-items: center; border: 1px solid var(--border); border-radius: 6px; background: #0f172a; overflow: hidden; }
-.synthetic-preview img { display: block; width: 100%; max-height: 210px; object-fit: contain; }
-.synthetic-source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.synthetic-source-panel { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 10px; margin: 0 12px 12px; }
+.synthetic-preview { display: grid; min-height: clamp(320px, 46vh, 560px); min-width: 0; place-items: center; border: 1px solid var(--border); border-radius: 6px; background: #0f172a; overflow: hidden; }
+.synthetic-preview img { display: block; max-width: 100%; min-width: 0; max-height: clamp(320px, 46vh, 560px); object-fit: contain; }
+.synthetic-source-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; max-height: clamp(320px, 50vh, 540px); overflow: auto; padding-right: 2px; min-width: 0; }
+.synthetic-source-panel > .muted { grid-column: 2; margin: 0; font-size: 11px; line-height: 1.45; }
 .synthetic-source-grid button { display: grid; min-height: 62px; align-content: center; gap: 3px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: #334155; text-align: left; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
 .synthetic-source-grid button:hover { border-color: #93c5fd; box-shadow: 0 8px 18px #1d4ed812; transform: translateY(-1px); }
 .synthetic-source-grid button.active { border-color: var(--blue); background: #eff6ff; box-shadow: inset 3px 0 var(--blue); }

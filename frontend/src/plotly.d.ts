@@ -5,6 +5,7 @@ declare module "plotly.js-dist-min" {
 
   const Plotly: {
     react: (element: HTMLElement, data: PlotlyFigureData[], layout?: PlotlyLayout, config?: PlotlyConfig) => Promise<void>;
+    newPlot: (element: HTMLElement, data: PlotlyFigureData[], layout?: PlotlyLayout, config?: PlotlyConfig) => Promise<void>;
     purge: (element: HTMLElement) => void;
   };
 

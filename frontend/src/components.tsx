@@ -2,6 +2,21 @@ import { Component, createContext, useCallback, useContext, useEffect, useMemo, 
 import { api } from "./api";
 import type { AgentRun, AuditEvent, AuditEventDetail, Evidence, Patient, Role, ToolCall } from "./types";
 
+// The backend and internal agent orchestration use snake_case pipeline
+// identifiers (e.g. "db_intelligence_pipeline") so the live ADK routing
+// prompt can address them by name. Clinician-facing UI should never show
+// those raw identifiers, so every display site maps through this lookup.
+const PIPELINE_DISPLAY_NAMES: Record<string, string> = {
+  image_extraction_pipeline: "Clinical Evidence Extraction",
+  patient_qa_pipeline: "Patient Q&A",
+  db_intelligence_pipeline: "Population Insights",
+};
+
+export function pipelineDisplayName(name?: string | null): string {
+  if (!name) return "Nexus clinical AI";
+  return PIPELINE_DISPLAY_NAMES[name] ?? name;
+}
+
 export class ErrorBoundary extends Component<{ children: ReactNode; label?: string }, { error: Error | null }> {
   state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) { return { error }; }
@@ -139,7 +154,7 @@ export function AgentStepper({ steps = [], toolCalls = [] }: { steps?: AgentRun[
 }
 
 export function AgentMeta({ run }: { run: AgentRun }) {
-  return <div className="agent-meta"><div><span className="eyebrow">Run</span><code>{run.id}</code></div><div><span className="eyebrow">Agent</span><strong>{run.agentName ?? run.workflow}</strong></div><div><span className="eyebrow">Status</span><StatusBadge tone={run.status}>{run.status}</StatusBadge></div><div><span className="eyebrow">Audit</span><code>{run.auditId ?? "pending"}</code></div></div>;
+  return <div className="agent-meta"><div><span className="eyebrow">Run</span><code>{run.id}</code></div><div><span className="eyebrow">Agent</span><strong>{pipelineDisplayName(run.agentName ?? run.workflow)}</strong></div><div><span className="eyebrow">Status</span><StatusBadge tone={run.status}>{run.status}</StatusBadge></div><div><span className="eyebrow">Audit</span><code>{run.auditId ?? "pending"}</code></div></div>;
 }
 
 export function EvidenceCard({ item, onOpen }: { item: Evidence; onOpen: (item: Evidence) => void }) {
@@ -178,7 +193,7 @@ export function AuditDetailModal({ event, onClose }: { event: AuditEvent | null;
     <div className="agent-meta"><div><span className="eyebrow">Actor</span><strong>{event.actor}</strong></div><div><span className="eyebrow">Entity</span><code>{event.entity}</code></div><div><span className="eyebrow">Result</span><StatusBadge tone="success">{event.result}</StatusBadge></div><div><span className="eyebrow">Recorded</span><code>{event.timestamp}</code></div></div>
     {loading ? <div className="loading"><i/><i/><i/>Loading event detail</div> : <>
       <JsonViewer value={detail?.details ?? { id: event.id, event: event.event, actor: event.actor, entity: event.entity, result: event.result }}/>
-      {run && <div className="audit-linked-run"><div><span className="eyebrow">Linked run</span><code>{run.id}</code><StatusBadge tone={run.status === "completed" ? "success" : run.status}>{run.status}</StatusBadge></div><small>{run.agentName} - {run.workflow} workflow{run.confidence != null ? ` - ${Math.round(run.confidence * 100)}% confidence` : ""}</small><ol>{run.steps.map(step => <li key={step.name}><strong>{step.name}</strong><span>{step.detail || step.status}</span></li>)}</ol></div>}
+      {run && <div className="audit-linked-run"><div><span className="eyebrow">Linked run</span><code>{run.id}</code><StatusBadge tone={run.status === "completed" ? "success" : run.status}>{run.status}</StatusBadge></div><small>{pipelineDisplayName(run.agentName)} - {run.workflow} workflow{run.confidence != null ? ` - ${Math.round(run.confidence * 100)}% confidence` : ""}</small><ol>{run.steps.map(step => <li key={step.name}><strong>{step.name}</strong><span>{step.detail || step.status}</span></li>)}</ol></div>}
       {detail?.patient && <div className="audit-linked-run"><div><span className="eyebrow">Patient</span><code>{detail.patient.id}</code></div><small>{detail.patient.name}</small></div>}
     </>}
     <footer><code>{event.id}</code></footer>
@@ -189,8 +204,24 @@ export function SqlPreview({ sql, safe }: { sql: string; safe: boolean }) {
   return <div className="sql-block"><header><span>Generated SQL - read only</span><StatusBadge tone={safe ? "success" : "danger"}>{safe ? "Safety passed" : "Blocked"}</StatusBadge></header><pre><code>{sql}</code></pre></div>;
 }
 
+// SQL result columns are arbitrary, so the chart infers a numeric column to
+// plot; that column may be a count (COUNT(*)) or a raw metric (MAX(hba1c)).
+// The label must reflect which one it is instead of always saying "records",
+// and a grand total across segments is only meaningful for counts.
+function formatMetricLabel(key: string | undefined): string {
+  if (!key) return "value";
+  return key.replace(/_/g, " ").replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
 export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record<string, unknown>>; variant?: string }) {
   const chartRef = useRef<HTMLDivElement>(null);
+  const metricKey = useMemo(() => {
+    const entries = Object.entries(rows[0] ?? {});
+    const numericEntry = entries.find(([, value]) => typeof value === "number") ?? entries.find(([, value]) => !Number.isNaN(Number(value)));
+    return numericEntry?.[0];
+  }, [rows]);
+  const metricLabel = formatMetricLabel(metricKey);
+  const isCountMetric = /count|total|rows|patients|events|segments/i.test(metricKey ?? "");
   const points = useMemo(() => rows.slice(0, 10).map((row, index) => {
     const entries = Object.entries(row);
     const valueEntry = entries.find(([, value]) => typeof value === "number") ?? entries.find(([, value]) => !Number.isNaN(Number(value)));
@@ -198,10 +229,10 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
     return {
       id: String(row.id ?? labelEntry?.[1] ?? index),
       label: String(labelEntry?.[1] ?? `Row ${index + 1}`),
-      value: Number(valueEntry?.[1] ?? 0),
+      value: Math.round(Number(valueEntry?.[1] ?? 0) * 100) / 100,
     };
   }), [rows]);
-  const total = points.reduce((sum, point) => sum + point.value, 0);
+  const total = Math.round(points.reduce((sum, point) => sum + point.value, 0) * 100) / 100;
   const largest = points.reduce((top, point) => point.value > top.value ? point : top, points[0] ?? { label: "none", value: 0 });
   const chartKind = variant.toLowerCase();
   // When rows expose two or more numeric columns, heatmaps render a real
@@ -225,7 +256,7 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       values,
       textinfo: "label+value",
       marker: { colors },
-      hovertemplate: "%{label}<br>%{value} records<extra></extra>",
+      hovertemplate: `%{label}<br>%{value} ${metricLabel}<extra></extra>`,
     } : chartKind.includes("treemap") ? {
       type: "treemap",
       labels: ["Total", ...labels],
@@ -235,7 +266,7 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       branchvalues: "total",
       textinfo: "label+value",
       marker: { colors },
-      hovertemplate: "%{label}<br>%{value} records<extra></extra>",
+      hovertemplate: `%{label}<br>%{value} ${metricLabel}<extra></extra>`,
     } : chartKind.includes("heatmap") ? (matrix ? {
       type: "heatmap",
       x: matrix.keys,
@@ -244,28 +275,28 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       colorscale: "Blues",
       showscale: true,
       texttemplate: "%{z}",
-      hovertemplate: "%{y} - %{x}<br>%{z}<extra></extra>",
+      hovertemplate: `%{y} - %{x}<br>%{z} ${metricLabel}<extra></extra>`,
     } : {
       type: "heatmap",
       x: labels,
-      y: ["records"],
+      y: [metricLabel],
       z: [values],
       colorscale: "Blues",
       showscale: true,
       texttemplate: "%{z}",
-      hovertemplate: "%{x}<br>%{z} records<extra></extra>",
+      hovertemplate: `%{x}<br>%{z} ${metricLabel}<extra></extra>`,
     }) : chartKind.includes("box") ? {
       type: "box",
       y: values,
       x: labels,
       boxpoints: "all",
-      marker: { color: "#2563eb" },
-      hovertemplate: "%{x}<br>%{y} records<extra></extra>",
+      marker: { color: labels.map((_, index) => colors[index % colors.length]) },
+      hovertemplate: `%{x}<br>%{y} ${metricLabel}<extra></extra>`,
     } : chartKind.includes("histogram") ? {
       type: "histogram",
       x: values,
       marker: { color: "#2563eb" },
-      hovertemplate: "%{x} records<extra></extra>",
+      hovertemplate: `%{x} ${metricLabel}<extra></extra>`,
     } : {
       type: chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area") || chartKind.includes("scatter") ? "scatter" : "bar",
       mode: chartKind.includes("scatter") ? "markers+text" : chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area") ? "lines+markers+text" : undefined,
@@ -274,19 +305,25 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       y: values,
       text: values.map(value => String(value)),
       textposition: "outside",
-      marker: { color: chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area") || chartKind.includes("scatter") ? "#2563eb" : labels.map((_, index) => colors[index % colors.length]) },
-      hovertemplate: "%{x}<br>%{y} records<extra></extra>",
+      marker: { color: chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area") ? "#2563eb" : labels.map((_, index) => colors[index % colors.length]) },
+      hovertemplate: `%{x}<br>%{y} ${metricLabel}<extra></extra>`,
     };
     const isCartesian = !["pie", "treemap", "heatmap"].some(type => chartKind.includes(type));
+    // Plotly.react() diffs the previous plot in place, but its diff breaks
+    // (throws "Cannot read properties of undefined (reading 'anchor')")
+    // when the trace type flips between cartesian (bar/line/box/...) and
+    // non-cartesian (pie/treemap/heatmap) on the same DOM node. Purging
+    // before every plot forces a clean rebuild and sidesteps that bug.
     void import("plotly.js-dist-min").then(({ default: Plotly }) => {
       if (cancelled || !chartRef.current) return;
-      void Plotly.react(chartRef.current, [trace], {
+      Plotly.purge(chartRef.current);
+      void Plotly.newPlot(chartRef.current, [trace], {
       margin: chartKind.includes("treemap") || chartKind.includes("pie") ? { t: 12, r: 8, b: 12, l: 8 } : { t: 16, r: 12, b: 54, l: 44 },
       height: chartKind.includes("treemap") ? 300 : 250,
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "#f8fafc",
       font: { family: "Inter, system-ui, sans-serif", size: 11, color: "#334155" },
-      yaxis: isCartesian ? { title: "Records", gridcolor: "#e2e8f0", zerolinecolor: "#cbd5e1" } : undefined,
+      yaxis: isCartesian ? { title: metricLabel, gridcolor: "#e2e8f0", zerolinecolor: "#cbd5e1" } : undefined,
       xaxis: isCartesian ? { tickangle: -24 } : undefined,
       annotations: isCartesian && !chartKind.includes("histogram") && !chartKind.includes("box") ? [{ x: largest.label, y: largest.value, text: "largest segment", showarrow: true, arrowhead: 2, ax: 0, ay: -34 }] : [],
       }, { displayModeBar: false, responsive: true });
@@ -296,9 +333,9 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       const element = chartRef.current;
       if (element) void import("plotly.js-dist-min").then(({ default: Plotly }) => Plotly.purge(element));
     };
-  }, [chartKind, largest.label, largest.value, matrix, points, variant]);
+  }, [chartKind, largest.label, largest.value, matrix, metricLabel, points, total, variant]);
 
-  return <figure className="plotly-chart" aria-label="Annotated Plotly query result chart"><figcaption><strong>{variant} - executed SQL visualization</strong><span>{total} records across {points.length} segment{points.length === 1 ? "" : "s"}</span></figcaption><div ref={chartRef} className={chartKind.includes("treemap") ? "treemap-plot" : undefined}/><p>Largest segment: {largest.label} ({largest.value}). Values come from the executed query rows.</p></figure>;
+  return <figure className="plotly-chart" aria-label="Annotated Plotly query result chart"><figcaption><strong>{variant} - executed SQL visualization</strong><span>{points.length} segment{points.length === 1 ? "" : "s"} by {metricLabel}{isCountMetric ? ` - ${total} total` : ""}</span></figcaption><div ref={chartRef} className={chartKind.includes("treemap") ? "treemap-plot" : undefined}/><p>Largest segment: {largest.label} ({largest.value} {metricLabel}). Values come from the executed query rows.</p></figure>;
 }
 
 export function JsonViewer({ value }: { value: unknown }) { return <pre className="json"><code>{JSON.stringify(value, null, 2)}</code></pre>; }

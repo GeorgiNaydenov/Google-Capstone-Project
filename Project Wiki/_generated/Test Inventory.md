@@ -21,6 +21,7 @@ Hand-written companion: [[Testing & Eval]].
 | `test_document_parsing.py` | 8 | Document upload policy and extraction contract tests. |
 | `test_eval.py` | 1 | ADK evaluation harness test (Day 4b). |
 | `test_live_bridge.py` | 18 | Unit tests for the live-mode ADK bridge parsing helpers. |
+| `test_live_ingestion.py` | 1 | Unit tests for live mode ingestion, ETL, and database seeding. |
 | `test_memory.py` | 3 | Tests for memory governance (Day 3b). |
 | `test_orchestration.py` | 6 | Tests for the orchestration building blocks (Day 1b / 2a). |
 | `test_product_integration.py` | 24 | End-to-end contracts joining the clinical UI API to product state. |
@@ -32,4 +33,4 @@ Hand-written companion: [[Testing & Eval]].
 | `test_versioned_api.py` | 5 | Unit tests for the versioned API backend endpoints (V1 and V2). |
 | `test_wiki_sync.py` | 7 | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |
 
-**Total test functions: 244**
+**Total test functions: 245**

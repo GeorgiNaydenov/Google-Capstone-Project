@@ -62,6 +62,7 @@ scripts/
   generate_database_showcase_demo2.py # Generate the second-platform database intelligence demo dataset.
   generate_extraction_showcase.py # Generate production-like extraction packets for the extraction agent.
   generate_extraction_showcase_demo2.py # Generate the second-platform extraction demo asset set.
+  generate_live_test_data.py # Generate a small live test dataset (database cohort, PDF, images) and run ETL ingestion.
   generate_multimodal_patient_showcase.py # Generate multimodal patient bundles for the Q&A agent.
   generate_multimodal_patient_showcase_demo2.py # Generate the second-platform multimodal Q&A demo bundle set.
   run_clinical_app_dev.py   # Run the clinical FastAPI app from the local Windows dev environment.
@@ -78,6 +79,7 @@ tests/
   test_document_parsing.py  # Document upload policy and extraction contract tests.
   test_eval.py              # ADK evaluation harness test (Day 4b).
   test_live_bridge.py       # Unit tests for the live-mode ADK bridge parsing helpers.
+  test_live_ingestion.py    # Unit tests for live mode ingestion, ETL, and database seeding.
   test_memory.py            # Tests for memory governance (Day 3b).
   test_orchestration.py     # Tests for the orchestration building blocks (Day 1b / 2a).
   test_product_integration.py # End-to-end contracts joining the clinical UI API to product state.
