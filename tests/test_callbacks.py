@@ -22,8 +22,9 @@ from capstone_agent.callbacks import (
     tool_authorization_callback,
 )
 
-# A valid-looking secret used to trigger the secret scanner deterministically.
-FAKE_SECRET = "api_key = " + "sk-" + "a" * 24
+def _fake_secret() -> str:
+    """Build a scanner fixture without committing a secret-shaped literal."""
+    return "api_key = " + "sk-" + "a" * 24
 
 
 def _ctx():
@@ -98,7 +99,7 @@ def test_tool_callback_enforces_rate_limit():
 def test_tool_callback_blocks_secrets_in_args():
     result = tool_authorization_callback(
         tool=_tool("example_action"),
-        args={"item_id": "1", "action": FAKE_SECRET},
+        args={"item_id": "1", "action": _fake_secret()},
         tool_context=_ctx(),
     )
     assert result is not None and result["status"] == "error"
@@ -107,7 +108,7 @@ def test_tool_callback_blocks_secrets_in_args():
 # --- Layer 3: output safety (after_model_callback) ---
 
 def test_output_callback_blocks_secret_leak():
-    result = output_safety_callback(_ctx(), _llm_response(f"Here it is: {FAKE_SECRET}"))
+    result = output_safety_callback(_ctx(), _llm_response(f"Here it is: {_fake_secret()}"))
     assert result is not None, "leaked secret should be blocked"
     assert "sensitive information" in result.content.parts[0].text.lower()
 

@@ -15,11 +15,14 @@ try {
   # 1. Run harness audit to ensure indexes and folders are synced and valid
   python scripts/check_harness.py
 
-  # 2. Run formatting and linting
+  # 2. Block committed secret-shaped fixtures and unsafe co-author trailers
+  python scripts/check_source_safety.py
+
+  # 3. Run formatting and linting
   ruff check .
   ruff format --check .
 
-  # 3. Run testing suite (model tests skip without GOOGLE_API_KEY)
+  # 4. Run testing suite (model tests skip without GOOGLE_API_KEY)
   pytest tests/ -v
 } finally {
   Pop-Location

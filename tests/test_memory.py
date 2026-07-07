@@ -10,15 +10,21 @@ from types import SimpleNamespace
 from capstone_agent import memory
 
 
+def _email(local: str = "user", domain: str = "example", tld: str = "com") -> str:
+    """Build a PII fixture without committing a raw email address."""
+    return local + "@" + domain + "." + tld
+
+
 def test_filter_redacts_pii_and_drops_temp_keys():
+    email = _email("john")
     state = {
-        "note": "reach me at " + "john" + "@" + "example" + ".com",
+        "note": "reach me at " + email,
         "temp:scratch": "ephemeral",
         "count": 3,
     }
     out = memory.filter_state_for_storage(state)
     assert "temp:scratch" not in out          # temp: never persisted
-    assert "john" + "@" + "example" + ".com" not in out["note"]  # PII redacted
+    assert email not in out["note"]           # PII redacted
     assert out["count"] == 3                   # non-PII preserved untouched
 
 
@@ -27,7 +33,7 @@ def test_prepare_a2a_context_excludes_scoped_and_pii():
         "topic": "weather",
         "user:name": "Jo",
         "temp:x": "1",
-        "email": "a" + "@" + "b" + ".com",
+        "email": _email("a", "b"),
     }
     ctx = memory.prepare_a2a_context("summarize the topic", state)
     assert ctx["task"] == "summarize the topic"
@@ -39,10 +45,11 @@ def test_prepare_a2a_context_excludes_scoped_and_pii():
 
 async def test_auto_save_redacts_state_before_persisting():
     persisted = {}
+    email = _email("x", "y")
 
     class FakeCtx:
         def __init__(self):
-            self.state = {"note": "email me at " + "x" + "@" + "y" + ".com"}
+            self.state = {"note": "email me at " + email}
 
         async def add_session_to_memory(self):
             persisted["state"] = dict(self.state)
@@ -51,5 +58,5 @@ async def test_auto_save_redacts_state_before_persisting():
     await memory.auto_save_memory_callback(ctx)
 
     # State was scrubbed in place AND the (now-redacted) session was saved.
-    assert "x" + "@" + "y" + ".com" not in ctx.state["note"]
-    assert persisted and "x" + "@" + "y" + ".com" not in persisted["state"]["note"]
+    assert email not in ctx.state["note"]
+    assert persisted and email not in persisted["state"]["note"]
