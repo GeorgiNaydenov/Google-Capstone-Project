@@ -3,6 +3,7 @@
 .gcloudignore
 
 .env
+.env.*
 .env.local
 *.env.local
 

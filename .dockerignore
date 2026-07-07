@@ -1,5 +1,6 @@
 # Secrets — never bake credentials into the image
 .env
+.env.*
 .env.local
 *.env.local
 
