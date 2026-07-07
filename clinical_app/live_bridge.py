@@ -3,7 +3,7 @@
 import asyncio
 import json
 import re
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 
 # Shared across requests so a caller-supplied session_key can resume prior
@@ -11,6 +11,12 @@ from uuid import uuid4
 # lazily inside execute_live so demo tenant sessions never import ADK.
 _session_service: Any = None
 _memory_service: Any = None
+
+# Lean single-purpose agents built once and reused across requests, keyed by
+# execute_live's target parameter. Kept separate from the root agent so the
+# fast preview path never pays the orchestrator routing call or the MCP
+# subprocess startup.
+_target_agents: dict[str, Any] = {}
 
 # Extraction-pipeline tools (assess_image_quality, extract_clinical_text,
 # analyze_clinical_image) take a filesystem path or GCS URI, not inline bytes.
@@ -67,12 +73,22 @@ async def execute_live(
     patient_context: dict[str, Any] | None = None,
     session_key: str | None = None,
     max_attempts: int = 2,
+    on_step: Callable[[list[dict[str, Any]]], None] | None = None,
+    target: str | None = None,
 ) -> dict[str, Any]:
     """Invoke the root agent with a bounded retry on transient model errors.
 
     Only stream-level failures matching _TRANSIENT_PATTERN are retried; any
     other exception (missing ADK, bad credentials, agent bugs) is raised
-    immediately so the caller can surface an honest error.
+    immediately so the caller can surface an honest error. on_step, if given,
+    is called synchronously with the author-steps-so-far every time a new
+    agent starts, so a caller can surface real incremental progress instead
+    of waiting for the whole (often 30s-several-minute) run to finish.
+
+    target selects a lean single-purpose agent instead of the root
+    orchestrator: "sql_draft" runs one schema-grounded NL-to-SQL model call
+    for the database preview (validation and execution stay deterministic
+    and server-side). None keeps the full multi-agent root pipeline.
     """
 
     for attempt in range(1, max_attempts + 1):
@@ -81,6 +97,7 @@ async def execute_live(
                 query, user_id,
                 file_bytes=file_bytes, file_mime=file_mime,
                 patient_context=patient_context, session_key=session_key,
+                on_step=on_step, target=target,
             )
         except Exception as exc:
             if attempt >= max_attempts or not _is_transient(str(exc)):
@@ -96,8 +113,10 @@ async def _execute_once(
     file_mime: str | None = None,
     patient_context: dict[str, Any] | None = None,
     session_key: str | None = None,
+    on_step: Callable[[list[dict[str, Any]]], None] | None = None,
+    target: str | None = None,
 ) -> dict[str, Any]:
-    """Invoke the root agent with optional multimodal content and return structured results.
+    """Invoke the root agent (or a lean target agent) and return structured results.
 
     Imports stay inside this function so demo tenant sessions have no model,
     key, network, or ADK graph dependency. When session_key is provided, the
@@ -112,11 +131,24 @@ async def _execute_once(
         from google.adk.sessions import InMemorySessionService
         from google.genai import types
 
-        from capstone_agent.agent import root_agent
         from capstone_agent.config import redact_secrets
         from capstone_agent.document_processor import UPLOAD_DIR, generate_document_id
         from capstone_agent.memory import create_memory_service
         from capstone_agent.security import redact_pii
+
+        if target is None:
+            # Importing capstone_agent.agent wires the full orchestrator,
+            # including the MCP stdio subprocess — only pay that for runs
+            # that actually need the multi-agent graph.
+            from capstone_agent.agent import root_agent as live_agent
+        elif target == "sql_draft":
+            if "sql_draft" not in _target_agents:
+                from capstone_agent.orchestration import build_sql_draft_agent
+
+                _target_agents["sql_draft"] = build_sql_draft_agent()
+            live_agent = _target_agents["sql_draft"]
+        else:
+            raise ValueError(f"Unknown live execution target: {target}")
     except (ImportError, KeyError) as error:
         raise RuntimeError(f"Live ADK runtime unavailable: {error}") from error
 
@@ -166,7 +198,7 @@ async def _execute_once(
 
     content = types.Content(role="user", parts=parts)
     runner = Runner(
-        agent=root_agent,
+        agent=live_agent,
         app_name=app_name,
         session_service=session_service,
         memory_service=_memory_service,
@@ -180,6 +212,10 @@ async def _execute_once(
         author = getattr(event, "author", None) or "unknown"
         if not author_steps or author_steps[-1]["author"] != author:
             author_steps.append({"author": author, "eventId": getattr(event, "id", None)})
+            if on_step:
+                # A copy: author_steps keeps growing after this call, and the
+                # caller may hold onto what it was given across an await.
+                on_step(list(author_steps))
 
         for fc in event.get_function_calls():
             tool_calls.append({
@@ -212,7 +248,11 @@ async def _execute_once(
     safe_text = redact_pii(redact_secrets(final_text))
 
     fields_source = _string_source(state_outputs, ("structured_output", "refined_output")) or safe_text
-    sql_source = _string_source(state_outputs, ("validated_sql", "generated_sql")) or safe_text
+    # generated_sql is the nl_to_sql stage's own SQL text; validated_sql is the
+    # sql_validator's pass/fail verdict on it ("do not rewrite the SQL
+    # yourself" per its prompt) and normally contains no SELECT statement at
+    # all, so it must never be preferred over the actual SQL source.
+    sql_source = _string_source(state_outputs, ("generated_sql", "validated_sql")) or safe_text
 
     return {
         "finalResponse": safe_text,
@@ -303,7 +343,22 @@ def _extract_confidence(text: str) -> float:
 
 
 def _extract_sql(text: str) -> str:
-    """Extract SQL statement from agent output if present."""
+    """Extract the SQL statement (SELECT or WITH...SELECT CTE) from agent output.
 
-    match = re.search(r"(SELECT\s.+?)(?:;|\Z)", text, re.IGNORECASE | re.DOTALL)
-    return match.group(1).strip() if match else ""
+    A fenced ```sql block is preferred when present — matching bare SELECT
+    against the whole response used to slice a CTE apart by capturing from
+    the first SELECT inside `WITH x AS (SELECT ...)`, which produced
+    unexecutable SQL.
+    """
+
+    fence = re.search(r"```(?:sql)?\s*(.*?)```", text, re.IGNORECASE | re.DOTALL)
+    candidates = ([fence.group(1)] if fence else []) + [text]
+    for candidate in candidates:
+        match = re.search(
+            r"((?:WITH\s+(?:RECURSIVE\s+)?[\w\"]+\s+AS\s*\(|SELECT\s).*?)(?:;|```|\Z)",
+            candidate,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if match:
+            return match.group(1).strip()
+    return ""

@@ -1,5 +1,5 @@
 import type { AgentCatalog, AgentConfig, AgentMonitorRow, AgentRun, AuditEvent, AuditEventDetail, ClinicalNotification, ClinicalSession, ClinicalUser, DashboardData, EvidenceItem, ExtractionSource, KnowledgeBaseAsset, OrchestrationPlan, Patient, PermissionRow, Permissions, Role, SchemaTable, StorageData, SystemHealth, WorkspaceSummary } from "./types";
-import { fallbackAudits, fallbackCatalog, fallbackConfig, fallbackDashboard, fallbackEvidence, fallbackExtractionRun, fallbackKnowledgeBase, fallbackKnowledgeBaseUpload, fallbackMonitoring, fallbackNotifications, fallbackPatients, fallbackPermissions, fallbackQaRun, fallbackReviewRun, fallbackSchema, fallbackSessions, fallbackSqlExecute, fallbackSqlPreview, fallbackStorage, fallbackSummary, fallbackSystemHealth, fallbackUpload, fallbackUsers, syntheticExtractionOptionsForTenant } from "./fallbackData";
+import { fallbackAudits, fallbackCatalog, fallbackConfig, fallbackDashboard, fallbackDatabaseExamples, fallbackEvidence, fallbackExtractionRun, fallbackKnowledgeBase, fallbackKnowledgeBaseUpload, fallbackMonitoring, fallbackNotifications, fallbackPatients, fallbackPermissions, fallbackQaRun, fallbackReviewRun, fallbackSchema, fallbackSessions, fallbackSqlExecute, fallbackSqlPreview, fallbackStorage, fallbackSummary, fallbackSystemHealth, fallbackUpload, fallbackUsers, syntheticExtractionOptionsForTenant } from "./fallbackData";
 
 // Runs minted by the deterministic client-side fallbacks never exist on the
 // backend, so their follow-up calls must resolve locally instead of 404ing.
@@ -66,7 +66,7 @@ export const api = {
   auditEvent: (id: string) => request<AuditEventDetail>(`/audit/${id}`),
   upload: (file: File, patientId: string) => {
     const body = new FormData(); body.append("file", file); body.append("patient_id", patientId);
-    return demoMutationFailover(() => request<{ assetId: string; previewUrl?: string; extracted?: Record<string, unknown> }>("/assets", { method: "POST", body }), () => fallbackUpload(file, patientId));
+    return demoMutationFailover(() => request<{ assetId: string; patientId?: string; detectedPatientId?: string; previewUrl?: string; extracted?: Record<string, unknown> }>("/assets", { method: "POST", body }), () => fallbackUpload(file, patientId));
   },
   uploadKnowledgeBase: (file: File, patientId: string) => {
     const body = new FormData(); body.append("file", file); body.append("patient_id", patientId);
@@ -96,6 +96,7 @@ export const api = {
   permissions: () => failover(() => request<Permissions>("/permissions"), () => fallbackPermissions),
   savePermissions: (matrix: PermissionRow[]) => request<Permissions>("/permissions", { method: "PUT", body: JSON.stringify({ matrix }) }),
   schema: () => failover(() => request<SchemaTable[]>("/database/schema"), () => fallbackSchema),
+  databaseExamples: () => failover(() => request<string[]>("/database/examples"), () => fallbackDatabaseExamples),
   summary: () => failover(() => request<WorkspaceSummary>("/summary"), () => fallbackSummary),
   patientEvidence: (id: string) => failover(() => request<EvidenceItem[]>(`/patients/${id}/evidence`), () => fallbackEvidence(id)),
   readNotification: (id: string) => request<ClinicalNotification>(`/notifications/${id}/read`, { method: "POST" }),

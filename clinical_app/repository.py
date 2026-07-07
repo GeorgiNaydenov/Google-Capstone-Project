@@ -174,6 +174,14 @@ import os
 # beside the project for local development. Demo tenants keep no files.
 PROJECT_ROOT = Path(os.environ["CLINICAL_DATA_DIR"]).resolve() if os.environ.get("CLINICAL_DATA_DIR") else Path(__file__).resolve().parents[1]
 
+# Generated showcase assets (databases, PDFs, PNG previews, manifests) ship
+# baked into the image beside the package and must resolve there regardless
+# of CLINICAL_DATA_DIR — that variable relocates the *writable* real-tenant
+# store, not these read-only demo fixtures. Reusing PROJECT_ROOT here made
+# demo tenants look for showcase_data under the mounted volume (empty) and
+# silently fall back to the tiny hardcoded dataset once CLINICAL_DATA_DIR was set.
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+
 
 def _read_app_manifest(directory: Path) -> dict[str, Any]:
     """Read a generated app manifest, falling back to manifest.frontend_contract."""
@@ -200,7 +208,7 @@ def _generated_database_path(database_dir: Path) -> Path | None:
         raw = manifest.get("db_path")
         if raw:
             candidate = Path(str(raw))
-            candidates = [candidate, PROJECT_ROOT / candidate]
+            candidates = [candidate, PACKAGE_ROOT / candidate]
             for item in candidates:
                 if item.is_file():
                     return item
@@ -213,7 +221,7 @@ def _generated_file_path(path_value: Any) -> Path:
     candidate = Path(str(path_value or "").replace("\\", "/"))
     if candidate.is_absolute():
         return candidate
-    return PROJECT_ROOT / candidate
+    return PACKAGE_ROOT / candidate
 
 
 def _monitor_row(baseline: dict[str, Any]) -> dict[str, Any]:
@@ -402,7 +410,7 @@ def load_showcase_dataset(
         for item in mm_manifest.get("syntheticKnowledgeBase", []):
             patient_id = item["patientId"]
             bundle_rel_path = item["bundlePath"]
-            bundle_path = PROJECT_ROOT / bundle_rel_path.replace("\\", "/")
+            bundle_path = PACKAGE_ROOT / bundle_rel_path.replace("\\", "/")
             if not bundle_path.is_file():
                 continue
 
@@ -457,7 +465,7 @@ def load_showcase_dataset(
                 # The generated file exists on disk; keep its resolved path so
                 # the asset route can stream real bytes for previews instead
                 # of 404ing on a seeded upload with no in-memory contents.
-                doc_path = PROJECT_ROOT / doc["path"].replace("\\", "/")
+                doc_path = PACKAGE_ROOT / doc["path"].replace("\\", "/")
                 uploads[doc_id] = {
                     "assetId": doc_id,
                     "patientId": doc["patient_id"],
@@ -565,7 +573,7 @@ def load_showcase_dataset(
 # scripts feed Research Clinic; the demo2 scripts feed Northstar Health.
 GENERATED_RESEARCH = load_showcase_dataset(
     "research_clinic",
-    PROJECT_ROOT / "showcase_data",
+    PACKAGE_ROOT / "showcase_data",
     RESEARCH_NOTIFICATIONS,
     RESEARCH_USERS,
     base_patients=PATIENTS,
@@ -578,7 +586,7 @@ if GENERATED_RESEARCH:
 
 DEMO2_NORTHSTAR = load_showcase_dataset(
     "northstar",
-    PROJECT_ROOT / "showcase_data" / "demo2",
+    PACKAGE_ROOT / "showcase_data" / "demo2",
     NORTHSTAR_NOTIFICATIONS,
     NORTHSTAR_USERS,
     base_patients=NORTHSTAR_PATIENTS,
@@ -842,7 +850,7 @@ class LiveRepository:
     def _governance_db(self) -> Path:
         """Return the SQLite file holding this tenant's users and permissions."""
 
-        return Path(self.db_path) if self.db_path is not None else PROJECT_ROOT / "clinical.db"
+        return Path(self.db_path) if self.db_path is not None else PACKAGE_ROOT / "clinical.db"
 
     def _load_rows(self, database: Any) -> None:
         """Read patients, sessions, and notes from the active database file."""
@@ -912,6 +920,46 @@ class LiveRepository:
         event = {"audit_id": self.identifier("AUD"), "timestamp": now(), "action": action, "actor": actor, "role": role, "details": details}
         self.audit.append(event)
         return event
+
+    def find_patient(self, patient_id: str) -> dict[str, Any] | None:
+        """Return one patient, re-reading the tenant database on a memory miss.
+
+        A live session hydrates its roster once at creation, so patients that
+        reach the store afterwards (ETL ingestion, another session's approved
+        extraction, agent writes) are invisible to that snapshot. Falling back
+        to the database keeps every stored patient addressable from any open
+        session — the Q&A and extraction workflows both resolve patients here.
+        """
+
+        item = self.patients.get(patient_id)
+        if item is not None:
+            return item
+        try:
+            from capstone_agent import database
+        except Exception:
+            return None
+        if self.db_path is not None:
+            with database.tenant_storage(self.db_path, self.uploads_root):
+                return self._load_patient_row(database, patient_id)
+        return self._load_patient_row(database, patient_id)
+
+    def _load_patient_row(self, database: Any, patient_id: str) -> dict[str, Any] | None:
+        """Read a single patients_core row and cache it in the session roster."""
+
+        with database.get_connection() as conn:
+            row = conn.execute(
+                "SELECT patient_id, name, age, sex, risk_level, primary_diagnosis, "
+                "assigned_clinician, last_session_date, data_completeness_score, "
+                "open_tasks, ai_review_status FROM patients_core WHERE patient_id = ?",
+                (patient_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        item = dict(row)
+        item["data_completeness_score"] = float(item.get("data_completeness_score") or 0)
+        item["open_tasks"] = int(item.get("open_tasks") or 0)
+        self.patients[patient_id] = item
+        return item
 
     def add_patient(self, patient_id: str, name: str, **kwargs: Any) -> dict[str, Any]:
         """Register a patient from extraction results."""
@@ -1004,7 +1052,7 @@ class RepositoryRegistry:
                 db_path=PROJECT_ROOT / (tenant.db_filename or "clinical.db"),
                 uploads_root=PROJECT_ROOT / (tenant.uploads_dirname or "uploads"),
             )
-        db_path = PROJECT_ROOT / tenant.db_filename if tenant.db_filename else None
+        db_path = PACKAGE_ROOT / tenant.db_filename if tenant.db_filename else None
         return DemoRepository(DATASETS[tenant.dataset or "research_clinic"], db_path=db_path)
 
     def get(self, session_id: str, tenant: TenantConfig | None = None) -> DemoRepository | LiveRepository:

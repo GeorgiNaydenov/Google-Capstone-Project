@@ -7,6 +7,13 @@ import { ONBOARDING_KEY } from "./Onboarding";
 describe("clinical product shell", () => {
   beforeEach(() => { localStorage.setItem(ONBOARDING_KEY, "done"); });
   afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); sessionStorage.clear(); });
+  function mockPendingMutation(endpoint: RegExp) {
+    vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+      if (init?.method === "POST" && endpoint.test(url)) return new Promise<Response>(() => undefined);
+      return Promise.resolve(new Response(JSON.stringify({ detail: "Gateway unavailable" }), { status: 502, headers: { "Content-Type": "application/json" } }));
+    });
+  }
   it("declares the current primary screen inventory", () => {
     expect(primaryRoutes).toHaveLength(19);
     expect(primaryRoutes).toContain("/app/console");
@@ -27,10 +34,24 @@ describe("clinical product shell", () => {
   it("uses synthetic extraction choices in demo mode", async () => {
     render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
     expect(screen.getByRole("button", { name: /run selected packet/i })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("PT-D00008")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /packet/i }).length).toBeGreaterThanOrEqual(10);
     expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /run selected packet/i }));
     expect(await screen.findByDisplayValue(/Enterprise five-patient clinical packet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Visual extraction board/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Extraction confidence visualization/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Evidence sources for this run/i)).toBeInTheDocument();
+    const citations = screen.getByLabelText("Inline evidence citations");
+    fireEvent.click(within(citations).getAllByRole("button", { name: /PKT-EXT-0002\.pdf/i })[0]);
+    expect(await screen.findByRole("dialog", { name: /evidence source/i })).toBeInTheDocument();
+  });
+  it("shows extraction agent progress while the selected packet is running", async () => {
+    mockPendingMutation(/\/runs\/extraction$/);
+    render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
+    fireEvent.click(await screen.findByRole("button", { name: /run selected packet/i }));
+    expect(await screen.findByRole("status", { name: /extraction agents are working/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/Quality Assessment/i).length).toBeGreaterThan(0);
   });
   it("keeps real upload input for the live tenant", () => {
     sessionStorage.setItem("tenant", "capstone");
@@ -108,12 +129,30 @@ describe("clinical product shell", () => {
     fireEvent.change(await screen.findByPlaceholderText(/ask a longitudinal/i), { target: { value: "What changed between the last two sessions?" } });
     fireEvent.click(screen.getByRole("button", { name: /ask about this patient/i }));
     expect(await screen.findByText(/Answer \+ table \+ visual evidence/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Visual retrieval map/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Retrieved source mix/i)).toBeInTheDocument();
     expect(screen.getByText(/stored knowledge base indicates stable follow-up/i)).toBeInTheDocument();
     expect(screen.getByText(/Evidence cited in this answer/i)).toBeInTheDocument();
     const evidenceImage = screen.getByAltText(/cited visual evidence/i) as HTMLImageElement;
     expect(evidenceImage.getAttribute("src")).toContain("/evidence/demo-retinopathy-intake.png");
     expect(evidenceImage.getAttribute("src")).not.toContain("/diagrams/");
     expect(screen.queryByText(/Request failed \(502\)/i)).not.toBeInTheDocument();
+  });
+  it("shows Q&A agent progress while a patient answer is being assembled", async () => {
+    mockPendingMutation(/\/runs\/qa$/);
+    render(<MemoryRouter initialEntries={["/app/qa"]}><App/></MemoryRouter>);
+    fireEvent.change(await screen.findByPlaceholderText(/ask a longitudinal/i), { target: { value: "What changed between the last two sessions?" } });
+    fireEvent.click(screen.getByRole("button", { name: /ask about this patient/i }));
+    expect(await screen.findByRole("status", { name: /q&a agents are working/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/Evidence Retrieval/i).length).toBeGreaterThan(0);
+  });
+  it("shows population insight progress while SQL is being drafted", async () => {
+    mockPendingMutation(/\/runs\/database\/preview$/);
+    render(<MemoryRouter initialEntries={["/app/database"]}><App/></MemoryRouter>);
+    fireEvent.change(await screen.findByPlaceholderText(/ask a governed question/i), { target: { value: "Show high risk patients by age band" } });
+    fireEvent.click(screen.getByRole("button", { name: /draft query for review/i }));
+    expect(await screen.findByRole("status", { name: /population insights agents are working/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/Natural Language to SQL/i).length).toBeGreaterThan(0);
   });
   it("shows stored multimodal files from the synthetic knowledge base", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ detail: "Gateway unavailable" }), { status: 502, headers: { "Content-Type": "application/json" } }));

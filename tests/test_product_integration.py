@@ -1,5 +1,6 @@
 """End-to-end contracts joining the clinical UI API to product state."""
 
+import time
 from importlib import import_module
 from typing import Any
 
@@ -10,6 +11,23 @@ from clinical_app.app import create_app
 from clinical_app.repository import RepositoryRegistry
 
 product_app = import_module("clinical_app.app")
+
+
+def poll_until_settled(api: TestClient, headers: dict[str, str], run_id: str, timeout: float = 2.0) -> dict[str, object]:
+    """Poll a live run until its background task moves it off "running".
+
+    Live endpoints return immediately with status "running" and finish the
+    real ADK call in a background asyncio task so the frontend can poll for
+    incremental progress instead of blocking on a multi-minute request;
+    tests need the same poll to observe the settled result.
+    """
+
+    deadline = time.monotonic() + timeout
+    run = api.get(f"/api/runs/{run_id}", headers=headers).json()
+    while run.get("status") == "running" and time.monotonic() < deadline:
+        time.sleep(0.02)
+        run = api.get(f"/api/runs/{run_id}", headers=headers).json()
+    return run
 
 
 PATIENT_ID = "PT-8829"
@@ -498,11 +516,12 @@ def test_live_execution_mode_invokes_lazy_agent_bridge(tmp_path, monkeypatch: py
     assert response.status_code == 201
     assert calls and calls[0][1] == "Integration Tester"
     assert PATIENT_ID in calls[0][0]
-    assert response.json()["result"]["liveResponse"] == "Synthetic live response"
-    assert response.json()["result"]["authorSteps"] == [
+    settled = poll_until_settled(live_api, {**headers(session="live-bridge"), "X-Tenant": "capstone"}, response.json()["id"])
+    assert settled["result"]["liveResponse"] == "Synthetic live response"
+    assert settled["result"]["authorSteps"] == [
         {"author": "patient_qa_pipeline", "eventId": "event-1"}
     ]
-    assert any(step["name"] == "Patient Qa Pipeline" for step in response.json()["steps"])
+    assert any(step["name"] == "Patient Qa Pipeline" for step in settled["steps"])
 
 
 def capstone_headers(session: str = "capstone-int") -> dict[str, str]:
@@ -564,9 +583,11 @@ def test_capstone_database_preview_has_no_static_fallback(api: TestClient, tmp_p
         headers=capstone_headers("capstone-fallback"),
         json={"question": "How many patients per risk level?"},
     )
-    assert response.status_code == 502
-    assert "SQL generation failed" in response.json()["detail"]
-    assert "SELECT risk_level" not in response.text
+    assert response.status_code == 201
+    settled = poll_until_settled(api, capstone_headers("capstone-fallback"), response.json()["id"])
+    assert settled["status"] == "error"
+    assert "SQL generation failed" in settled["steps"][-1]["detail"]
+    assert "SELECT risk_level" not in settled["result"]["sql"]
 
 
 def test_capstone_preview_rejects_empty_sql(api: TestClient, tmp_path, monkeypatch) -> None:
@@ -587,8 +608,10 @@ def test_capstone_preview_rejects_empty_sql(api: TestClient, tmp_path, monkeypat
         headers=capstone_headers("capstone-empty-sql"),
         json={"question": "How many patients per risk level?"},
     )
-    assert response.status_code == 502
-    assert "did not return SQL" in response.json()["detail"]
+    assert response.status_code == 201
+    settled = poll_until_settled(api, capstone_headers("capstone-empty-sql"), response.json()["id"])
+    assert settled["status"] == "error"
+    assert "did not return SQL" in settled["steps"][-1]["detail"]
 
 
 def test_capstone_users_and_permissions_persist_across_sessions(api: TestClient, tmp_path, monkeypatch) -> None:

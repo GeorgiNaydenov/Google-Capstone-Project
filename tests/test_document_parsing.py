@@ -11,6 +11,8 @@ from clinical_app.document import (
     MAX_UPLOAD_BYTES,
     UploadPolicyError,
     UnsupportedUploadTypeError,
+    detect_patient_id,
+    detect_patient_id_from_parsed,
     parse_knowledge_base_upload,
     parse_upload,
     validate_knowledge_base_upload,
@@ -134,3 +136,35 @@ def test_upload_request_uses_shared_10mb_limit() -> None:
     UploadRequest(filename="evidence.png", content_type="image/png", size_bytes=MAX_UPLOAD_BYTES)
     with pytest.raises(ValidationError):
         UploadRequest(filename="evidence.png", content_type="image/png", size_bytes=MAX_UPLOAD_BYTES + 1)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Vol 001 - Patient 900001: Whiteside, Eleanor", "900001"),
+        ("Body Temperature History - Patient 900001", "900001"),
+        ("Patient ID: 12345", "12345"),
+        ("patient id # 900002 follow-up labs", "900002"),
+        ("Cohort roster includes PT-D00008 and others", "PT-D00008"),
+        ("MRN: A-123456 admitted overnight", "A-123456"),
+    ],
+)
+def test_detect_patient_id_reads_document_identifiers(text: str, expected: str) -> None:
+    """Detection should read the identifiers real packets print in headers."""
+
+    assert detect_patient_id(text) == expected
+
+
+def test_detect_patient_id_ignores_unrelated_numbers() -> None:
+    """Dates, counts, and bare numbers must not be mistaken for patient ids."""
+
+    assert detect_patient_id("5 patients per file, updated 2025-11-10, ref 42") == ""
+    assert detect_patient_id("") == ""
+
+
+def test_detect_patient_id_from_parsed_scans_preview_then_pages() -> None:
+    """Parsed-upload detection should fall back from the preview to page text."""
+
+    parsed = {"textPreview": "", "pages": [{"pageNumber": 1, "text": "Laboratory Results - Patient 900001"}]}
+    assert detect_patient_id_from_parsed(parsed) == "900001"
+    assert detect_patient_id_from_parsed({"textPreview": "no identifiers here", "pages": []}) == ""

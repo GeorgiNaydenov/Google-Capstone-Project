@@ -22,11 +22,15 @@ from typing import Any
 import xml.etree.ElementTree as ET
 
 from .config import get_config
+from .database import UPLOADS_ROOT
 
 logger = logging.getLogger("capstone_agent.document_processor")
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
+# UPLOADS_ROOT honors CLINICAL_DATA_DIR, keeping uploads on the writable
+# (optionally mounted) data directory in containers where the package root
+# is read-only; unset, it stays beside the project for local development.
+UPLOAD_DIR = UPLOADS_ROOT
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def generate_document_id(filename: str, content: bytes) -> str:
@@ -329,11 +333,15 @@ def analyze_with_gemini(text: str, analysis_type: str = "clinical") -> str:
 # Main processing pipeline
 # ---------------------------------------------------------------------------
 
-def process_document(file_path: str, patient_id: str = "") -> dict[str, Any]:
+def process_document(file_path: str, patient_id: str = "", pre_extraction: dict[str, Any] | None = None) -> dict[str, Any]:
     """Process a document end-to-end: extract text, chunk, analyze, store.
 
     This is the main entry point called by the upload_document tool.
     Handles PDFs, images, and plain text files.
+
+    pre_extraction lets callers that already extracted the document text
+    (for example patient-id detection on an uploaded image) reuse that
+    result instead of paying for a second Gemini Vision pass.
 
     Returns a complete processing result with document_id, extracted text,
     chunks stored, and Gemini analysis.
@@ -366,7 +374,9 @@ def process_document(file_path: str, patient_id: str = "") -> dict[str, Any]:
     logger.info(f"Processing document: {filename} ({content_type})")
 
     # Extract text based on content type
-    if content_type == "application/pdf":
+    if pre_extraction is not None:
+        extraction = pre_extraction
+    elif content_type == "application/pdf":
         extraction = extract_text_from_pdf(file_path)
     elif content_type.startswith("image/"):
         extraction = extract_text_from_image(file_path)

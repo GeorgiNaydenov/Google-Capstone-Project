@@ -44,6 +44,13 @@ describe("first-run onboarding tour", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("does not hijack a first-visit workflow deep link", async () => {
+    mockApi();
+    render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /clinical evidence extraction/i })).toBeInTheDocument();
+  });
+
   it("walks the simulated journey across real screens and lands on the queue", async () => {
     mockApi();
     render(<MemoryRouter initialEntries={["/app/dashboard"]}><App/></MemoryRouter>);

@@ -1,5 +1,6 @@
 """FastAPI routes for clinician-facing deterministic application."""
 
+import asyncio
 import csv
 import io
 import json
@@ -31,7 +32,7 @@ from clinical_app.models import (
 from clinical_app.system import component_checks
 from clinical_app.live_bridge import execute_live
 from clinical_app.agent_runtime import database_execution_tools, database_preview_tools, extraction_review_tools, extraction_tools, qa_tools
-from clinical_app.document import UploadPolicyError, parse_knowledge_base_upload, parse_upload, validate_knowledge_base_upload, validate_upload
+from clinical_app.document import UploadPolicyError, detect_patient_id, detect_patient_id_from_parsed, parse_knowledge_base_upload, parse_upload, validate_knowledge_base_upload, validate_upload
 from clinical_app.repository import DemoRepository, LiveRepository, RepositoryRegistry, now
 from clinical_app.tenancy import TenantConfig, TenantKind, resolve_tenant
 
@@ -183,9 +184,36 @@ def create_app() -> FastAPI:
 
     def patient_or_404(repo: DemoRepository | LiveRepository, patient_id: str) -> dict[str, Any]:
         item = repo.patients.get(patient_id)
+        if item is None and isinstance(repo, LiveRepository):
+            # Live rosters are a session-start snapshot; a patient ingested or
+            # registered after that moment exists only in the tenant database.
+            item = repo.find_patient(patient_id)
         if not item:
             raise HTTPException(404, "Patient not found")
         return item
+
+    def upload_patient_or_register(repo: DemoRepository | LiveRepository, patient_id: str) -> dict[str, Any]:
+        """Resolve an upload's patient, registering unseen ids for live tenants.
+
+        Demo rosters are fixed, so unknown ids stay a 404. Live evidence
+        uploads (extraction source or Q&A knowledge base) are how a clinician
+        first introduces a patient, so an unseen id creates a needs_review
+        roster row — persisted through ensure_patient, mirroring what
+        extraction approval already does — making the same patient immediately
+        usable from both workflows and from future sessions.
+        """
+
+        if not patient_id or not patient_id.strip():
+            raise HTTPException(422, "patientId is required")
+        if not isinstance(repo, LiveRepository):
+            return patient_or_404(repo, patient_id)
+        item = repo.find_patient(patient_id)
+        if item is not None:
+            return item
+        from capstone_agent import database as clinical_db
+
+        clinical_db.ensure_patient(patient_id)
+        return repo.add_patient(patient_id, f"Patient {patient_id}")
 
     def run_or_404(repo: DemoRepository | LiveRepository, run_id: str) -> dict[str, Any]:
         item = repo.runs.get(run_id)
@@ -193,13 +221,26 @@ def create_app() -> FastAPI:
             raise HTTPException(404, "Run not found")
         return item
 
-    def live_steps(run_id: str, live_result: dict[str, Any], terminal_name: str | None = None, terminal_status: str = "completed") -> list[dict[str, Any]]:
-        """Map ADK event authors to browser-visible step rows."""
+    def author_steps_to_rows(run_id: str, author_steps: list[dict[str, Any]], running_last: bool = False) -> list[dict[str, Any]]:
+        """Map ADK event authors to browser-visible step rows.
 
+        running_last marks the most recent author as still "running" instead
+        of "completed" — used for the on_step callback fired while the
+        pipeline is mid-flight, so the frontend's PipelineBand shows the
+        currently active agent instead of only a final all-completed snapshot.
+        """
+
+        rows = author_steps or [{"author": "root_agent"}]
         steps = [
-            {"id": f"{run_id}-S{i}", "name": str(step.get("author", "root_agent")).replace("_", " ").title(), "status": "completed", "detail": "ADK event completed", "timestamp": now()}
-            for i, step in enumerate(live_result.get("authorSteps", []) or [{"author": "root_agent"}], 1)
+            {"id": f"{run_id}-S{i}", "name": str(step.get("author", "root_agent")).replace("_", " ").title(), "status": "running" if running_last and i == len(rows) else "completed", "detail": "ADK event completed", "timestamp": now()}
+            for i, step in enumerate(rows, 1)
         ]
+        return steps
+
+    def live_steps(run_id: str, live_result: dict[str, Any], terminal_name: str | None = None, terminal_status: str = "completed") -> list[dict[str, Any]]:
+        """Map a finished live_result's author steps to browser-visible step rows, with an optional terminal gate row appended."""
+
+        steps = author_steps_to_rows(run_id, live_result.get("authorSteps", []))
         if terminal_name:
             steps.append({"id": f"{run_id}-S{len(steps)+1}", "name": terminal_name, "status": terminal_status, "detail": "Awaiting explicit approval" if terminal_status == "review" else "Stage completed", "timestamp": now()})
         return steps
@@ -467,11 +508,21 @@ def create_app() -> FastAPI:
         return session_view(item)
 
     @v1_router.post("/assets", status_code=201, tags=["Assets"], responses={201: {"description": "Asset uploaded and recorded successfully"}, **COMMON_RESPONSES})
-    async def create_asset(ctx: Context, file: UploadFile = File(...), patient_id: str = Form(...)) -> dict[str, Any]:
-        """Store uploaded bytes inside caller demo session or process through live agent ETL."""
+    async def create_asset(ctx: Context, file: UploadFile = File(...), patient_id: str = Form("")) -> dict[str, Any]:
+        """Store uploaded bytes inside caller demo session or process through live agent ETL.
+
+        Live tenants may leave patient_id blank: the endpoint reads an id the
+        document itself declares (local text for PDFs, one Gemini Vision pass
+        for images) and registers it through upload_patient_or_register, so
+        evidence carrying its own patient number processes without retyping.
+        """
 
         repo, role, user, _tenant = ctx
-        patient_or_404(repo, patient_id)
+        patient_id = patient_id.strip()
+        if repo.is_demo or patient_id:
+            # Blank live ids are resolved from the document text below,
+            # after the upload has been validated and parsed.
+            upload_patient_or_register(repo, patient_id)
         contents = await file.read()
         if not contents:
             raise HTTPException(422, "Uploaded file is empty")
@@ -486,11 +537,12 @@ def create_app() -> FastAPI:
         asset_id = repo.identifier("AST")
         preview_url = f"/api/assets/{asset_id}?session={repo.session_id}"
         extracted = parse_upload(contents, ct, fn)
+        detected_id = detect_patient_id_from_parsed(extracted)
 
         if not repo.is_demo:
             from capstone_agent import database as capstone_db
-            from capstone_agent.document_processor import process_document
-            
+            from capstone_agent.document_processor import extract_text_from_image, process_document
+
             # Save file to uploads root on disk for live tenant
             uploads_dir = Path(capstone_db.active_uploads_root())
             uploads_dir.mkdir(parents=True, exist_ok=True)
@@ -498,10 +550,27 @@ def create_app() -> FastAPI:
             dest_path = uploads_dir / dest_filename
             with open(dest_path, "wb") as f:
                 f.write(contents)
-            
+
+            pre_extraction = None
+            if not patient_id and not detected_id and str(extracted.get("type")) == "image":
+                # Images carry no locally extractable text; one Gemini Vision
+                # pass reads any on-image patient number, and process_document
+                # below reuses the result instead of running OCR twice.
+                try:
+                    pre_extraction = extract_text_from_image(str(dest_path))
+                    detected_id = detect_patient_id(str(pre_extraction.get("text") or ""))
+                except Exception:
+                    pre_extraction = None
+            if not patient_id:
+                if not detected_id:
+                    dest_path.unlink(missing_ok=True)
+                    raise HTTPException(422, "patientId is required: none was provided and none could be detected in the document")
+                patient_id = detected_id
+                upload_patient_or_register(repo, patient_id)
+
             # Run document processor ETL (parsing, chunking, Gemini structure)
             try:
-                res = process_document(dest_path, patient_id)
+                res = process_document(dest_path, patient_id, pre_extraction=pre_extraction)
                 if "error" not in res:
                     extracted["textPreview"] = res.get("text_preview", extracted.get("textPreview", ""))
                     extracted["pageCount"] = res.get("page_count", extracted.get("pageCount", 1))
@@ -529,14 +598,14 @@ def create_app() -> FastAPI:
             repo.uploads[asset_id] = {"assetId": asset_id, "patientId": patient_id, "filename": fn, "contentType": ct, "sizeBytes": len(contents), "previewUrl": preview_url, "createdAt": now(), "extracted": extracted}
 
         repo.log("asset_uploaded", user, role, patient_id=patient_id, asset_id=asset_id)
-        return {"assetId": asset_id, "previewUrl": preview_url, "extracted": extracted}
+        return {"assetId": asset_id, "patientId": patient_id, "detectedPatientId": detected_id, "previewUrl": preview_url, "extracted": extracted}
 
     @v1_router.post("/knowledge-base/assets", status_code=201, tags=["Assets"], responses={201: {"description": "Uploaded and indexed a patient-scoped knowledge-base document"}, **COMMON_RESPONSES})
     async def create_knowledge_base_asset(ctx: Context, file: UploadFile = File(...), patient_id: str = Form(...)) -> dict[str, Any]:
         """Store a patient-scoped document as searchable Q&A knowledge-base evidence."""
 
         repo, role, user, _tenant = ctx
-        patient_or_404(repo, patient_id)
+        upload_patient_or_register(repo, patient_id)
         contents = await file.read()
         if not contents:
             raise HTTPException(422, "Uploaded file is empty")
@@ -874,38 +943,40 @@ def create_app() -> FastAPI:
             extracted_meta = repo.uploads[asset_ids[0]].get("extracted", {})
             item = {"id": run_id, "workflow": "extraction", "status": "running", "agentName": "image_extraction_pipeline", "confidence": 0.0, "createdAt": now(), "auditId": audit["audit_id"], "traceId": f"TRACE-{run_id}", "steps": [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "running", "detail": "Routing to the clinical evidence extraction pipeline", "timestamp": now()}], "evidence": evidence_list, "result": {"patientId": patient_id, "fields": {}, "toolCalls": [], "storageReceipts": [], "persisted": False, "extractedContent": extracted_meta}, "review": None}
             repo.runs[run_id] = item
-            try:
-                live_result = await execute_live(
-                    f"Delegate to the image_extraction_pipeline sub-agent to run the full clinical "
-                    f"extraction workflow (quality check, OCR, vision analysis, clinical structuring, "
-                    f"and review gate) on the attached document for patient {patient_id}. Structure "
-                    f"every field with a confidence score.",
-                    user,
-                    file_bytes=file_bytes,
-                    file_mime=file_mime,
-                    patient_context={"patient_id": patient_id},
-                )
-                fields = live_result.get("fields", {})
-                if not fields:
-                    final_response = str(live_result.get("finalResponse", "")).strip()
-                    if not final_response:
-                        item["status"] = "error"
-                        item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": "Extraction produced no structured fields or narrative response", "timestamp": now()})
-                        raise HTTPException(502, "Extraction produced no structured fields. Transient model errors are retried automatically; try again or upload a clearer document.")
-                    fields = {"documentType": "Clinical evidence", "patientMatch": patient_id, "finding": final_response}
-                item["steps"] = live_steps(run_id, live_result, "Clinical Review Gate", "review")
-                item["status"] = "review"
-                item["confidence"] = live_result.get("confidence", 0.88)
-                item["result"]["fields"] = fields
-                attach_live_metadata(item["result"], live_result)
-                item["result"]["stateOutputs"] = live_result.get("stateOutputs", {})
-                item["result"]["storageReceipts"] = [{"target": t, "status": "pending"} for t in ("json", "relational", "vector")]
-            except HTTPException:
-                raise
-            except Exception as exc:
-                item["status"] = "error"
-                item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": f"Execution failed: {exc}", "timestamp": now()})
-                raise HTTPException(500, f"Live agent execution failed: {exc}")
+
+            async def run_in_background() -> None:
+                try:
+                    live_result = await execute_live(
+                        f"Delegate to the image_extraction_pipeline sub-agent to run the full clinical "
+                        f"extraction workflow (quality check, OCR, vision analysis, clinical structuring, "
+                        f"and review gate) on the attached document for patient {patient_id}. Structure "
+                        f"every field with a confidence score.",
+                        user,
+                        file_bytes=file_bytes,
+                        file_mime=file_mime,
+                        patient_context={"patient_id": patient_id},
+                        on_step=lambda steps: item.update(steps=author_steps_to_rows(run_id, steps, running_last=True)),
+                    )
+                    fields = live_result.get("fields", {})
+                    if not fields:
+                        final_response = str(live_result.get("finalResponse", "")).strip()
+                        if not final_response:
+                            item["status"] = "error"
+                            item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": "Extraction produced no structured fields or narrative response", "timestamp": now()})
+                            return
+                        fields = {"documentType": "Clinical evidence", "patientMatch": patient_id, "finding": final_response}
+                    item["steps"] = live_steps(run_id, live_result, "Clinical Review Gate", "review")
+                    item["status"] = "review"
+                    item["confidence"] = live_result.get("confidence", 0.88)
+                    item["result"]["fields"] = fields
+                    attach_live_metadata(item["result"], live_result)
+                    item["result"]["stateOutputs"] = live_result.get("stateOutputs", {})
+                    item["result"]["storageReceipts"] = [{"target": t, "status": "pending"} for t in ("json", "relational", "vector")]
+                except Exception as exc:
+                    item["status"] = "error"
+                    item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": f"Execution failed: {exc}", "timestamp": now()})
+
+            asyncio.create_task(run_in_background())
             return item
 
         primary_asset = repo.uploads[asset_ids[0]]
@@ -1092,6 +1163,12 @@ def create_app() -> FastAPI:
             # Validate before logging so a 404 never produces a fake
             # "question_answered" audit event for a request that never ran.
             patient_or_404(repo, body.patient_id)
+        elif body.patient_id and not repo.find_patient(body.patient_id):
+            # Live Q&A is often where a clinician first references a new
+            # patient; register the id in the session roster (in-memory,
+            # needs_review) so extraction uploads and the patient list see
+            # the same patient without waiting for persisted evidence.
+            repo.add_patient(body.patient_id, f"Patient {body.patient_id}")
         run_id = repo.identifier("RUN")
         audit = repo.log("question_answered", user, role, patient_id=body.patient_id, run_id=run_id)
 
@@ -1103,25 +1180,29 @@ def create_app() -> FastAPI:
             repo.runs[run_id] = item
             patient_data = repo.patients.get(body.patient_id, {})
             evidence_text = "\n".join(e["text"] for e in local_evidence[:10])
-            try:
-                live_result = await execute_live(
-                    f"Answer this clinical question for patient {body.patient_id} with evidence citations: {body.question}\n\nPatient context: {json.dumps(patient_data)}\n\nAvailable evidence:\n{evidence_text}",
-                    user,
-                    patient_context={"patient_id": body.patient_id, "source_types": source_types_str},
-                    # Patient-scoped session key keeps follow-up questions in the
-                    # same ADK session without leaking state across patients.
-                    session_key=f"{repo.session_id}-{body.patient_id}",
-                )
-                item["steps"] = live_steps(run_id, live_result)
-                item["status"] = "completed"
-                item["confidence"] = live_result.get("confidence", 0.85)
-                state_outputs = live_result.get("stateOutputs", {})
-                item["result"]["answer"] = state_outputs.get("qa_answer") or live_result.get("finalResponse", "No answer generated")
-                attach_live_metadata(item["result"], live_result)
-            except Exception as exc:
-                item["status"] = "error"
-                item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": f"Execution failed: {exc}", "timestamp": now()})
-                raise HTTPException(500, f"Live agent execution failed: {exc}")
+
+            async def run_in_background() -> None:
+                try:
+                    live_result = await execute_live(
+                        f"Answer this clinical question for patient {body.patient_id} with evidence citations: {body.question}\n\nPatient context: {json.dumps(patient_data)}\n\nAvailable evidence:\n{evidence_text}",
+                        user,
+                        patient_context={"patient_id": body.patient_id, "source_types": source_types_str},
+                        # Patient-scoped session key keeps follow-up questions in the
+                        # same ADK session without leaking state across patients.
+                        session_key=f"{repo.session_id}-{body.patient_id}",
+                        on_step=lambda steps: item.update(steps=author_steps_to_rows(run_id, steps, running_last=True)),
+                    )
+                    item["steps"] = live_steps(run_id, live_result)
+                    item["status"] = "completed"
+                    item["confidence"] = live_result.get("confidence", 0.85)
+                    state_outputs = live_result.get("stateOutputs", {})
+                    item["result"]["answer"] = state_outputs.get("qa_answer") or live_result.get("finalResponse", "No answer generated")
+                    attach_live_metadata(item["result"], live_result)
+                except Exception as exc:
+                    item["status"] = "error"
+                    item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": f"Execution failed: {exc}", "timestamp": now()})
+
+            asyncio.create_task(run_in_background())
             return item
 
         patient = repo.patients[body.patient_id]
@@ -1155,36 +1236,43 @@ def create_app() -> FastAPI:
         if not repo.is_demo:
             item = {"id": run_id, "workflow": "database", "status": "running", "agentName": "db_intelligence_pipeline", "createdAt": now(), "auditId": audit["audit_id"], "traceId": f"TRACE-{run_id}", "steps": [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "running", "detail": "Routing to the population insights pipeline", "timestamp": now()}], "evidence": [], "result": {"question": body.question, "sql": "", "safe": False, "readOnly": True, "tables": [], "toolCalls": []}}
             repo.runs[run_id] = item
-            try:
-                live_result = await execute_live(
-                    f"Generate a safe read-only SQL query for this clinical population question: {body.question}\n\nOnly generate SELECT statements. Validate safety before returning.",
-                    user,
-                    patient_context={"workflow": "database"},
-                    # One ADK session per browser session keeps database
-                    # follow-up questions conversational, mirroring the
-                    # patient-scoped session the Q&A pipeline already uses.
-                    session_key=f"{repo.session_id}-database",
-                )
-                from capstone_agent.clinical_schemas import validate_sql
 
-                sql = live_result.get("sql", "")
-                if not sql:
+            async def run_in_background() -> None:
+                try:
+                    live_result = await execute_live(
+                        f"Generate a safe read-only SQL query for this clinical population question: {body.question}\n\nOnly generate SELECT statements.",
+                        user,
+                        patient_context={"workflow": "database"},
+                        # One ADK session per browser session keeps database
+                        # follow-up questions conversational, mirroring the
+                        # patient-scoped session the Q&A pipeline already uses.
+                        session_key=f"{repo.session_id}-database",
+                        # Fast path: one schema-grounded model call drafts the
+                        # SQL. validate_sql below plus database_execute's re-gate
+                        # provide the safety guarantees deterministically, so the
+                        # full six-stage pipeline would only add latency here.
+                        target="sql_draft",
+                        on_step=lambda steps: item.update(steps=author_steps_to_rows(run_id, steps, running_last=True)),
+                    )
+                    from capstone_agent.clinical_schemas import validate_sql
+
+                    sql = live_result.get("sql", "")
+                    if not sql:
+                        item["status"] = "error"
+                        item["steps"].append({"id": f"{run_id}-S2", "name": "SQL Generation", "status": "error", "detail": "Agent did not return SQL for this question", "timestamp": now()})
+                        return
+                    item["steps"] = live_steps(run_id, live_result, "SQL Approval Gate", "review")
+                    item["status"] = "review"
+                    item["result"]["sql"] = sql
+                    item["result"]["safe"] = bool(validate_sql(sql)["safe"])
+                    attach_live_metadata(item["result"], live_result)
+                except Exception as exc:
+                    # No canned fallback: a real tenant surfaces the failure so
+                    # the clinician never approves SQL the agent did not write.
                     item["status"] = "error"
-                    item["steps"].append({"id": f"{run_id}-S2", "name": "SQL Generation", "status": "error", "detail": "Agent did not return SQL for this question", "timestamp": now()})
-                    raise HTTPException(502, "Agent did not return SQL for this question. Try again or rephrase it as a population query.")
-                item["steps"] = live_steps(run_id, live_result, "SQL Approval Gate", "review")
-                item["status"] = "review"
-                item["result"]["sql"] = sql
-                item["result"]["safe"] = bool(validate_sql(sql)["safe"])
-                attach_live_metadata(item["result"], live_result)
-            except HTTPException:
-                raise
-            except Exception as exc:
-                # No canned fallback: a real tenant surfaces the failure so
-                # the clinician never approves SQL the agent did not write.
-                item["status"] = "error"
-                item["steps"] = [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "error", "detail": f"SQL generation failed: {type(exc).__name__}: {exc}", "timestamp": now()}]
-                raise HTTPException(502, f"SQL generation failed: {exc}. Transient model errors are retried automatically; try again or rephrase the question.")
+                    item["steps"] = [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "error", "detail": f"SQL generation failed: {type(exc).__name__}: {exc}", "timestamp": now()}]
+
+            asyncio.create_task(run_in_background())
             return item
 
         query_cards = getattr(repo, "database_queries", []) or []
@@ -1252,6 +1340,64 @@ def create_app() -> FastAPI:
         """Return completed database runs."""
 
         return ctx[0].query_history
+
+    @v1_router.get("/database/examples", response_model=list[str], tags=["Database"], responses={200: {"description": "Example population questions grounded in the tenant's actual database contents"}, **COMMON_RESPONSES})
+    def database_examples(ctx: Context) -> list[str]:
+        """Return example questions derived from the tenant's real data.
+
+        Demo tenants surface their curated query-card questions, which the
+        deterministic preview matcher is guaranteed to answer. Live tenants
+        probe the governed database for what is actually present — the top
+        condition, critical lab flags, missed appointments, medication load —
+        so every suggestion is answerable with real rows instead of being a
+        generic template that returns nothing.
+        """
+
+        repo = ctx[0]
+        fallback = [
+            "Count patients by risk level",
+            "Which patients have critical lab results, and for which tests?",
+            "How many active medications is each patient taking?",
+            "Which patients missed the most appointments?",
+        ]
+        if repo.is_demo:
+            cards = getattr(repo, "database_queries", []) or []
+            questions = [str(card.get("question")) for card in cards if card.get("question")]
+            return questions[:7] or fallback
+
+        from capstone_agent import clinical_schemas
+
+        def probe(sql: str) -> list[dict[str, Any]]:
+            """Run one read-only probe; any failure just drops the suggestion."""
+            try:
+                res = clinical_schemas.execute_query(sql)
+                return res.get("rows", []) if not res.get("error") else []
+            except Exception:
+                return []
+
+        examples: list[str] = []
+        risk = probe("SELECT COUNT(DISTINCT risk_level) AS n FROM patients_core")
+        if risk and int(risk[0].get("n") or 0) >= 2:
+            examples.append("Count patients by risk level")
+        condition = probe("SELECT condition_name, COUNT(DISTINCT patient_id) AS n FROM patient_conditions GROUP BY condition_name ORDER BY n DESC LIMIT 1")
+        if condition and condition[0].get("condition_name"):
+            examples.append(f"Which patients have {str(condition[0]['condition_name']).rstrip('.').lower()}, and how old are they?")
+        critical = probe("SELECT COUNT(*) AS n FROM lab_results WHERE flag LIKE 'critical%'")
+        if critical and int(critical[0].get("n") or 0):
+            examples.append("Which patients have critical lab results, and for which tests?")
+        panel = probe("SELECT test_name, COUNT(*) AS n FROM lab_results GROUP BY test_name ORDER BY n DESC LIMIT 1")
+        if panel and panel[0].get("test_name"):
+            examples.append(f"Show the most recent {panel[0]['test_name']} result date for each patient")
+        noshow = probe("SELECT COUNT(*) AS n FROM appointments WHERE status = 'No-Show'")
+        if noshow and int(noshow[0].get("n") or 0):
+            examples.append("Which patients missed the most appointments?")
+        meds = probe("SELECT COUNT(*) AS n FROM medications")
+        if meds and int(meds[0].get("n") or 0):
+            examples.append("How many active medications is each patient taking?")
+        vitals = probe("SELECT COUNT(*) AS n FROM vital_signs")
+        if vitals and int(vitals[0].get("n") or 0):
+            examples.append("What is the average systolic blood pressure by risk level?")
+        return examples[:7] or fallback
 
     @v1_router.get("/database/queries/{run_id}/csv", tags=["Database"], responses={200: {"description": "Retrieved query results exported as a CSV stream"}, **COMMON_RESPONSES})
     def export_csv(run_id: str, ctx: Context) -> StreamingResponse:

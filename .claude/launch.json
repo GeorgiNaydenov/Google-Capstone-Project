@@ -8,6 +8,18 @@
       "port": 8000
     },
     {
+      "name": "clinical-app-scratch2",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "clinical_app.app:app", "--port", "8010"],
+      "port": 8010
+    },
+    {
+      "name": "clinical-app-scratch3",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "clinical_app.app:app", "--port", "8021"],
+      "port": 8021
+    },
+    {
       "name": "frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--port", "5199", "--strictPort"],
@@ -30,6 +42,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--port", "5344", "--strictPort"],
       "port": 5344
+    },
+    {
+      "name": "frontend-scratch5",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--port", "5388", "--strictPort"],
+      "port": 5388
     }
   ]
 }

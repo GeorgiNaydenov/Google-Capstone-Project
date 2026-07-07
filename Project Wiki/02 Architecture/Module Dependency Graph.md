@@ -41,7 +41,9 @@ flowchart LR
     agent --> a2a_server
     agent --> app
     callbacks --> agent
+    callbacks --> orchestration
     callbacks --> plugins
+    clinical_schemas --> orchestration
     clinical_schemas --> tools
     config --> a2a_server
     config --> agent
@@ -56,6 +58,7 @@ flowchart LR
     config --> tools
     context --> agent
     context --> plugins
+    database --> document_processor
     database --> mock_data
     document_processor --> tools
     human_in_the_loop --> agent

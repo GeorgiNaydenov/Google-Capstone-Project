@@ -9,9 +9,9 @@ Test categories:
    before_model callback short-circuits before any model call)
 3. Multi-turn tests — does conversation context persist? (needs a model)
 
-Tests that invoke the model are skipped unless Gemini credentials are present
-(GOOGLE_API_KEY, or Vertex AI via GOOGLE_GENAI_USE_VERTEXAI + project), so the
-suite stays green in CI without credentials.
+Tests that invoke the model are skipped unless a direct Gemini API key is
+present. Vertex AI/ADC-backed behavioral checks belong in the explicit
+`adk eval` path because they require networked cloud auth.
 """
 
 import os
@@ -20,17 +20,11 @@ import pytest
 
 from tests.conftest import APP_NAME, USER_ID, get_agent_response
 
-_HAS_GEMINI = bool(
-    os.getenv("GOOGLE_API_KEY")
-    or (
-        os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").upper() == "TRUE"
-        and os.getenv("GOOGLE_CLOUD_PROJECT")
-    )
-)
+_HAS_GEMINI = bool(os.getenv("GOOGLE_API_KEY"))
 
 requires_model = pytest.mark.skipif(
     not _HAS_GEMINI,
-    reason="Gemini credentials (API key or Vertex AI project) required to invoke the model",
+    reason="GOOGLE_API_KEY is required to invoke the model from pytest",
 )
 
 

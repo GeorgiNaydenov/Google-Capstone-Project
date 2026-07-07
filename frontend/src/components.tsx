@@ -217,25 +217,56 @@ function formatMetricLabel(key: string | undefined): string {
 // match what Plotly actually painted.
 const CHART_COLORS = ["#2563eb", "#16a34a", "#b45309", "#dc2626", "#0284c7", "#7c3aed", "#0f766e"];
 
+// A cell only counts as numeric when it is a real measure: null and ""
+// coerce to 0 through Number(), which used to chart empty columns as a flat
+// line of zeros ("PT-x has the highest value at 0").
+function numericCell(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value))) return Number(value);
+  return null;
+}
+
+// Identifier columns (result_id, panel_id) are labels, not measures.
+const ID_COLUMN = /(^|_)id$/i;
+
 export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record<string, unknown>>; variant?: string }) {
   const chartRef = useRef<HTMLDivElement>(null);
+  // Scan every row, not just the first, since the metric column may be NULL
+  // on row one; id-like columns only qualify when nothing else is numeric.
   const metricKey = useMemo(() => {
-    const entries = Object.entries(rows[0] ?? {});
-    const numericEntry = entries.find(([, value]) => typeof value === "number") ?? entries.find(([, value]) => !Number.isNaN(Number(value)));
-    return numericEntry?.[0];
+    const keys = Object.keys(rows[0] ?? {});
+    const pick = (list: string[]) => list.find(key => rows.some(row => numericCell(row[key]) !== null));
+    return pick(keys.filter(key => !ID_COLUMN.test(key))) ?? pick(keys);
   }, [rows]);
-  const metricLabel = formatMetricLabel(metricKey);
-  const isCountMetric = /count|total|rows|patients|events|segments/i.test(metricKey ?? "");
-  const points = useMemo(() => rows.slice(0, 10).map((row, index) => {
-    const entries = Object.entries(row);
-    const valueEntry = entries.find(([, value]) => typeof value === "number") ?? entries.find(([, value]) => !Number.isNaN(Number(value)));
-    const labelEntry = entries.find(([, value]) => typeof value === "string");
-    return {
-      id: String(row.id ?? labelEntry?.[1] ?? index),
-      label: String(labelEntry?.[1] ?? `Row ${index + 1}`),
-      value: Math.round(Number(valueEntry?.[1] ?? 0) * 100) / 100,
-    };
-  }), [rows]);
+  // Identity-list results (SELECT patient_id, name ... WHERE ...) carry no
+  // numeric column at all; fall back to counting records per label so every
+  // chart variant still renders something truthful instead of all-zeros.
+  const points = useMemo(() => {
+    if (metricKey) {
+      return rows.slice(0, 10).map((row, index) => {
+        const labelEntry = Object.entries(row).find(([key, value]) => key !== metricKey && typeof value === "string");
+        return {
+          id: String(row.id ?? labelEntry?.[1] ?? index),
+          label: String(labelEntry?.[1] ?? `Row ${index + 1}`),
+          value: Math.round((numericCell(row[metricKey]) ?? 0) * 100) / 100,
+        };
+      });
+    }
+    const sample = rows.slice(0, 50);
+    const textKeys = Object.keys(sample[0] ?? {}).filter(key => !ID_COLUMN.test(key) && typeof sample[0]?.[key] === "string");
+    const cardinality = (key: string) => new Set(sample.map(row => String(row[key]))).size;
+    // Prefer a real grouping column (repeated values, e.g. risk_level);
+    // otherwise every row is its own segment counting one record.
+    const groupKey = textKeys.find(key => { const distinct = cardinality(key); return distinct > 1 && distinct < sample.length; }) ?? textKeys[0] ?? Object.keys(sample[0] ?? {})[0];
+    const counts = new Map<string, number>();
+    sample.forEach((row, index) => {
+      const label = String(groupKey ? row[groupKey] : `Row ${index + 1}`);
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    });
+    return [...counts.entries()].slice(0, 10).map(([label, value]) => ({ id: label, label, value }));
+  }, [rows, metricKey]);
+  const metricLabel = metricKey ? formatMetricLabel(metricKey) : "records";
+  const isCountMetric = !metricKey || /count|total|rows|patients|events|segments/i.test(metricKey);
   const total = Math.round(points.reduce((sum, point) => sum + point.value, 0) * 100) / 100;
   const largest = points.reduce((top, point) => point.value > top.value ? point : top, points[0] ?? { label: "none", value: 0 });
   const lowest = points.reduce((bottom, point) => point.value < bottom.value ? point : bottom, points[0] ?? { label: "none", value: 0 });
@@ -251,6 +282,11 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
   // and reads identically regardless of which mode produced them.
   const insight = useMemo(() => {
     if (!points.length) return "No rows were returned to summarize.";
+    if (points.length === 1) {
+      return metricKey
+        ? `${largest.label} is the only segment returned, at ${largest.value} ${metricLabel}.`
+        : `${largest.label} is the only segment returned, covering ${largest.value} matching record${largest.value === 1 ? "" : "s"}.`;
+    }
     if (isTrendKind && points.length > 1) {
       const first = points[0];
       const last = points[points.length - 1];
@@ -267,7 +303,7 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       return `${largest.label} is the largest segment at ${largest.value} ${metricLabel}${share ? ` (${share}% of the ${total} total)` : ""}.`;
     }
     return `${largest.label} has the highest ${metricLabel} at ${largest.value}, versus ${lowest.value} at ${lowest.label}.`;
-  }, [points, isTrendKind, chartKind, metricLabel, isCountMetric, total, largest, lowest]);
+  }, [points, isTrendKind, chartKind, metricKey, metricLabel, isCountMetric, total, largest, lowest]);
   // When rows expose two or more numeric columns, heatmaps render a real
   // label-by-metric matrix instead of a single undifferentiated value strip.
   const matrix = useMemo(() => {
@@ -330,17 +366,23 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
       x: values,
       marker: { color: "#2563eb" },
       hovertemplate: `%{x} ${metricLabel}<extra></extra>`,
-    } : {
-      type: chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area") || chartKind.includes("scatter") ? "scatter" : "bar",
-      mode: chartKind.includes("scatter") ? "markers+text" : chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area") ? "lines+markers+text" : undefined,
-      fill: chartKind.includes("area") ? "tozeroy" : undefined,
-      x: labels,
-      y: values,
-      text: values.map(value => String(value)),
-      textposition: "outside",
-      marker: { color: chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area") ? "#2563eb" : labels.map((_, index) => colors[index % colors.length]) },
-      hovertemplate: `%{x}<br>%{y} ${metricLabel}<extra></extra>`,
-    };
+    } : (() => {
+      // A line/area/time-series through a single point paints one floating
+      // marker on an empty canvas; a single bar communicates the same value
+      // honestly, so trend kinds degrade to bar below two points.
+      const drawLine = (chartKind.includes("line") || chartKind.includes("time") || chartKind.includes("area")) && points.length > 1;
+      return {
+        type: chartKind.includes("scatter") || drawLine ? "scatter" : "bar",
+        mode: chartKind.includes("scatter") ? "markers+text" : drawLine ? "lines+markers+text" : undefined,
+        fill: chartKind.includes("area") && drawLine ? "tozeroy" : undefined,
+        x: labels,
+        y: values,
+        text: values.map(value => String(value)),
+        textposition: "outside",
+        marker: { color: drawLine ? "#2563eb" : labels.map((_, index) => colors[index % colors.length]) },
+        hovertemplate: `%{x}<br>%{y} ${metricLabel}<extra></extra>`,
+      };
+    })();
     const isCartesian = !["pie", "treemap", "heatmap"].some(type => chartKind.includes(type));
     // Plotly's cleanLayout enumerates every "xaxis"/"yaxis" key on the layout
     // object and reads `.anchor` off its value, regardless of whether that
@@ -350,11 +392,13 @@ export function ChartPanel({ rows, variant = "Bar chart" }: { rows: Array<Record
     // 'anchor')". Only include the axis keys at all for cartesian charts.
     const layout: Record<string, unknown> = {
       margin: chartKind.includes("treemap") || chartKind.includes("pie") ? { t: 12, r: 8, b: 12, l: 8 } : { t: 16, r: 12, b: 54, l: 44 },
-      height: chartKind.includes("treemap") ? 300 : 250,
+      height: chartKind.includes("treemap") ? 380 : 340,
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "#f8fafc",
       font: { family: "Inter, system-ui, sans-serif", size: 11, color: "#334155" },
-      annotations: isCartesian && !chartKind.includes("histogram") && !chartKind.includes("box") ? [{ x: largest.label, y: largest.value, text: "largest segment", showarrow: true, arrowhead: 2, ax: 0, ay: -34 }] : [],
+      // "largest segment" only means something when there are segments to
+      // compare against.
+      annotations: isCartesian && points.length > 1 && !chartKind.includes("histogram") && !chartKind.includes("box") ? [{ x: largest.label, y: largest.value, text: "largest segment", showarrow: true, arrowhead: 2, ax: 0, ay: -34 }] : [],
     };
     if (isCartesian) {
       layout.yaxis = { title: metricLabel, gridcolor: "#e2e8f0", zerolinecolor: "#cbd5e1" };

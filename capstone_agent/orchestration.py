@@ -399,6 +399,40 @@ def build_db_intelligence_pipeline() -> SequentialAgent:
     )
 
 
+def build_sql_draft_agent() -> LlmAgent:
+    """Build the single-call NL-to-SQL draft agent for the product preview.
+
+    The product's database preview endpoint only needs the SQL text: safety
+    validation and execution are enforced deterministically server-side
+    (clinical_schemas.validate_sql / execute_query re-gate every query), so
+    this lean agent replaces the full six-stage pipeline for interactive
+    previews — one model call with the schema inlined instead of six agent
+    stages with tool round-trips. The full db_intelligence_pipeline remains
+    the canonical multi-agent path for adk run, A2A, and evaluation.
+
+    Because this agent runs as its own Runner root (not under the clinical
+    orchestrator), it must carry security layers 1 and 3 itself; layer 2 is
+    moot since it has no tools.
+    """
+    # Function-level imports keep the module dependency graph unchanged:
+    # callbacks and clinical_schemas are only needed by this product-mode
+    # factory, never by the course-pattern builders above.
+    from .callbacks import content_safety_callback, output_safety_callback
+    from .clinical_schemas import FULL_SCHEMA
+
+    return LlmAgent(
+        model=build_model("pro"),
+        name="sql_draft_agent",
+        description="Drafts one read-only SQL query for the population-insights preview.",
+        # Placeholder replaced at build time so ADK never sees literal braces
+        # from state templating in the schema DDL.
+        instruction=CLINICAL_INSTRUCTIONS["sql_draft"].replace("__SCHEMA_DDL__", FULL_SCHEMA),
+        output_key="generated_sql",
+        before_model_callback=content_safety_callback,
+        after_model_callback=output_safety_callback,
+    )
+
+
 # ============================================================================
 # GENERIC PATTERNS (from the course — kept as reference/reusable)
 # ============================================================================

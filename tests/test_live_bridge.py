@@ -59,6 +59,20 @@ class TestExtractSql:
     def test_no_select_returns_empty(self) -> None:
         assert _extract_sql("I could not generate a query for that request.") == ""
 
+    def test_cte_kept_whole(self) -> None:
+        """WITH ... AS (SELECT ...) must not be sliced at the inner SELECT."""
+
+        text = "WITH diabetics AS (SELECT patient_id FROM patient_conditions) SELECT p.name FROM patients_core p JOIN diabetics d ON p.patient_id = d.patient_id;"
+        sql = _extract_sql(text)
+        assert sql.startswith("WITH diabetics AS (SELECT")
+        assert sql.endswith("d.patient_id")
+
+    def test_fenced_sql_preferred_over_prose(self) -> None:
+        """The ```sql fence the prompts require wins over SELECT-ish prose."""
+
+        text = "The word SELECT appears here first.\n```sql\nWITH recent AS (SELECT 1) SELECT * FROM lab_results\n```\nDone."
+        assert _extract_sql(text) == "WITH recent AS (SELECT 1) SELECT * FROM lab_results"
+
 
 class TestStringSource:
     """_string_source prefers earlier state keys and serializes structured values."""

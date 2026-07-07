@@ -1,11 +1,30 @@
 """Frontend contract tests for deterministic clinician product API."""
 
+import time
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from clinical_app.app import create_app
+
+
+def poll_until_settled(api: TestClient, headers: dict[str, str], run_id: str, timeout: float = 2.0) -> dict[str, object]:
+    """Poll a live run until its background task moves it off "running".
+
+    Live endpoints return immediately with status "running" and finish the
+    real ADK call in a background asyncio task (see app.py's run_in_background
+    closures) so the frontend can poll for incremental progress instead of
+    blocking on a multi-minute request; tests need the same poll to observe
+    the settled result.
+    """
+
+    deadline = time.monotonic() + timeout
+    run = api.get(f"/api/runs/{run_id}", headers=headers).json()
+    while run.get("status") == "running" and time.monotonic() < deadline:
+        time.sleep(0.02)
+        run = api.get(f"/api/runs/{run_id}", headers=headers).json()
+    return run
 
 # Seeded provenance rows (AUD-SEED-*, SEED-RCP-*) only exist after a generated
 # showcase dataset has been loaded; without one the demo tenant falls back to
@@ -301,6 +320,7 @@ def test_live_mode_uses_lazy_bridge_and_persists_metadata(tmp_path, monkeypatch)
             "/api/runs/qa", headers=capstone,
             json={"patientId": "PT-9921", "question": "Summarize recent status"},
         ).json()
+        run = poll_until_settled(api, capstone, run["id"])
         assert run["result"]["liveResponse"] == "Safe live response"
         assert run["result"]["authorSteps"][0]["author"] == "root_agent"
         assert any(step["name"] == "Root Agent" for step in run["steps"])
@@ -512,3 +532,25 @@ def test_demo_storage_serves_sample_records_with_patient_context() -> None:
     assert sample and all(record["patientId"] and record["sessionId"] for record in sample)
     seeded = [entry for entry in storage["persistedExtractions"] if str(entry["runId"]).startswith("RUN-SEED-")]
     assert seeded and all(entry["jsonReceipt"] and entry["patientId"] and entry["confidence"] is not None for entry in seeded)
+
+
+def test_database_examples_are_grounded_and_answerable() -> None:
+    """GET /database/examples returns questions the tenant can actually answer.
+
+    Demo tenants surface their curated query-card questions, so the first
+    suggestion must round-trip through preview and execution with real rows
+    instead of being a generic template that matches nothing.
+    """
+
+    api = client()
+    headers = clinician("examples-session")
+    response = api.get("/api/database/examples", headers=headers)
+    assert response.status_code == 200
+    questions = response.json()
+    assert questions and len(questions) <= 7
+    assert all(isinstance(question, str) and question for question in questions)
+    preview = api.post("/api/runs/database/preview", headers=headers, json={"question": questions[0]})
+    assert preview.status_code == 201
+    executed = api.post(f"/api/runs/database/{preview.json()['id']}/execute", headers=headers)
+    assert executed.status_code == 200
+    assert executed.json()["result"]["rows"]

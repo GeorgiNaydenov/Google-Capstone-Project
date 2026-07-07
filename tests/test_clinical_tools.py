@@ -122,6 +122,14 @@ class TestClinicalSchemas:
         result = validate_sql("SELECT * FROM patients_core")
         assert result["safe"] is True
 
+    def test_validate_sql_accepts_read_only_cte(self):
+        result = validate_sql("WITH recent AS (SELECT patient_id FROM lab_results) SELECT p.name FROM patients_core p JOIN recent r ON p.patient_id = r.patient_id")
+        assert result["safe"] is True
+
+    def test_validate_sql_blocks_mutation_inside_cte(self):
+        result = validate_sql("WITH x AS (SELECT 1) DELETE FROM patients_core")
+        assert result["safe"] is False
+
     def test_validate_sql_blocks_drop(self):
         result = validate_sql("DROP TABLE patients_core")
         assert result["safe"] is False

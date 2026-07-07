@@ -2696,6 +2696,10 @@ export function fallbackQaRun(patientId: string, question: string, sourceTypes: 
   };
 }
 
+// Shown when GET /database/examples is unreachable; the backend otherwise
+// derives these from the tenant's real database contents.
+export const fallbackDatabaseExamples = ["Count patients by risk level", "Which diabetic patients have an HbA1c above 9 percent?", "Which anticoagulated patients have no recent INR result?", "Which patients aged 65 and older are missing pneumococcal vaccination?", "Which patients are on 8 or more active medications?", "How does appointment no-show rate vary with housing stability?", "Show open care gaps by priority and owner"];
+
 export function fallbackSqlPreview(question: string): AgentRun {
   const runId = demoId("RUN");
   return { id: runId, workflow: "database", status: "review", agentName: "db_intelligence_pipeline", confidence: 0.9, createdAt: now(), auditId: demoId("AUD"), traceId: demoId("TRACE"), steps: [{ id: `${runId}-S1`, name: "Schema Discovery Agent", status: "completed", detail: "Loaded deterministic fallback schema", timestamp: now() }, { id: `${runId}-S2`, name: "SQL Validator", status: "review", detail: "SELECT-only query awaits approval", timestamp: now() }], evidence: [], result: { question, sql: "SELECT risk_level, COUNT(*) AS patient_count FROM patients GROUP BY risk_level;", safe: true, toolCalls: [] } };

@@ -23,12 +23,19 @@
 #   printf "KEY" | gcloud secrets versions add GOOGLE_API_KEY --data-file=-
 # Then change GOOGLE_GENAI_USE_VERTEXAI=FALSE and add:
 #   --update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest
+#
+# CLINICAL_DATA_DIR=/data is mounted onto _DATA_BUCKET (GCS FUSE, gen2 only) so
+# the real (capstone) tenant's capstone.db and uploads survive redeploys and
+# scale-to-zero; demo tenants keep no files and do not need this volume.
+#   gcloud storage buckets create gs://_DATA_BUCKET --location=_REGION
+#   gsutil iam ch serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com:roles/storage.objectAdmin gs://_DATA_BUCKET
 
 substitutions:
   _REGION: us-central1
   _SERVICE: clinical-ai-kit
   _REPOSITORY: clinical-ai-kit
   _IMAGE: clinical-ai-kit
+  _DATA_BUCKET: capstone-project-500212-clinical-data
 
 steps:
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
@@ -75,8 +82,9 @@ steps:
       - --concurrency=20
       - --min-instances=0
       - --max-instances=1
-      - --clear-volume-mounts
-      - --clear-volumes
+      - --execution-environment=gen2
+      - --add-volume=name=data,type=cloud-storage,bucket=${_DATA_BUCKET}
+      - --add-volume-mount=volume=data,mount-path=/data
       - --set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,HIPAA_MODE=TRUE,PHI_REDACTION=TRUE,MEMORY_BACKEND=memory,SESSION_BACKEND=memory,ENABLE_TRACING=TRUE,TRACE_EXPORTER=gcp,CLINICAL_DATA_DIR=/data
 
 images:

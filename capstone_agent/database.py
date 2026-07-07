@@ -67,12 +67,12 @@ def get_connection():
     """Get a connection to the context-active SQLite database.
 
     GCS FUSE (Cloud Run volume mount) does not support random writes required
-    by SQLite WAL mode. Using DELETE journal mode ensures sequential writes to
-    the single .db file, which is fully compatible with GCS FUSE semantics.
+    by SQLite WAL mode. Journal mode is configured during initialization so
+    ordinary request connections do not need the exclusive lock that changing
+    journal mode requires.
     """
-    conn = sqlite3.connect(str(active_db_path()))
+    conn = sqlite3.connect(str(active_db_path()), timeout=30)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=DELETE")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
@@ -102,6 +102,7 @@ def init_db(*, seed: bool | None = None):
                 _INITIALIZED_PATHS.add(path_key)
                 return
 
+            conn.execute("PRAGMA journal_mode=DELETE")
             for ddl in clinical_schemas.SCHEMA_DDL.values():
                 sqlite_ddl = ddl.replace("SERIAL", "INTEGER").replace("JSONB", "TEXT")
                 cursor.execute(sqlite_ddl)

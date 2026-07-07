@@ -67,7 +67,7 @@ export function Shell() {
   const [commandOpen, setCommandOpen] = useState(false);
   const [initialCommand, setInitialCommand] = useState("");
   const [noticeOpen, setNoticeOpen] = useState(false);
-  const [tourOpen, setTourOpen] = useState(() => localStorage.getItem(ONBOARDING_KEY) !== "done" && location.pathname !== "/app/console");
+  const [tourOpen, setTourOpen] = useState(() => localStorage.getItem(ONBOARDING_KEY) !== "done" && ["/app", "/app/dashboard"].includes(location.pathname));
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [matches, setMatches] = useState<Patient[]>([]);

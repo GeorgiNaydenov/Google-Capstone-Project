@@ -67,10 +67,19 @@ volume (Cloud Run volume mounts or a GCS FUSE mount). The demo tenants keep no
 files, so they need no volume. The default `clinical.db` self-seeds on first
 touch and is safe to leave ephemeral.
 
-For the Kaggle demo, ephemeral `/data` is acceptable because all bundled
-clinical data is synthetic and the live Capstone tenant is only a demonstration
-of the real ADK/Gemini boundary. For real production, mount persistent storage
-or move the clinical database and uploads to Cloud SQL plus object storage.
+`cloudbuild.yaml` mounts `CLINICAL_DATA_DIR=/data` onto a GCS bucket
+(`_DATA_BUCKET`, GCS FUSE volume) via `--execution-environment=gen2` so the
+real `capstone.db` and `uploads_capstone/` persist across restarts, scale-to-
+zero, and redeploys. One-time setup before the first deploy:
+
+```bash
+gcloud storage buckets create gs://capstone-project-500212-clinical-data --location=us-central1
+gsutil iam ch serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com:roles/storage.objectAdmin \
+    gs://capstone-project-500212-clinical-data
+```
+
+For real production beyond the Kaggle demo, move the clinical database and
+uploads to Cloud SQL plus object storage instead of GCS FUSE.
 
 ### Health and readiness
 

@@ -6,6 +6,7 @@ import base64
 import hashlib
 import io
 import json
+import re
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -188,6 +189,44 @@ def parse_knowledge_base_upload(contents: bytes, content_type: str, filename: st
         }
     )
     return metadata
+
+
+PATIENT_ID_PATTERNS = (
+    # "Patient PT-D00008", "Patient ID: MRN-1234", "patient #A-1234"
+    re.compile(r"\bpatient(?:\s+id)?\s*[:#]?\s*([A-Z]{1,4}-[A-Z0-9]{3,12})\b", re.IGNORECASE),
+    # "Patient 900001", "Patient ID 900001"
+    re.compile(r"\bpatient(?:\s+id)?\s*[:#]?\s*(\d{4,10})\b", re.IGNORECASE),
+    # Standalone tenant-style identifiers, e.g. "PT-D00008" in a table cell.
+    re.compile(r"\b(PT-[A-Z0-9]{3,12})\b"),
+    re.compile(r"\bMRN\s*[:#]?\s*([A-Z0-9][A-Z0-9-]{3,15})\b", re.IGNORECASE),
+)
+
+
+def detect_patient_id(text: str) -> str:
+    """Return the first patient identifier mentioned in free text, or ''.
+
+    Recognizes "Patient 900001" / "Patient ID: 900001" style document
+    headers plus standalone PT-/MRN-prefixed identifiers, so uploads can
+    prefill the patient field from what the document itself declares.
+    """
+
+    for pattern in PATIENT_ID_PATTERNS:
+        match = pattern.search(text or "")
+        if match:
+            return match.group(1)
+    return ""
+
+
+def detect_patient_id_from_parsed(parsed: dict[str, Any]) -> str:
+    """Scan parsed upload metadata (text preview, then page text) for a patient identifier."""
+
+    texts = [str(parsed.get("textPreview") or "")]
+    texts.extend(str(page.get("text") or "") for page in parsed.get("pages", []) if isinstance(page, dict))
+    for text in texts:
+        detected = detect_patient_id(text)
+        if detected:
+            return detected
+    return ""
 
 
 def _base_metadata(contents: bytes, content_type: str, filename: str) -> dict[str, Any]:

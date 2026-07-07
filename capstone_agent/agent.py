@@ -43,6 +43,7 @@ Google Cloud ecosystem integration:
 """
 
 import logging
+import os
 import sys
 
 from google.adk.agents import LlmAgent
@@ -112,6 +113,12 @@ mcp_tools = McpToolset(
         server_params=StdioServerParameters(
             command=sys.executable,
             args=["-m", "mcp_server.server"],
+            # StdioServerParameters.env defaults to a minimal safe-list (PATH,
+            # HOME, ...), not the parent's full environment, so without this
+            # the subprocess loses CLINICAL_DATA_DIR/GOOGLE_CLOUD_PROJECT and
+            # capstone_agent.database falls back to the read-only package
+            # root, failing with "unable to open database file" in containers.
+            env=os.environ.copy(),
         ),
         timeout=30,
     ),

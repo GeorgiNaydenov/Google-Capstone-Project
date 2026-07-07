@@ -476,7 +476,10 @@ def validate_sql(sql: str) -> dict[str, Any]:
     """
     upper_sql = sql.upper().strip()
 
-    if not upper_sql.startswith("SELECT"):
+    # WITH ... SELECT common-table-expression prologues are still read-only:
+    # any mutation smuggled inside a CTE is caught by the blocked-keyword
+    # scan below, which covers the whole statement.
+    if not upper_sql.startswith(("SELECT", "WITH")):
         return {"safe": False, "reason": "Query must start with SELECT.", "tables_referenced": []}
 
     for keyword in BLOCKED_KEYWORDS:
