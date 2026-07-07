@@ -422,12 +422,13 @@ def persist_extraction_vector(
 def assess_image_quality(image_uri: str, patient_id: str) -> dict[str, Any]:
     """Assess clinical image quality before analysis.
 
-    Checks resolution, contrast, artifacts, and DICOM compliance.
-    Uses GCS metadata to evaluate whether the image meets minimum
-    quality thresholds for clinical analysis.
+    For local file paths (a freshly uploaded live-tenant document): reads
+    the real file, same real-vs-seeded branch used by extract_clinical_text
+    and analyze_clinical_image below. For GCS URIs or other references: uses
+    seeded imaging_studies metadata to evaluate quality thresholds.
 
     Args:
-        image_uri: GCS URI of the clinical image (gs://...).
+        image_uri: File path or GCS URI of the clinical image.
         patient_id: Patient identifier for audit trail.
 
     Returns:
@@ -436,28 +437,64 @@ def assess_image_quality(image_uri: str, patient_id: str) -> dict[str, Any]:
     start = time.perf_counter()
     try:
         validated = ImageQualityInput(image_uri=image_uri, patient_id=patient_id)
-        quality = database.get_imaging_quality(validated.image_uri)
-        if not quality:
-            result = ToolError(
-                error_code="IMAGE_NOT_FOUND",
-                message=f"No image found at {validated.image_uri}",
-            ).to_dict()
-        else:
-            passed = quality["quality_score"] >= 0.70
+
+        from pathlib import Path
+        local_path = Path(validated.image_uri)
+
+        if local_path.exists() and local_path.suffix.lower() == ".pdf":
+            # Resolution/contrast checks are meaningless for a text document;
+            # the vision stage already knows to treat this as non-imaging.
             result = ToolResponse(
-                message=f"Quality {'PASS' if passed else 'FAIL'}: score {quality['quality_score']:.2f}",
+                message="Quality PASS: text-based document, resolution checks do not apply",
+                data={
+                    "passed": True, "quality_score": 1.0, "resolution": "n/a (document)",
+                    "modality": "document", "contrast": "n/a", "artifacts": "n/a",
+                    "dicom_compliant": False, "patient_id": validated.patient_id, "image_uri": validated.image_uri,
+                },
+            ).to_dict()
+        elif local_path.exists():
+            from PIL import Image
+
+            with Image.open(local_path) as img:
+                width, height = img.size
+            passed = width >= 512 and height >= 512
+            result = ToolResponse(
+                message=f"Quality {'PASS' if passed else 'FAIL'}: {width}x{height}",
                 data={
                     "passed": passed,
-                    "quality_score": quality["quality_score"],
-                    "resolution": quality["resolution"],
-                    "modality": quality["modality"],
-                    "contrast": quality["contrast"],
-                    "artifacts": quality["artifacts"],
-                    "dicom_compliant": quality["dicom_compliant"],
+                    "quality_score": 0.9 if passed else 0.5,
+                    "resolution": f"{width}x{height}",
+                    "modality": "unknown (assessed by vision stage)",
+                    "contrast": "unknown",
+                    "artifacts": "unknown",
+                    "dicom_compliant": False,
                     "patient_id": validated.patient_id,
                     "image_uri": validated.image_uri,
                 },
             ).to_dict()
+        else:
+            quality = database.get_imaging_quality(validated.image_uri)
+            if not quality:
+                result = ToolError(
+                    error_code="IMAGE_NOT_FOUND",
+                    message=f"No image found at {validated.image_uri}",
+                ).to_dict()
+            else:
+                passed = quality["quality_score"] >= 0.70
+                result = ToolResponse(
+                    message=f"Quality {'PASS' if passed else 'FAIL'}: score {quality['quality_score']:.2f}",
+                    data={
+                        "passed": passed,
+                        "quality_score": quality["quality_score"],
+                        "resolution": quality["resolution"],
+                        "modality": quality["modality"],
+                        "contrast": quality["contrast"],
+                        "artifacts": quality["artifacts"],
+                        "dicom_compliant": quality["dicom_compliant"],
+                        "patient_id": validated.patient_id,
+                        "image_uri": validated.image_uri,
+                    },
+                ).to_dict()
     except ValidationError as e:
         result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
     except Exception as e:

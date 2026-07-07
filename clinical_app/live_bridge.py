@@ -318,7 +318,14 @@ def _extract_fields(text: str) -> dict[str, str]:
     fields: dict[str, str] = {}
     parsed = _parse_json_object(text)
     if isinstance(parsed, dict):
-        fields = {str(k): v if isinstance(v, str) else json.dumps(v) for k, v in parsed.items()}
+        for key, value in parsed.items():
+            # clinical_structurer enriches fields worth an ontology code with
+            # {"value": ..., "code": ..., "confidence": ..., "needs_review": ...}
+            # instead of a bare scalar; unwrap it so the UI shows the clinical
+            # value ("Dyspnea on exertion") rather than the raw JSON object.
+            if isinstance(value, dict) and "value" in value:
+                value = value["value"]
+            fields[str(key)] = value if isinstance(value, str) else json.dumps(value)
     if not fields:
         for line in text.split("\n"):
             # Markdown table rows and separators produce garbage keys — the

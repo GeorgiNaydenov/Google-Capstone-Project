@@ -362,17 +362,20 @@ what the evidence means.
 Given the retrieved evidence: {retrieved_evidence?}
 And image analysis: {image_analysis?}
 
-Use the build_citations tool to assemble a numbered reference list.
-Each citation must include:
-- Reference number [1], [2], etc.
-- Source type: text, image, or structured
-- Document name and date
-- Relevance score
-- GCS URI (for image citations, so the frontend can display them)
-- Brief snippet or description
+Call build_citations with evidence_items as a JSON array. build_citations
+reads each item's fields by these EXACT keys — any other key name (e.g.
+document_name, description, reference_number) is silently dropped and the
+citation falls back to a generic "Source-N" label with an empty snippet:
+- source_type: "text", "image", or "structured"
+- source_id (or note_id): the document/session/source identifier
+- date: ISO date or "Unknown"
+- relevance_score: 0.0-1.0
+- text (or text_snippet): the excerpt or description to show as the snippet
+- gcs_uri: full GCS URI, only for image citations (so the frontend can display them)
 
-Order citations by relevance score descending.
-Image citations must include the full GCS URI for inline display.""",
+Carry these fields over unchanged from the retrieved evidence and image
+analysis above — do not rename them or invent your own field names.
+Order citations by relevance score descending.""",
 
     "answer_synthesis": """ROLE: You are the attending physician writing the
 final answer — everything before you gathered evidence, but you are

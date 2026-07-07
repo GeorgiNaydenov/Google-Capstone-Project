@@ -252,6 +252,19 @@ def create_app() -> FastAPI:
         result["authorSteps"] = live_result.get("authorSteps", [])
         result["toolCalls"] = live_result.get("toolCalls", result.get("toolCalls", []))
 
+    def last_tool_output(live_result: dict[str, Any], tool_name: str) -> dict[str, Any] | None:
+        """Return the data payload of the last successful call to tool_name.
+
+        citation_builder_agent's own output_key text is free-form prose, not
+        reliable structured data — the deterministic build_citations tool
+        return value (captured here from the event stream) is.
+        """
+
+        for call in reversed(live_result.get("toolCalls", [])):
+            if call.get("tool") == tool_name and isinstance(call.get("output"), dict) and call["output"].get("status") == "success":
+                return call["output"].get("data") or {}
+        return None
+
     @api.get("/healthz")
     def healthz() -> dict[str, str]:
         """Report liveness for raw probes."""
@@ -1198,6 +1211,26 @@ def create_app() -> FastAPI:
                     state_outputs = live_result.get("stateOutputs", {})
                     item["result"]["answer"] = state_outputs.get("qa_answer") or live_result.get("finalResponse", "No answer generated")
                     attach_live_metadata(item["result"], live_result)
+                    item["result"]["stateOutputs"] = state_outputs
+                    # citation_builder_agent's citations carry the image_evidence_agent's
+                    # findings even when no locally-stored asset backs them (e.g. imaging
+                    # studies referenced only by a synthetic GCS URI) — surface them as a
+                    # structured table. imageEvidence intentionally stays unset here: an
+                    # <img> pointed at a non-HTTP gs:// URI cannot render, so the frontend's
+                    # existing fallback (first "image" kind entry in evidence, which only
+                    # exists for real stored assets) remains the only inline image source.
+                    citations = (last_tool_output(live_result, "build_citations") or {}).get("citations", [])
+                    if citations:
+                        item["result"]["summaryRows"] = [
+                            {
+                                "id": f"{run_id}-cite-{citation.get('ref', index)}",
+                                "citation": f"[{citation.get('ref', index)}]",
+                                "file": citation.get("document_name", "Evidence"),
+                                "type": citation.get("source_type", "text"),
+                                "finding": citation.get("snippet", ""),
+                            }
+                            for index, citation in enumerate(citations, 1)
+                        ]
                 except Exception as exc:
                     item["status"] = "error"
                     item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": f"Execution failed: {exc}", "timestamp": now()})
