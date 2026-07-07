@@ -75,7 +75,7 @@ steps:
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$BUILD_ID
       - --region=${_REGION}
       - --platform=managed
-      - --allow-unauthenticated
+      - --no-allow-unauthenticated
       - --port=8080
       - --memory=1Gi
       - --cpu=1
