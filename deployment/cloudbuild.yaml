@@ -26,6 +26,14 @@
 #     --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
 #     --role="roles/discoveryengine.editor"
 #
+# --no-cpu-throttling: live-mode requests return "running" immediately and do
+# the actual multi-agent + MCP-subprocess work in an asyncio background task
+# while the client polls /runs/{id}. Cloud Run's default CPU throttling only
+# allocates CPU while actively serving an inbound HTTP request, starving that
+# background task between polls and manifesting as opaque MCP session/timeout
+# failures. Always-allocated CPU fixes it; cost only accrues while an instance
+# is up (min-instances stays 0).
+#
 # Optional API-key mode instead of Vertex:
 #   gcloud secrets create GOOGLE_API_KEY --replication-policy=automatic
 #   printf "KEY" | gcloud secrets versions add GOOGLE_API_KEY --data-file=-
@@ -87,6 +95,7 @@ steps:
       - --port=8080
       - --memory=1Gi
       - --cpu=1
+      - --no-cpu-throttling
       - --concurrency=20
       - --min-instances=0
       - --max-instances=1
