@@ -131,3 +131,5 @@ Project Wiki/.obsidian/workspace.json
 # Local build/tool artifacts
 .docker-tmp/
 tmp_sharex_*.jpg
+.tmp/
+.tmp_showcase_validation/
