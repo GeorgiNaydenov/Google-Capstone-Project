@@ -58,6 +58,12 @@ def get_config() -> dict:
         "session_db_url": os.getenv("SESSION_DB_URL", "sqlite:///./capstone_sessions.db"),
         "memory_backend": os.getenv("MEMORY_BACKEND", "memory").lower(),  # memory | vertex
         "agent_engine_id": os.getenv("AGENT_ENGINE_ID", ""),
+        # --- Semantic retrieval (see vector_store.py) ---
+        "enable_vector_search": os.getenv("ENABLE_VECTOR_SEARCH", "TRUE").upper() == "TRUE",
+        "embedding_model": os.getenv("EMBEDDING_MODEL", "gemini-embedding-001"),
+        "embedding_dimensions": int(os.getenv("EMBEDDING_DIMENSIONS", "768")),
+        "enable_reranker": os.getenv("ENABLE_RERANKER", "TRUE").upper() == "TRUE",
+        "reranker_model": os.getenv("RERANKER_MODEL", "semantic-ranker-default@latest"),
         # --- Resumability (human-in-the-loop, long-running ops) ---
         "enable_resumability": os.getenv("ENABLE_RESUMABILITY", "TRUE").upper() == "TRUE",
         # --- A2A serving (Day 5a) ---

@@ -8,6 +8,7 @@ Google ADK capstone project for Kaggle's 5-Day AI Agents: Intensive Vibe Coding 
 
 - **Framework**: Google ADK (`google-adk`) — Python
 - **LLM**: Google Gemini 3.1 via a 3-tier registry (`llm.build_model`): `flash-lite` (default), `pro`, `pro-customtools`
+- **Retrieval**: Vertex AI `gemini-embedding-001` embeddings + Vertex AI Ranking API reranker over a tenant-scoped SQLite vector store (`vector_store.py`); deterministic keyword fallback without credentials
 - **MCP**: Model Context Protocol for tool interoperability
 - **A2A**: Agent2Agent protocol for cross-agent communication (`a2a_server.py`, `google-adk[a2a]`)
 - **Observability**: OpenTelemetry (OTLP / Cloud Trace) + ADK plugins + structured JSON logging
@@ -57,6 +58,7 @@ scripts/
   build_docs_site.py        # Build the standalone documentation hub served at /documentation.
   build_llm_wiki.py         # Script to compile the Obsidian Project Wiki into the Karpathy LLM Wiki structure.
   check_harness.py
+  check_source_safety.py    # Repository safety gate for public source and commit metadata.
   export_diagrams.py        # Export Project Wiki draw.io diagrams into frontend public assets.
   generate_database_showcase.py # Generate a large governed SQLite cohort for the database agent.
   generate_database_showcase_demo2.py # Generate the second-platform database intelligence demo dataset.
@@ -98,6 +100,20 @@ docs/                       # Architecture and product documentation
 Project Wiki/               # Obsidian knowledge base (auto-synced)
 ```
 <!-- AUTO:STRUCTURE:END -->
+
+### Logical layers (flat modules by design)
+
+`capstone_agent/` keeps a flat module layout because the wiki sync tooling,
+dependency graph, and Module Inventory key off `capstone_agent/*.py`. The
+layered structure is expressed inside the modules instead of via subpackages:
+
+| Layer | Module(s) |
+|---|---|
+| Settings | `config.py` (env, secrets, redaction) |
+| DB / repositories | `database.py` — `DatabaseManager` + `PatientRepository`, `DocumentRepository`, `ImagingRepository`, `SessionRepository`, `AuditRepository`, `QaMemoryRepository` (module-level functions are thin delegates kept for the functional API) |
+| Schemas / contracts | `clinical_schemas.py`, `models.py` |
+| Domain services | `document_processor.py`, `memory.py`, `context.py`, `security.py` |
+| Agent wiring | `llm.py`, `orchestration.py`, `prompts.py`, `callbacks.py`, `agent.py`, `app.py` |
 
 ## Module Dependency Graph
 
@@ -175,9 +191,9 @@ Traces (narrative), Metrics (timing). All output passes through
 ## Key Commands
 
 ```bash
-# Setup
-python -m venv .venv && .venv\Scripts\activate
-pip install -r requirements.txt
+# Setup — dependencies are canonical in pyproject.toml, hash-pinned in uv.lock
+# (requirements.txt is only the deployment mirror consumed by the Dockerfile)
+uv sync
 copy .env.example .env   # Add your GOOGLE_API_KEY
 
 # Development

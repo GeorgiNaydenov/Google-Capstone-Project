@@ -165,6 +165,17 @@ SCHEMA_DDL: dict[str, str] = {
     source_page INTEGER
 );""",
 
+    "vector_chunks": """CREATE TABLE vector_chunks (
+    chunk_id VARCHAR(120) PRIMARY KEY,
+    patient_id VARCHAR(10),
+    source_type VARCHAR(30) NOT NULL,      -- 'clinical_note', 'document', 'structured'
+    source_id VARCHAR(80),
+    chunk_text TEXT NOT NULL,
+    embedding TEXT NOT NULL,               -- JSON array from Vertex gemini-embedding-001
+    embedding_model VARCHAR(60) NOT NULL,
+    created_at TIMESTAMP NOT NULL
+);""",
+
     "patient_conditions": """CREATE TABLE patient_conditions (
     condition_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),

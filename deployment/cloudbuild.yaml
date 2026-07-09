@@ -18,6 +18,14 @@
 #     --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
 #     --role="roles/cloudtrace.agent"
 #
+# Semantic retrieval reranker (capstone_agent/vector_store.py) calls the Vertex
+# AI Ranking API with the runtime service account's ADC. Grant it once (the
+# store falls back to cosine ordering until this is granted):
+#   gcloud services enable discoveryengine.googleapis.com
+#   gcloud projects add-iam-policy-binding PROJECT_ID \
+#     --member="serviceAccount:PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+#     --role="roles/discoveryengine.editor"
+#
 # Optional API-key mode instead of Vertex:
 #   gcloud secrets create GOOGLE_API_KEY --replication-policy=automatic
 #   printf "KEY" | gcloud secrets versions add GOOGLE_API_KEY --data-file=-

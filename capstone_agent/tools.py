@@ -27,6 +27,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from . import database
+from . import vector_store
 from .clinical_schemas import execute_query, get_schema, validate_sql
 from .models import (
     AuditEventInput,
@@ -138,7 +139,24 @@ def _persist_extraction(
                 )
                 chunk_dicts = [{"index": c["index"], "text": c["text"], "page": None} for c in chunks]
                 chunk_count = database.store_document_chunks(doc_id, chunk_dicts, validated.patient_id)
-                db_result = {"chunks_stored": chunk_count}
+                # Semantic index: embed the approved extraction so Q&A finds it
+                # by meaning, not just keywords. Best-effort — without Vertex
+                # credentials the keyword chunks above still serve retrieval.
+                embedded = 0
+                try:
+                    embedded = vector_store.index_chunks([
+                        {
+                            "chunk_id": f"doc-{doc_id}-{c['index']}",
+                            "patient_id": validated.patient_id,
+                            "source_type": "document",
+                            "source_id": doc_id,
+                            "text": c["text"],
+                        }
+                        for c in chunks
+                    ])
+                except Exception:
+                    embedded = 0
+                db_result = {"chunks_stored": chunk_count, "chunks_embedded": embedded}
             else:
                 db_result = {}
 
@@ -869,19 +887,40 @@ def search_vector_store(query: str, patient_id: str, source_types: str = "all") 
         results = []
         type_filter = None if validated.source_types == "all" else {t.strip() for t in validated.source_types.split(",")}
         keywords = validated.query.lower().split()
+        retrieval_mode = "keyword"
 
         if type_filter is None or "text" in type_filter or "structured" in type_filter:
-            db_results = database.search_documents(validated.query, validated.patient_id, limit=15)
-            for item in db_results:
-                results.append({
-                    "chunk_id": str(item.get("chunk_id", "")),
-                    "source_type": item.get("source_type", "document"),
-                    "source_id": item.get("document_id", ""),
-                    "date": item.get("uploaded_at", ""),
-                    "text": item.get("chunk_text", "")[:400],
-                    "relevance_score": item.get("relevance_score", 0.5),
-                    "filename": item.get("filename", ""),
-                })
+            # Semantic-first: Vertex embeddings + Ranking API when credentials
+            # and an index are available; deterministic keyword search otherwise.
+            semantic_results: list[dict[str, Any]] = []
+            try:
+                semantic_results = vector_store.semantic_search(validated.query, validated.patient_id, limit=10)
+            except Exception:
+                semantic_results = []
+            if semantic_results:
+                retrieval_mode = semantic_results[0].get("retrieval", "vector")
+                for item in semantic_results:
+                    results.append({
+                        "chunk_id": str(item.get("chunk_id", "")),
+                        "source_type": item.get("source_type", "document"),
+                        "source_id": item.get("source_id", ""),
+                        "date": "",
+                        "text": (item.get("text") or "")[:400],
+                        "relevance_score": item.get("rerank_score", item.get("relevance_score", 0.5)),
+                        "retrieval": item.get("retrieval", "vector"),
+                    })
+            else:
+                db_results = database.search_documents(validated.query, validated.patient_id, limit=15)
+                for item in db_results:
+                    results.append({
+                        "chunk_id": str(item.get("chunk_id", "")),
+                        "source_type": item.get("source_type", "document"),
+                        "source_id": item.get("document_id", ""),
+                        "date": item.get("uploaded_at", ""),
+                        "text": item.get("chunk_text", "")[:400],
+                        "relevance_score": item.get("relevance_score", 0.5),
+                        "filename": item.get("filename", ""),
+                    })
 
         if type_filter is None or "image" in type_filter:
             imaging_results = database.search_imaging_studies(validated.patient_id, keywords)
@@ -899,8 +938,8 @@ def search_vector_store(query: str, patient_id: str, source_types: str = "all") 
         results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
 
         result = ToolResponse(
-            message=f"Search returned {len(results)} results for {validated.patient_id}",
-            data={"patient_id": validated.patient_id, "query": validated.query, "results": results},
+            message=f"Search returned {len(results)} results for {validated.patient_id} via {retrieval_mode} retrieval",
+            data={"patient_id": validated.patient_id, "query": validated.query, "retrieval_mode": retrieval_mode, "results": results},
         ).to_dict()
     except ValidationError as e:
         result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
