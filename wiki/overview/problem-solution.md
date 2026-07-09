@@ -1,9 +1,9 @@
-# Problem & Solution
+# Problem and Solution
 
 > Sources: Antigravity, 2026-07-05
-> Raw: [Problem & Solution Source](../../raw/overview/2026-07-04-problem-solution.md)
+> Raw: [Problem and Solution Source](../../raw/overview/2026-07-04-problem-solution.md)
 
-# Problem & Solution
+# Problem and Solution
 
 ## Problem
 

@@ -48,6 +48,7 @@ Hand-written companion: [[Module Reference]].
 | `scripts` | `build_docs_site.py` | Build the standalone documentation hub served at /documentation. |
 | `scripts` | `build_llm_wiki.py` | Script to compile the Obsidian Project Wiki into the Karpathy LLM Wiki structure. |
 | `scripts` | `check_harness.py` | (no docstring) |
+| `scripts` | `check_source_safety.py` | Repository safety gate for public source and commit metadata. |
 | `scripts` | `export_diagrams.py` | Export Project Wiki draw.io diagrams into frontend public assets. |
 | `scripts` | `generate_database_showcase.py` | Generate a large governed SQLite cohort for the database agent. |
 | `scripts` | `generate_database_showcase_demo2.py` | Generate the second-platform database intelligence demo dataset. |

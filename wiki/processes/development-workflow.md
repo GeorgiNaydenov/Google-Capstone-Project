@@ -43,4 +43,4 @@ Key facts:
 - Machine-owned pages live in `_generated/`; AUTO-marked blocks in [[Module Dependency Graph]], `CLAUDE.md`, and root `MEMORY.md` are rewritten in place. Hand-written prose is never touched.
 - After any CLAUDE.md change, `sync_harness.py` must mirror it to AGENTS.md — the sync script does this automatically as its last step.
 
-Related: [[Claude Harness]] · [[Testing & Eval]]
+Related: [[Claude Harness]] · [[Testing and Eval]]

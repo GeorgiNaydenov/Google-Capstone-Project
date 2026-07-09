@@ -100,6 +100,13 @@ describe("clinical product shell", () => {
     const request = fetchMock.mock.calls.find(([, init]) => init?.method === "PUT")?.[1] as RequestInit;
     expect(JSON.parse(String(request.body))).toMatchObject({ autoApprovalThreshold: 90, reviewThreshold: 75, maxConcurrentRuns: 12, databaseEnabled: true });
   });
+  it("shows agent configuration read-only for clinicians", async () => {
+    localStorage.setItem("clinicalRole", "clinician");
+    render(<MemoryRouter initialEntries={["/app/configuration"]}><App/></MemoryRouter>);
+    expect(await screen.findByRole("heading", { name: /agent configuration and monitoring/i })).toBeInTheDocument();
+    expect(screen.getByText(/read-only view/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /save new version/i })).not.toBeInTheDocument();
+  });
   it("keeps the admin dashboard usable when read APIs return gateway errors", async () => {
     localStorage.setItem("clinicalRole", "admin");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ detail: "Gateway unavailable" }), { status: 502, headers: { "Content-Type": "application/json" } }));

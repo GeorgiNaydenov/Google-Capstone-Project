@@ -28,6 +28,7 @@ from clinical_app.models import (
     OrchestrationPlan, ErrorResponse,
     SystemHealthResponse, AgentMonitorRow, PermissionsResponse, PermissionsUpdateRequest,
     SchemaTable, WorkspaceSummaryResponse, EvidenceItemResponse,
+    ReportScheduleResponse, ReportScheduleUpdateRequest,
 )
 from clinical_app.system import component_checks
 from clinical_app.live_bridge import execute_live
@@ -323,10 +324,12 @@ def create_app() -> FastAPI:
 
     @v1_router.get("/agents/monitoring", response_model=list[AgentMonitorRow], tags=["Agents"], responses={200: {"description": "Per-agent runtime statistics"}, **COMMON_RESPONSES})
     def agents_monitoring(ctx: Context) -> list[dict[str, Any]]:
-        """Return per-agent statistics — baseline+session for demo, run-derived for real tenants."""
+        """Return per-agent statistics — baseline+session for demo, run-derived for real tenants.
 
-        if ctx[1] != "admin":
-            raise HTTPException(403, "Admin role required")
+        Readable by every role: clinicians get the same read-only monitoring
+        view admins see, and no mutation happens through this endpoint.
+        """
+
         return ctx[0].agent_monitoring()
 
     @v1_router.get("/permissions", response_model=PermissionsResponse, tags=["Admin"], responses={200: {"description": "Role-permission matrix"}, **COMMON_RESPONSES})
@@ -977,7 +980,7 @@ def create_app() -> FastAPI:
                             item["status"] = "error"
                             item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": "Extraction produced no structured fields or narrative response", "timestamp": now()})
                             return
-                        fields = {"documentType": "Clinical evidence", "patientMatch": patient_id, "finding": final_response}
+                        fields = {"document_type": "Clinical evidence", "patient_match": patient_id, "finding": final_response}
                     item["steps"] = live_steps(run_id, live_result, "Clinical Review Gate", "review")
                     item["status"] = "review"
                     item["confidence"] = live_result.get("confidence", 0.88)
@@ -1003,20 +1006,24 @@ def create_app() -> FastAPI:
         }
         if not fields:
             fields = {
-                "documentType": extracted_meta.get("documentType", "Clinical evidence"),
-                "patientMatch": patient_id,
+                "document_type": extracted_meta.get("documentType", "Clinical evidence"),
+                "patient_match": patient_id,
                 "finding": str(extracted_meta.get("textPreview") or "Evidence ready for clinician verification"),
             }
         confidence = round(
             sum(float(field.get("confidence", 0.88)) for field in extracted_fields) / len(extracted_fields),
             2,
         ) if extracted_fields else 0.88
+        # Extracted-field names are clinical data, not API parameters: they are
+        # displayed verbatim in the inbox review workspace and mirrored into the
+        # relational row, so every key here uses one convention (snake_case) to
+        # match the extraction packets and the relational/session views.
         fields = {
-            "documentType": extracted_meta.get("documentType", "Clinical evidence"),
-            "patientMatch": patient_id,
-            "sourceFile": primary_asset.get("filename", ""),
-            "packetId": primary_asset.get("packetId", ""),
-            "batchPatients": primary_asset.get("packetPatientIds", []),
+            "document_type": extracted_meta.get("documentType", "Clinical evidence"),
+            "patient_match": patient_id,
+            "source_file": primary_asset.get("filename", ""),
+            "packet_id": primary_asset.get("packetId", ""),
+            "batch_patients": primary_asset.get("packetPatientIds", []),
             **fields,
             "finding": str(extracted_meta.get("textPreview") or "Evidence ready for clinician verification"),
         }
@@ -1571,10 +1578,12 @@ def create_app() -> FastAPI:
 
     @v1_router.get("/agent-config", response_model=AgentConfigResponse, tags=["Admin"], responses={200: {"description": "Retrieved current agent validation thresholds and concurrent limits"}, **COMMON_RESPONSES})
     def agent_config(ctx: Context) -> dict[str, Any]:
-        """Return current session-scoped agent configuration."""
+        """Return current session-scoped agent configuration.
 
-        if ctx[1] != "admin":
-            raise HTTPException(403, "Admin role required")
+        Readable by every role so clinicians can inspect the thresholds that
+        govern their reviews; only the PUT endpoint is admin-gated.
+        """
+
         return ctx[0].agent_config
 
     @v1_router.put("/agent-config", response_model=AgentConfigResponse, tags=["Admin"], responses={200: {"description": "Updated and persisted new agent thresholds configuration"}, **COMMON_RESPONSES})
@@ -1592,6 +1601,31 @@ def create_app() -> FastAPI:
         repo.agent_config["version"] += 1
         repo.log("agent_config_saved", user, role, version=repo.agent_config["version"])
         return repo.agent_config
+
+    @v1_router.get("/report-schedules", response_model=list[ReportScheduleResponse], tags=["Reports"], responses={200: {"description": "List every report with its recurring generation schedule"}, **COMMON_RESPONSES})
+    def report_schedules(ctx: Context) -> list[dict[str, Any]]:
+        """List every workspace report with its recurring generation schedule."""
+
+        return list(ctx[0].report_schedules.values())
+
+    @v1_router.put("/report-schedules/{report_id}", response_model=ReportScheduleResponse, tags=["Reports"], responses={200: {"description": "Updated the report's recurring generation frequency"}, **COMMON_RESPONSES})
+    def save_report_schedule(report_id: str, body: ReportScheduleUpdateRequest, ctx: Context) -> dict[str, Any]:
+        """Set how often a report is generated (off, daily, weekly, or monthly).
+
+        The schedule is session-scoped like the rest of the demo state; every
+        change is audit-logged so governance sees who altered report cadence.
+        """
+
+        repo, role, user, _tenant = ctx
+        item = repo.report_schedules.get(report_id)
+        if item is None:
+            raise HTTPException(404, "Report not found")
+        interval_days = {"daily": 1, "weekly": 7, "monthly": 30}.get(body.frequency)
+        item["frequency"] = body.frequency
+        item["updatedAt"] = now()
+        item["nextRun"] = (datetime.now(UTC) + timedelta(days=interval_days)).strftime("%Y-%m-%d") if interval_days else None
+        repo.log("report_schedule_updated", user, role, report_id=report_id, frequency=body.frequency)
+        return item
 
     @v1_router.get("/visuals/{document_id}", tags=["Storage"], responses={200: {"description": "Serve patient structured visual image binary data"}, **COMMON_RESPONSES})
     def visual(document_id: str, ctx: Context) -> FileResponse:

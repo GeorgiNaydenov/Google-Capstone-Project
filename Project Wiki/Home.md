@@ -17,7 +17,7 @@ Clinician-facing AI platform built on Google ADK: specialist agent pipelines for
 
 ## Overview
 
-- [[Problem & Solution]] — what Nexus does and why
+- [[Problem and Solution]] — what Nexus does and why
 - [[Course Concepts Map]] — Days 1a–5b coverage and rubric alignment
 
 ## Architecture & Agent Workflows
@@ -46,7 +46,7 @@ Clinician-facing AI platform built on Google ADK: specialist agent pipelines for
 - [[Clinical App]] — FastAPI product server + React frontend
 - [[REST API and Developer Console]] — versioned REST APIs, styled Swagger, and interactive playground console
 - [[MCP and A2A]] — interoperability surfaces
-- [[Testing & Eval]] — pytest suite + ADK evaluation
+- [[Testing and Eval]] — pytest suite + ADK evaluation
 - [[Observability]] — logs, traces, clinical audit
 - [[Deployment]] — Cloud Run / Agent Engine / GKE
 

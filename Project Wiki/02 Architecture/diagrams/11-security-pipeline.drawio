@@ -48,19 +48,22 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e3" value="requests a tool" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="model" target="lay2">
-          <mxGeometry relative="1" as="geometry" />
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" x="0" y="-16" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="e4" value="passes validation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="lay2" target="tool">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e5" value="returns result to the model" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="tool" target="model">
+        <mxCell id="e5" value="returns result to the model" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=1;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="tool" target="model">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="635" y="510" />
             </Array>
+            <mxPoint as="offset" x="-40" y="14" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e6" value="model completes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="model" target="lay3">
+        <mxCell id="e6" value="model completes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="model" target="lay3">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="635" y="290" />

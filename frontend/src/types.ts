@@ -149,6 +149,16 @@ export interface AgentConfig {
   databaseEnabled: boolean;
 }
 
+export type ReportFrequency = "off" | "daily" | "weekly" | "monthly";
+
+export interface ReportSchedule {
+  id: string;
+  name: string;
+  frequency: ReportFrequency;
+  nextRun: string | null;
+  updatedAt: string | null;
+}
+
 export interface OrchestrationPlan {
   intent: string;
   workflow: "extraction" | "qa" | "database";

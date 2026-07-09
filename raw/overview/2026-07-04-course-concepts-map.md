@@ -17,7 +17,7 @@ The project covers **all 10 course notebooks** (Days 1a through 5b).
 | 3a | Memory & state | `memory.py` — session/memory factories, state prefixes | [[Memory Layers]] |
 | 3b | Context engineering | `context.py` — token budgeting, compaction, boundary injection | [[Memory Layers]] |
 | 4a | Observability | `observability.py`, `plugins.py` — OpenTelemetry, Cloud Trace, structured logging | [[Observability]] |
-| 4b | Evaluation | `eval/` — ADK EvalSet, tool trajectory + response match scoring | [[Testing & Eval]] |
+| 4b | Evaluation | `eval/` — ADK EvalSet, tool trajectory + response match scoring | [[Testing and Eval]] |
 | 5a | Agent2Agent (A2A) | `a2a_server.py` — ASGI A2A server with agent card | [[MCP and A2A]] |
 | 5b | Deployment | `deployment/` — Cloud Run, Vertex AI Agent Engine, GKE | [[Deployment]] |
 

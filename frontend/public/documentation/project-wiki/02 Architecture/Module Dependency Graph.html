@@ -53,7 +53,9 @@ The Mermaid graph between the AUTO markers is rewritten by <code>scripts/sync_wi
     agent --> a2a_server
     agent --> app
     callbacks --> agent
+    callbacks --> orchestration
     callbacks --> plugins
+    clinical_schemas --> orchestration
     clinical_schemas --> tools
     config --> a2a_server
     config --> agent
@@ -68,6 +70,7 @@ The Mermaid graph between the AUTO markers is rewritten by <code>scripts/sync_wi
     config --> tools
     context --> agent
     context --> plugins
+    database --> document_processor
     database --> mock_data
     document_processor --> tools
     human_in_the_loop --> agent

@@ -95,8 +95,7 @@ Prerequisites:
 git clone https://github.com/GeorgiNaydenov/Google-Capstone-Project.git
 cd Google-Capstone-Project
 
-uv venv .venv --python 3.11
-uv pip install --python .venv\Scripts\python.exe -r requirements.txt
+uv sync   # resolves pyproject.toml via the hash-pinned uv.lock and creates .venv
 
 cd frontend
 npm ci

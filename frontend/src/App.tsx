@@ -38,7 +38,9 @@ export function App() {
       <Route path="admin" element={<RequireRole allow="admin" fallback="/app/dashboard"><AdminDashboard/></RequireRole>}/>
       <Route path="users" element={<RequireRole allow="admin" fallback="/app/dashboard"><UsersRoles/></RequireRole>}/>
       <Route path="storage" element={<RequireRole allow="admin" fallback="/app/dashboard"><DataStorage/></RequireRole>}/>
-      <Route path="configuration" element={<RequireRole allow="admin" fallback="/app/dashboard"><AgentConfiguration/></RequireRole>}/>
+      {/* Both roles can inspect agent configuration and monitoring; the screen
+          itself renders read-only for clinicians and only admins can save. */}
+      <Route path="configuration" element={<AgentConfiguration/>}/>
       <Route path="console" element={<Navigate to="/docs-viewer?tab=api_runner" replace/>}/>
     </Route><Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes></ErrorBoundary></ToastProvider></ClinicalProvider>;

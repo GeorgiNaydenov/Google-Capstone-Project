@@ -32,7 +32,7 @@ Nexus compiled knowledge on operations.
 | [MCP and A2A](operations/mcp-and-a2a.md) | Two interoperability surfaces let external clients and agents use Nexus capabilities. | 2026-07-04 |
 | [Observability](operations/observability.md) | Three pillars — Logs (diary), Traces (narrative), Metrics (timing) — plus clinical audit events. | 2026-07-04 |
 | [REST API and Developer Console](operations/rest-api-and-developer-console.md) | Nexus exposes a versioned, secure REST API backend built on FastAPI and a React-based interactive Developer/API Console to assist developers in testing, auditing, and executing agent pipelines and MCP tools. | 2026-07-05 |
-| [Testing & Eval](operations/testing-eval.md) | pytest + pytest-asyncio for system contracts; ADK `AgentEvaluator` for content quality. | 2026-07-04 |
+| [Testing and Eval](operations/testing-eval.md) | pytest + pytest-asyncio for system contracts; ADK `AgentEvaluator` for content quality. | 2026-07-04 |
 
 ## overview
 
@@ -41,7 +41,7 @@ Nexus compiled knowledge on overview.
 | Article | Summary | Updated |
 |---------|---------|---------|
 | [Course Concepts Map](overview/course-concepts-map.md) | The project covers **all 10 course notebooks** (Days 1a through 5b). | 2026-07-04 |
-| [Problem & Solution](overview/problem-solution.md) | Clinical work spans disconnected notes, session images, structured records, historical evidence, and population databases. | 2026-07-04 |
+| [Problem and Solution](overview/problem-solution.md) | Clinical work spans disconnected notes, session images, structured records, historical evidence, and population databases. | 2026-07-04 |
 
 ## processes
 

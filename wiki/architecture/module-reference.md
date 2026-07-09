@@ -67,7 +67,7 @@ Every Python module currently in the repository, with its purpose (taken from mo
 | Area | Purpose |
 |------|---------|
 | `frontend/` | React/Vite/TypeScript clinical UI — 16 routes; `dist/` served by FastAPI |
-| `eval/` | ADK evaluation suite — `capstone.evalset.json` + `test_config.json` ([[Testing & Eval]]) |
-| `tests/` | pytest + async test suite ([[Testing & Eval]]) |
+| `eval/` | ADK evaluation suite — `capstone.evalset.json` + `test_config.json` ([[Testing and Eval]]) |
+| `tests/` | pytest + async test suite ([[Testing and Eval]]) |
 | `deployment/` | Dockerfile, cloudbuild.yaml, Agent Engine config ([[Deployment]]) |
 | `docs/` | Architecture and product documentation |

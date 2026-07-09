@@ -1,5 +1,5 @@
 ---
-title: Problem & Solution
+title: Problem and Solution
 type: overview
 status: active
 updated: 2026-07-04
@@ -8,7 +8,7 @@ tags:
   - overview
 ---
 
-# Problem & Solution
+# Problem and Solution
 
 ## Problem
 

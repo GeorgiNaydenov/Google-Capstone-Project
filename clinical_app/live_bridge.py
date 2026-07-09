@@ -312,6 +312,19 @@ def _parse_json_object(text: str) -> Any:
     return None
 
 
+def _snake_key(key: str) -> str:
+    """Normalize an agent-produced field name to snake_case.
+
+    Live agent output names fields freely (camelCase, Title Case, prose), but
+    the review workspace, session detail, and relational row all present
+    clinical field names in snake_case — one convention end to end.
+    """
+
+    key = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", key.strip())
+    key = re.sub(r"[^0-9a-zA-Z]+", "_", key)
+    return key.strip("_").lower()
+
+
 def _extract_fields(text: str) -> dict[str, str]:
     """Best-effort extraction of structured fields from agent output text."""
 
@@ -325,7 +338,7 @@ def _extract_fields(text: str) -> dict[str, str]:
             # value ("Dyspnea on exertion") rather than the raw JSON object.
             if isinstance(value, dict) and "value" in value:
                 value = value["value"]
-            fields[str(key)] = value if isinstance(value, str) else json.dumps(value)
+            fields[_snake_key(str(key))] = value if isinstance(value, str) else json.dumps(value)
     if not fields:
         for line in text.split("\n"):
             # Markdown table rows and separators produce garbage keys — the
@@ -335,7 +348,7 @@ def _extract_fields(text: str) -> dict[str, str]:
                 key = key.strip().strip("-*").strip()
                 value = value.strip()
                 if key and value and len(key) < 60 and "|" not in key:
-                    fields[key] = value
+                    fields[_snake_key(key)] = value
     return fields
 
 

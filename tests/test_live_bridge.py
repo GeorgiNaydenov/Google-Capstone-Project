@@ -37,9 +37,13 @@ class TestExtractFields:
     def test_line_based_fallback(self) -> None:
         text = "Diagnosis: hypertension\n- Medication: lisinopril\n# heading: ignored"
         fields = _extract_fields(text)
-        assert fields["Diagnosis"] == "hypertension"
-        assert fields["Medication"] == "lisinopril"
+        assert fields["diagnosis"] == "hypertension"
+        assert fields["medication"] == "lisinopril"
         assert "heading" not in fields
+
+    def test_field_names_normalized_to_snake_case(self) -> None:
+        fields = _extract_fields('{"documentType": "CT report", "Primary Finding": "lesion"}')
+        assert fields == {"document_type": "CT report", "primary_finding": "lesion"}
 
     def test_no_structure_returns_empty(self) -> None:
         assert _extract_fields("plain narrative with no delimiters") == {}

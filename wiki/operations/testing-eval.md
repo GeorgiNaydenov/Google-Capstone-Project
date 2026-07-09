@@ -1,9 +1,9 @@
-# Testing & Eval
+# Testing and Eval
 
 > Sources: Antigravity, 2026-07-05
-> Raw: [Testing & Eval Source](../../raw/operations/2026-07-04-testing-eval.md)
+> Raw: [Testing and Eval Source](../../raw/operations/2026-07-04-testing-eval.md)
 
-# Testing & Eval
+# Testing and Eval
 
 pytest + pytest-asyncio for system contracts; ADK `AgentEvaluator` for content quality. The live, machine-generated test-count table is [[Test Inventory]].
 

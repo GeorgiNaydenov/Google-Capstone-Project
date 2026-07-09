@@ -1,4 +1,4 @@
-import type { AgentCatalog, AgentConfig, AgentMonitorRow, AgentRun, AuditEvent, ClinicalNotification, ClinicalSession, ClinicalUser, DashboardData, EvidenceItem, ExtractionSource, KnowledgeBaseAsset, Patient, Permissions, SchemaTable, StorageData, SystemHealth, WorkspaceSummary } from "./types";
+import type { AgentCatalog, AgentConfig, AgentMonitorRow, AgentRun, AuditEvent, ClinicalNotification, ClinicalSession, ClinicalUser, DashboardData, EvidenceItem, ExtractionSource, KnowledgeBaseAsset, Patient, Permissions, ReportSchedule, SchemaTable, StorageData, SystemHealth, WorkspaceSummary } from "./types";
 
 const now = () => new Date().toISOString();
 
@@ -96,6 +96,13 @@ export const fallbackPermissions: Permissions = {
 };
 
 export const fallbackConfig: AgentConfig = { version: 1, autoApprovalThreshold: 90, reviewThreshold: 75, maxConcurrentRuns: 8, databaseEnabled: true };
+
+export const fallbackReportSchedules: ReportSchedule[] = [
+  { id: "daily-command", name: "Daily clinical command report", frequency: "off", nextRun: null, updatedAt: null },
+  { id: "extraction-quality", name: "Extraction quality report", frequency: "off", nextRun: null, updatedAt: null },
+  { id: "cohort-risk", name: "Patient cohort risk report", frequency: "off", nextRun: null, updatedAt: null },
+  { id: "storage-lineage", name: "Storage and lineage report", frequency: "off", nextRun: null, updatedAt: null },
+];
 
 export const fallbackNotifications: ClinicalNotification[] = [
   { id: "NTF-FB-1", title: "API gateway degraded", detail: "Read-only failover data is being shown until the product API responds.", severity: "warning", agent: "Frontend failover", createdAt: now(), read: false, route: "/app/admin?view=health" },

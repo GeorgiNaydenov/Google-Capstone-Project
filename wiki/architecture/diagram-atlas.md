@@ -169,4 +169,4 @@ The product now exposes the prepared architecture diagrams as an interactive atl
 | PNG fallbacks | `frontend/public/diagrams/*.png` | 31 |
 | SVG viewer assets | `frontend/public/diagrams/svg/*.svg` | 31 |
 
-Related: [[System Overview]] - [[Clinical App]] - [[REST API and Developer Console]] - [[MCP and A2A]] - [[Testing & Eval]]
+Related: [[System Overview]] - [[Clinical App]] - [[REST API and Developer Console]] - [[MCP and A2A]] - [[Testing and Eval]]

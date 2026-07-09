@@ -1,10 +1,10 @@
-# Problem & Solution
+# Problem and Solution
 
-> Source: Project Wiki/01 Overview/Problem & Solution.md
+> Source: Project Wiki/01 Overview/Problem and Solution.md
 > Collected: 2026-07-05
 > Published: 2026-07-04
 
-# Problem & Solution
+# Problem and Solution
 
 ## Problem
 

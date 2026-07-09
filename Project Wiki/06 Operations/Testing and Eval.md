@@ -1,5 +1,5 @@
 ---
-title: Testing & Eval
+title: Testing and Eval
 type: operations
 status: active
 updated: 2026-07-04
@@ -9,7 +9,7 @@ tags:
   - testing
 ---
 
-# Testing & Eval
+# Testing and Eval
 
 pytest + pytest-asyncio for system contracts; ADK `AgentEvaluator` for content quality. The live, machine-generated test-count table is [[Test Inventory]].
 

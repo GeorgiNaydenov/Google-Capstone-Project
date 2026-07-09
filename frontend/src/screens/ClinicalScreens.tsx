@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../api";
-import { AuditDetailModal, AuditTimeline, Card, CompletenessBadge, ConfidenceMeter, DenseTable, EmptyState, ErrorState, JsonViewer, KpiStrip, LoadingState, RiskBadge, SourceViewer, StatusBadge } from "../components";
+import { AuditDetailModal, AuditTimeline, Card, CompletenessBadge, ConfidenceMeter, DenseTable, EmptyState, ErrorState, JsonViewer, KpiStrip, LoadingState, RiskBadge, SourceViewer, StatusBadge, useToast } from "../components";
 import { DiagramAtlas } from "../components/DiagramAtlas";
 import { InlineDiagram } from "../components/InlineDiagram";
 import { useClinical } from "../context";
-import type { AgentRun, AuditEvent, ClinicalSession, Evidence, Patient } from "../types";
+import type { AgentRun, AuditEvent, ClinicalSession, Evidence, Patient, ReportFrequency } from "../types";
 import { useApi } from "../useApi";
 
 const TABLE_PREVIEW_LIMIT = 160;
@@ -130,18 +130,20 @@ export function PatientSearch({ queue = false }: { queue?: boolean }) {
     else setQuickFilters(current => current.includes(next) ? current.filter(item => item !== next) : [...current, next]);
   };
   if (view === "sessions") return <SessionRegistry sessions={sessionState.data ?? []} loading={sessionState.loading} error={sessionState.error} onRetry={sessionState.refresh} onOpen={id => navigate(`/app/session/${id}`)}/>;
+  const filterControls = <>
+    <label>Risk level<select value={risk} onChange={event => setRisk(event.target.value)}><option value="all">All risk levels</option><option value="high">High risk</option><option value="medium">Needs review</option><option value="low">Stable</option></select></label>
+    <label>Agent review<select value={review} onChange={event => setReview(event.target.value)}><option value="all">All review states</option><option value="needs_review">Pending review</option><option value="verified">Clinician verified</option></select></label>
+    <label>Data completeness<select value={completeness} onChange={event => setCompleteness(event.target.value)}><option value="all">Any completeness</option><option value="incomplete">Below 85%</option><option value="complete">85% and above</option></select></label>
+    <label>Last session<select><option>Any date</option><option>Last 7 days</option><option>Last 30 days</option><option>Last 90 days</option></select></label>
+    <label>Evidence type<select><option>All evidence</option><option>Imaging</option><option>Clinical notes</option><option>Structured data</option><option>Similar-case matches</option></select></label>
+    <button className={queue ? "button subtle" : "button subtle full"} onClick={() => { setRisk("all"); setReview("all"); setCompleteness("all"); }}>Clear filters</button>
+  </>;
   return <>
     <PageHead eyebrow={queue ? "PRIORITIZED WORKLIST" : "GLOBAL PATIENT SEARCH"} title={queue ? "Patient queue" : "Patient search results"} detail={queue ? "Agent-prioritized cases, verification tasks, and follow-up work." : "Search structured records, clinical notes, image evidence, and vectorized content."} actions={<button className="button subtle" onClick={() => exportRows(rows)}>Export CSV</button>}/>
     {queue && <div className="quick-filters">{[["high", "High risk"], ["review", "Needs review"], ["new", "Recent session"], ["missing", "Missing evidence"], ["flagged", "AI flagged"], ["followup", "Follow-up due"]].map(([value, label]) => <button key={value} aria-pressed={quickActive(value)} className={quickActive(value) ? "active" : ""} onClick={() => applyQuickFilter(value)}>{label}</button>)}</div>}
-    <div className="search-layout">
-      <Card title="Filters" className="filter-panel">
-        <label>Risk level<select value={risk} onChange={event => setRisk(event.target.value)}><option value="all">All risk levels</option><option value="high">High risk</option><option value="medium">Needs review</option><option value="low">Stable</option></select></label>
-        <label>Agent review<select value={review} onChange={event => setReview(event.target.value)}><option value="all">All review states</option><option value="needs_review">Pending review</option><option value="verified">Clinician verified</option></select></label>
-        <label>Data completeness<select value={completeness} onChange={event => setCompleteness(event.target.value)}><option value="all">Any completeness</option><option value="incomplete">Below 85%</option><option value="complete">85% and above</option></select></label>
-        <label>Last session<select><option>Any date</option><option>Last 7 days</option><option>Last 30 days</option><option>Last 90 days</option></select></label>
-        <label>Evidence type<select><option>All evidence</option><option>Imaging</option><option>Clinical notes</option><option>Structured data</option><option>Similar-case matches</option></select></label>
-        <button className="button subtle full" onClick={() => { setRisk("all"); setReview("all"); setCompleteness("all"); }}>Clear filters</button>
-      </Card>
+    {queue && <Card className="filter-bar">{filterControls}</Card>}
+    <div className={queue ? "search-layout no-filter-panel" : "search-layout"}>
+      {!queue && <Card title="Filters" className="filter-panel">{filterControls}</Card>}
       <div className="results-column">
         <Card className="search-toolbar"><form onSubmit={event => { event.preventDefault(); setSubmitted(query); setParams(current => { current.set("q", query); return current; }); }}><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Name, patient ID, diagnosis, note, or imaging finding"/><button className="button primary" type="submit">Search all evidence</button></form><small>{rows.length} patients match the current filters</small></Card>
         <Card>{patientState.loading || dashboardState.loading ? <LoadingState/> : patientState.error && dashboardState.error ? <ErrorState error={patientState.error} retry={() => { void patientState.refresh(); void dashboardState.refresh(); }}/> : <DenseTable columns={queue ? [...patientColumns.slice(0, 6), { key: "confidence", label: "AI Confidence", render: row => `${Math.round(Number(row.completeness) * 100)}%` }, patientColumns[8]] : patientColumns} rows={rows as unknown as Array<Record<string, unknown>>} onRow={open} limit={TABLE_PREVIEW_LIMIT}/>}</Card>
@@ -186,13 +188,29 @@ export function PatientOverview() {
 
 function ReportsView() {
   const navigate = useNavigate();
-  const reports: Array<[string, string, string, string]> = [
-    ["Daily clinical command report", "Queue, high-risk changes, and pending verifications", "Live view", "/app/queue"],
-    ["Extraction quality report", "Confidence, failures, and human review outcomes", "Live view", "/app/inbox"],
-    ["Patient cohort risk report", "Risk distribution and population movement", "Live view", "/app/overview"],
-    ["Storage and lineage report", "Object, JSON, relational, vector, and audit receipts", "Live view", "/app/inbox?view=audit"],
-  ];
-  return <><PageHead eyebrow="CLINICAL REPORTING" title="Reports" detail="Operational and clinical intelligence views generated from governed data."/><div className="report-grid">{reports.map(([title, detail, schedule, route]) => <Card key={title}><span className="report-icon">R</span><h3>{title}</h3><p>{detail}</p><small>{schedule}</small><button className="button subtle full" onClick={() => navigate(route)}>Open report</button></Card>)}</div></>;
+  const toast = useToast();
+  const schedules = useApi(() => api.reportSchedules(), []);
+  // Descriptions and live routes per schedule id; names come from the API so
+  // the cards and the audit trail always agree on report titles.
+  const reportMeta: Record<string, [string, string]> = {
+    "daily-command": ["Queue, high-risk changes, and pending verifications", "/app/queue"],
+    "extraction-quality": ["Confidence, failures, and human review outcomes", "/app/inbox"],
+    "cohort-risk": ["Risk distribution and population movement", "/app/overview"],
+    "storage-lineage": ["Object, JSON, relational, vector, and audit receipts", "/app/inbox?view=audit"],
+  };
+  const setFrequency = async (id: string, frequency: ReportFrequency) => {
+    const saved = await api.saveReportSchedule(id, frequency);
+    schedules.setData((schedules.data ?? []).map(item => item.id === saved.id ? saved : item));
+    toast(saved.frequency === "off" ? `${saved.name} recurring generation disabled` : `${saved.name} scheduled ${saved.frequency}; next run ${saved.nextRun}`);
+  };
+  if (schedules.loading) return <LoadingState/>;
+  return <><PageHead eyebrow="CLINICAL REPORTING" title="Reports" detail="Operational and clinical intelligence views generated from governed data. Each report can also be generated on a recurring schedule."/><div className="report-grid">{(schedules.data ?? []).map(({ id, name, frequency, nextRun }) => {
+    const [detail, route] = reportMeta[id] ?? ["Governed clinical report", "/app/overview"];
+    return <Card key={id}><span className="report-icon">R</span><h3>{name}</h3><p>{detail}</p>
+      <label>Recurring generation<select value={frequency} onChange={event => void setFrequency(id, event.target.value as ReportFrequency)}><option value="off">On demand only</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label>
+      <small>{frequency === "off" ? "Live view" : `Next scheduled run ${nextRun}`}</small>
+      <button className="button subtle full" onClick={() => navigate(route)}>Open report</button></Card>;
+  })}</div></>;
 }
 
 export function PatientProfile() {

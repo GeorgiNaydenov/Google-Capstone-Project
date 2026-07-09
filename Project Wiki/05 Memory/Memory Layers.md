@@ -48,4 +48,4 @@ Token pipeline: Collect → Rank → Compress → Budget → Assemble. `config.d
 
 Only task-relevant, non-sensitive data crosses agent boundaries: no PII/PHI, no secrets, no `temp:`/`user:` keys. Used by `RemoteA2aAgent` delegations — see [[MCP and A2A]].
 
-Related: [[Security Layers]] · [[Testing & Eval]] (test_memory.py, test_context.py)
+Related: [[Security Layers]] · [[Testing and Eval]] (test_memory.py, test_context.py)

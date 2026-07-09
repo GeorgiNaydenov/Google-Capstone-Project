@@ -1,10 +1,10 @@
-# Testing & Eval
+# Testing and Eval
 
-> Source: Project Wiki/06 Operations/Testing & Eval.md
+> Source: Project Wiki/06 Operations/Testing and Eval.md
 > Collected: 2026-07-05
 > Published: 2026-07-04
 
-# Testing & Eval
+# Testing and Eval
 
 pytest + pytest-asyncio for system contracts; ADK `AgentEvaluator` for content quality. The live, machine-generated test-count table is [[Test Inventory]].
 

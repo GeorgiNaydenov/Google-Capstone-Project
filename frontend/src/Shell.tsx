@@ -23,6 +23,7 @@ const clinicianGroups: NavGroup[] = [
     { to: "/app/extraction", icon: "microscope", label: "Evidence Extraction" },
     { to: "/app/qa", icon: "brain", label: "Patient Q&A" },
     { to: "/app/database", icon: "database", label: "Population Insights" },
+    { to: "/app/configuration", icon: "sliders", label: "Agent Monitoring" },
   ]},
   { label: "Reports & Compliance", items: [
     { to: "/app/overview?view=reports", icon: "report", label: "Reports" },

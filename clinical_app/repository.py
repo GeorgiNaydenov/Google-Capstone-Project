@@ -604,6 +604,25 @@ def now() -> str:
     return datetime.now(UTC).isoformat()
 
 
+# Stable ids for the reports the workspace can generate on a schedule; the
+# frontend reports view and the /report-schedules endpoints share these ids.
+REPORT_CATALOG: tuple[tuple[str, str], ...] = (
+    ("daily-command", "Daily clinical command report"),
+    ("extraction-quality", "Extraction quality report"),
+    ("cohort-risk", "Patient cohort risk report"),
+    ("storage-lineage", "Storage and lineage report"),
+)
+
+
+def default_report_schedules() -> dict[str, dict[str, Any]]:
+    """Seed every report with generation disabled until a user schedules it."""
+
+    return {
+        report_id: {"id": report_id, "name": name, "frequency": "off", "nextRun": None, "updatedAt": None}
+        for report_id, name in REPORT_CATALOG
+    }
+
+
 def derive_monitoring(runs: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     """Aggregate per-agent statistics from the runs that actually executed.
 
@@ -741,6 +760,7 @@ class DemoRepository:
             "maxConcurrentRuns": 8,
             "databaseEnabled": True,
         }
+        self.report_schedules: dict[str, dict[str, Any]] = default_report_schedules()
         self.notifications = [dict(item, createdAt=now()) for item in deepcopy(self._dataset.notifications)]
         self.users = deepcopy(self._dataset.users)
         self.permissions = {"roles": list(system_module.ROLES), "matrix": deepcopy(system_module.DEFAULT_PERMISSIONS), "version": 1}
@@ -821,6 +841,7 @@ class LiveRepository:
             "maxConcurrentRuns": 8,
             "databaseEnabled": True,
         }
+        self.report_schedules: dict[str, dict[str, Any]] = default_report_schedules()
         self.notifications: list[dict[str, Any]] = []
         self.sequence = 0
         self._hydrate_from_database()

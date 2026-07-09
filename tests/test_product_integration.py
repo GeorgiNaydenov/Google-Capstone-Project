@@ -159,8 +159,8 @@ def test_extraction_approval_preserves_fields_and_updates_patient_state(api: Tes
     ).json()
     run = start_extraction(api, request_headers, patient_id)
     reviewed_fields = {
-        "documentType": "Verified CT",
-        "patientMatch": patient_id,
+        "document_type": "Verified CT",
+        "patient_match": patient_id,
         "finding": "Three hepatic lesions",
     }
 

@@ -89,4 +89,4 @@ Three tenants are selectable from the organization dropdown in the Shell topbar 
 
 FastAPI serves the frontend build at `http://localhost:8000`. During frontend development, `npm run dev` in `frontend/` proxies `/api` to port 8000.
 
-Related: [[System Overview]] · [[End-to-End Request Flow]] · [[Testing & Eval]] · [[REST API and Developer Console]]
+Related: [[System Overview]] · [[End-to-End Request Flow]] · [[Testing and Eval]] · [[REST API and Developer Console]]

@@ -58,4 +58,4 @@ grill-me, grill-with-docs, testing-workflow, defuddle, deployment, obsidian-mark
 | `.claude/memory/` | Harness memory directory (currently placeholder) |
 | User auto-memory (`~/.claude/projects/...`) | Cross-session facts maintained by Claude Code |
 
-Related: [[Development Workflow]] · [[Testing & Eval]]
+Related: [[Development Workflow]] · [[Testing and Eval]]

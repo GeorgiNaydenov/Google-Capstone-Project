@@ -125,7 +125,7 @@
             <Array as="points">
               <mxPoint x="1290" y="795" />
             </Array>
-            <mxPoint as="offset" x="-120" y="0" />
+            <mxPoint as="offset" x="-60" y="90" />
           </mxGeometry>
         </mxCell>
         <mxCell id="legend" value="Legend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;verticalAlign=top;fontStyle=1;" vertex="1" parent="1">

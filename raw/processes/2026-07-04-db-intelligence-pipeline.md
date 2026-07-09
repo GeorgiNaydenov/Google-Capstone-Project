@@ -34,7 +34,7 @@ flowchart TD
 
 Key facts:
 
-- SQL never executes without passing `validate_sql_safety`; the product exposes a **read-only SQL preview with an explicit execution boundary** ([[Problem & Solution]]).
+- SQL never executes without passing `validate_sql_safety`; the product exposes a **read-only SQL preview with an explicit execution boundary** ([[Problem and Solution]]).
 - The executor is `pro-customtools` tier; generation is `pro` tier ([[Model Registry]]).
 - Results feed `generate_chart_spec` for visual output, and the query is persisted to memory (`save_query_to_memory`) for later recall.
 - Schema and query engine live in `clinical_schemas.py` and `database.py` ([[Module Reference]]).

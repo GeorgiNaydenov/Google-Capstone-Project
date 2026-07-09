@@ -196,6 +196,22 @@ class AgentConfigResponse(BaseModel):
     databaseEnabled: bool = Field(description="Flag to enable execution of approved SELECT queries")
 
 
+class ReportScheduleResponse(BaseModel):
+    """One report's recurring generation schedule."""
+
+    id: str = Field(description="Stable report identifier, e.g. 'cohort-risk'")
+    name: str = Field(description="Human-readable report title")
+    frequency: Literal["off", "daily", "weekly", "monthly"] = Field(description="Recurring generation cadence; 'off' disables scheduling")
+    nextRun: str | None = Field(default=None, description="Next scheduled generation date (YYYY-MM-DD) or null when off")
+    updatedAt: str | None = Field(default=None, description="ISO 8601 timestamp of the last schedule change")
+
+
+class ReportScheduleUpdateRequest(BaseModel):
+    """Set how often a report is generated."""
+
+    frequency: Literal["off", "daily", "weekly", "monthly"] = Field(description="Recurring generation cadence to apply")
+
+
 class UserResponse(BaseModel):
     """Structured user response contract."""
 

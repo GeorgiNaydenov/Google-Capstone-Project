@@ -114,7 +114,7 @@ def test_extraction_is_review_gated_and_approval_persists() -> None:
     assert api.get("/api/reviews", headers=headers).json()[0]["id"] == run["id"]
     approved = api.post(
         f"/api/runs/{run['id']}/review", headers=headers,
-        json={"decision": "approved", "fields": {"documentType": "Verified CT", "patientMatch": patient_id}},
+        json={"decision": "approved", "fields": {"document_type": "Verified CT", "patient_match": patient_id}},
     ).json()
     assert approved["status"] == "completed"
     assert approved["result"]["persisted"] is True
@@ -428,11 +428,36 @@ def test_permissions_matrix_default_and_admin_edit() -> None:
     assert saved["matrix"][0]["grants"]["Data Manager"] is True
 
 
+def test_report_schedules_round_trip_and_audit() -> None:
+    """Report cadence persists within the session and records an audit event."""
+
+    api = client()
+    rows = api.get("/api/report-schedules", headers=clinician()).json()
+    assert {row["id"] for row in rows} == {"daily-command", "extraction-quality", "cohort-risk", "storage-lineage"}
+    assert all(row["frequency"] == "off" and row["nextRun"] is None for row in rows)
+
+    saved = api.put("/api/report-schedules/cohort-risk", headers=clinician(), json={"frequency": "weekly"}).json()
+    assert saved["frequency"] == "weekly"
+    assert saved["nextRun"] and saved["updatedAt"]
+    rows = api.get("/api/report-schedules", headers=clinician()).json()
+    assert next(row for row in rows if row["id"] == "cohort-risk")["frequency"] == "weekly"
+
+    disabled = api.put("/api/report-schedules/cohort-risk", headers=clinician(), json={"frequency": "off"}).json()
+    assert disabled["frequency"] == "off" and disabled["nextRun"] is None
+    assert api.put("/api/report-schedules/unknown", headers=clinician(), json={"frequency": "daily"}).status_code == 404
+    assert api.put("/api/report-schedules/cohort-risk", headers=clinician(), json={"frequency": "hourly"}).status_code == 422
+
+    audit = api.get("/api/audit", headers=admin()).json()
+    assert any(event["event"] == "report_schedule_updated" for event in audit)
+
+
 def test_agent_monitoring_merges_demo_baseline_with_session_runs() -> None:
     """Demo monitoring shows the plausible baseline plus real session runs."""
 
     api = client()
-    assert api.get("/api/agents/monitoring", headers=clinician()).status_code == 403
+    # Monitoring is read-only and visible to both roles; clinicians get the
+    # same view admins do (writes stay admin-gated on /agent-config PUT).
+    assert api.get("/api/agents/monitoring", headers=clinician()).status_code == 200
     rows = api.get("/api/agents/monitoring", headers=admin()).json()
     assert any(row["pipeline"] in {"extraction", "qa", "database"} for row in rows)
     for row in rows:
@@ -499,7 +524,7 @@ def test_storage_records_derive_from_upload_and_approval() -> None:
     after_upload = api.get("/api/storage", headers=headers).json()["records"]
     assert any(record["destination"] == "Object storage" and record["source"] == "scan.png" and record["id"] not in before for record in after_upload)
     run = api.post("/api/runs/extraction", headers=headers, json={"assetId": asset_id, "patientId": patient_id}).json()
-    api.post(f"/api/runs/{run['id']}/review", headers=headers, json={"decision": "approved", "fields": {"documentType": "CT"}})
+    api.post(f"/api/runs/{run['id']}/review", headers=headers, json={"decision": "approved", "fields": {"document_type": "CT"}})
     records = api.get("/api/storage", headers=headers).json()["records"]
     extraction_records = [record for record in records if record["source"] == f"Extraction {run['id']}"]
     assert {record["destination"] for record in extraction_records} == {"JSON document store", "Relational database", "Vector search index"}

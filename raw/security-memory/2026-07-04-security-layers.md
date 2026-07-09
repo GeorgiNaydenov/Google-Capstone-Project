@@ -54,4 +54,4 @@ Security logic lives in `security.py` as pure, testable functions (`scan_for_sec
 > - Never write API keys or GCP credentials to long-term memory or session storage; run `redact_pii` before persisting memory layers.
 > - Store sensitive config in `.env`, never commit API keys.
 
-Related: [[End-to-End Request Flow]] · [[Testing & Eval]] (test_security.py, test_callbacks.py)
+Related: [[End-to-End Request Flow]] · [[Testing and Eval]] (test_security.py, test_callbacks.py)

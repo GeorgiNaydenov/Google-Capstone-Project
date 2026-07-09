@@ -1,5 +1,5 @@
-import type { AgentCatalog, AgentConfig, AgentMonitorRow, AgentRun, AuditEvent, AuditEventDetail, ClinicalNotification, ClinicalSession, ClinicalUser, DashboardData, EvidenceItem, ExtractionSource, KnowledgeBaseAsset, OrchestrationPlan, Patient, PermissionRow, Permissions, Role, SchemaTable, StorageData, SystemHealth, WorkspaceSummary } from "./types";
-import { fallbackAudits, fallbackCatalog, fallbackConfig, fallbackDashboard, fallbackDatabaseExamples, fallbackEvidence, fallbackExtractionRun, fallbackKnowledgeBase, fallbackKnowledgeBaseUpload, fallbackMonitoring, fallbackNotifications, fallbackPatients, fallbackPermissions, fallbackQaRun, fallbackReviewRun, fallbackSchema, fallbackSessions, fallbackSqlExecute, fallbackSqlPreview, fallbackStorage, fallbackSummary, fallbackSystemHealth, fallbackUpload, fallbackUsers, syntheticExtractionOptionsForTenant } from "./fallbackData";
+import type { AgentCatalog, AgentConfig, AgentMonitorRow, AgentRun, AuditEvent, AuditEventDetail, ClinicalNotification, ClinicalSession, ClinicalUser, DashboardData, EvidenceItem, ExtractionSource, KnowledgeBaseAsset, OrchestrationPlan, Patient, PermissionRow, Permissions, ReportFrequency, ReportSchedule, Role, SchemaTable, StorageData, SystemHealth, WorkspaceSummary } from "./types";
+import { fallbackAudits, fallbackCatalog, fallbackConfig, fallbackDashboard, fallbackDatabaseExamples, fallbackEvidence, fallbackExtractionRun, fallbackKnowledgeBase, fallbackKnowledgeBaseUpload, fallbackMonitoring, fallbackNotifications, fallbackPatients, fallbackPermissions, fallbackQaRun, fallbackReportSchedules, fallbackReviewRun, fallbackSchema, fallbackSessions, fallbackSqlExecute, fallbackSqlPreview, fallbackStorage, fallbackSummary, fallbackSystemHealth, fallbackUpload, fallbackUsers, syntheticExtractionOptionsForTenant } from "./fallbackData";
 
 // Runs minted by the deterministic client-side fallbacks never exist on the
 // backend, so their follow-up calls must resolve locally instead of 404ing.
@@ -88,6 +88,15 @@ export const api = {
   storage: () => failover(() => request<StorageData>("/storage"), () => fallbackStorage),
   users: () => failover(() => request<ClinicalUser[]>("/users"), () => fallbackUsers),
   config: () => failover(() => request<AgentConfig>("/agent-config"), () => fallbackConfig),
+  reportSchedules: () => failover(() => request<ReportSchedule[]>("/report-schedules"), () => fallbackReportSchedules),
+  saveReportSchedule: (id: string, frequency: ReportFrequency) => demoMutationFailover(() => request<ReportSchedule>(`/report-schedules/${id}`, { method: "PUT", body: JSON.stringify({ frequency }) }), () => {
+    const item = fallbackReportSchedules.find(schedule => schedule.id === id) ?? fallbackReportSchedules[0];
+    const intervalDays = { daily: 1, weekly: 7, monthly: 30 }[frequency as Exclude<ReportFrequency, "off">];
+    item.frequency = frequency;
+    item.updatedAt = new Date().toISOString();
+    item.nextRun = frequency === "off" ? null : new Date(Date.now() + intervalDays * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    return { ...item };
+  }),
   saveConfig: (config: AgentConfig) => demoMutationFailover(() => request<AgentConfig>("/agent-config", { method: "PUT", body: JSON.stringify(config) }), () => { Object.assign(fallbackConfig, config); fallbackConfig.version += 1; return { ...fallbackConfig }; }),
   agents: () => failover(() => request<AgentCatalog>("/agents"), () => fallbackCatalog),
   notifications: () => failover(() => request<ClinicalNotification[]>("/notifications"), () => fallbackNotifications),

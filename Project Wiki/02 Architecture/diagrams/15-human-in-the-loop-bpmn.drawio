@@ -88,38 +88,39 @@
         <mxCell id="e8" value="approved" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="gw2" target="approved">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1300" y="310" />
-              <mxPoint x="1300" y="560" />
-              <mxPoint x="860" y="560" />
+              <mxPoint x="1340" y="560" />
+              <mxPoint x="900" y="560" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e9" value="rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.9;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="gw2" target="rejected">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e9" value="rejected" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="gw2" target="rejected">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1420" y="230" />
+              <mxPoint x="1420" y="600" />
+              <mxPoint x="1190" y="600" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="e10" value="auto approved path" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;entryX=0.1;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="auto" target="audit">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="600" y="80" />
-              <mxPoint x="55" y="80" />
-              <mxPoint x="55" y="620" />
-              <mxPoint x="365" y="620" />
+              <mxPoint x="82" y="80" />
+              <mxPoint x="82" y="610" />
+              <mxPoint x="365" y="610" />
             </Array>
+            <mxPoint as="offset" x="259" y="-147" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.75;entryY=1;" edge="1" parent="1" source="approved" target="audit">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="860" y="700" />
-              <mxPoint x="490" y="700" />
-            </Array>
-          </mxGeometry>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="approved" target="audit">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.9;entryY=1;" edge="1" parent="1" source="rejected" target="audit">
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=1;" edge="1" parent="1" source="rejected" target="audit">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1150" y="720" />
-              <mxPoint x="525" y="720" />
+              <mxPoint x="1190" y="745" />
+              <mxPoint x="465" y="745" />
             </Array>
           </mxGeometry>
         </mxCell>

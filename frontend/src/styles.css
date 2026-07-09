@@ -263,6 +263,12 @@ tr.clickable:hover, tr.clickable:focus { background: #f5f8ff; outline: 0; }
 .quick-filters button:hover { border-color: var(--blue); background: #eff6ff; color: var(--blue-dark); }
 .quick-filters button.active { border-color: var(--blue-dark); background: var(--blue-dark); color: #fff; }
 .search-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr) minmax(240px, 270px); align-items: start; gap: 12px; }
+/* Queue view: filters render as one horizontal toolbar above the results
+   instead of the vertical side panel, so the layout drops that column. */
+.search-layout.no-filter-panel { grid-template-columns: minmax(0, 1fr) minmax(240px, 270px); }
+.filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 12px; padding: 12px; }
+.filter-bar label { flex: 1 1 150px; min-width: 140px; max-width: 220px; }
+.filter-bar .button { flex: 0 0 auto; height: 36px; }
 .filter-panel { padding-bottom: 12px; }
 .filter-panel label { margin: 12px 12px 0; }
 .filter-panel .button { margin: 12px 12px 0; width: calc(100% - 24px); }
@@ -1216,7 +1222,7 @@ body[data-tour-step="orchestrator"] .grouped-nav { outline-color: #7c3aed; box-s
 
 /* Collapse dense 3-column workspaces to a single column on tablet */
 @media (max-width: 1220px) {
-  .search-layout, .patient-workspace, .extraction-layout, .qa-workspace,
+  .search-layout, .search-layout.no-filter-panel, .patient-workspace, .extraction-layout, .qa-workspace,
   .database-workspace, .users-layout, .inbox-layout, .population-grid,
   .session-layout, .lineage-view { grid-template-columns: minmax(0, 1fr); }
   .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
