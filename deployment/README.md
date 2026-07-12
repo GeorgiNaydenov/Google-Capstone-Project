@@ -36,6 +36,9 @@ Live-mode environment set by `cloudbuild.yaml`:
 | `GOOGLE_CLOUD_LOCATION` | `global` | Gemini 3.1 models are only served from the global endpoint |
 | `HIPAA_MODE` | `TRUE` | Forces PHI redaction on all output paths |
 | `CLINICAL_DATA_DIR` | `/data` | Writable path owned by the non-root container user |
+| `MODEL_REQUESTS_PER_MINUTE` | `10` | Per-session sliding-window model request budget |
+| `MAX_CONCURRENT_MODEL_RUNS` | `2` | Per-session active model execution cap |
+| `MAX_TOOL_COUNT` | `15` | Per-tool invocation cap enforced by ADK callbacks |
 
 Constraints to respect until the storage layer moves off-instance:
 

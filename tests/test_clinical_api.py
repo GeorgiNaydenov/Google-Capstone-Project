@@ -272,6 +272,11 @@ def test_orchestration_classifies_context_and_audits_plan() -> None:
     ).json()
     assert qa["intent"] == "answer_patient_question" and qa["workflow"] == "qa"
     assert api.post("/api/orchestrate", headers=headers, json={"query": "Summarize recent evidence"}).status_code == 422
+    assert api.post(
+        "/api/orchestrate",
+        headers=headers,
+        json={"query": "What is the difference between C, C++, and C#?"},
+    ).status_code == 422
     database = api.post("/api/orchestrate", headers=headers, json={"query": "Count population risk cohorts"}).json()
     assert database["workflow"] == "database" and database["route"] == "/app/database"
     audit = api.get("/api/audit", headers=admin("orchestration")).json()

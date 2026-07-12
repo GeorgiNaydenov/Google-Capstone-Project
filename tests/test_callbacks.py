@@ -54,9 +54,17 @@ def test_input_callback_blocks_injection():
     assert "unable to process" in result.content.parts[0].text.lower()
 
 
-def test_input_callback_allows_benign():
+def test_input_callback_blocks_out_of_scope_request():
     result = content_safety_callback(_ctx(), _llm_request("What's the weather today?"))
-    assert result is None, "benign input should pass through (no short-circuit)"
+    assert result is not None, "off-domain input should be blocked before model execution"
+    assert "clinical" in result.content.parts[0].text.lower()
+
+
+def test_input_callback_allows_clinical_request():
+    result = content_safety_callback(
+        _ctx(), _llm_request("Summarize the patient's latest lab evidence")
+    )
+    assert result is None
 
 
 def test_input_callback_ignores_empty_request():

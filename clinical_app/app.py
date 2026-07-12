@@ -5,6 +5,7 @@ import csv
 import io
 import json
 import os
+from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
@@ -135,6 +136,8 @@ def create_app() -> FastAPI:
 
     api = FastAPI(title="Clinical AI Command Center API", version="0.3.0", docs_url=None, redoc_url=None, description=API_DESCRIPTION)
     registry = RepositoryRegistry()
+    model_request_times: dict[str, deque[float]] = defaultdict(deque)
+    active_model_runs: dict[str, int] = defaultdict(int)
 
     v1_router = APIRouter()
 
@@ -182,6 +185,39 @@ def create_app() -> FastAPI:
             yield repo, role, user, active_tenant
 
     Context = Annotated[tuple[DemoRepository | LiveRepository, Role, str, TenantConfig], Depends(context)]
+
+    def guard_model_request(repo: LiveRepository, text: str) -> str:
+        """Reject off-domain or over-budget live requests before Gemini runs."""
+
+        from capstone_agent.config import get_config
+        from capstone_agent.observability import log_security_event
+        from capstone_agent.security import is_out_of_scope
+
+        blocked, category = is_out_of_scope(text)
+        if blocked:
+            log_security_event("out_of_scope_blocked", {"category": category})
+            raise HTTPException(422, "Request is outside the clinical assistant scope")
+
+        key = repo.session_id
+        config = get_config()
+        current = monotonic()
+        window = model_request_times[key]
+        while window and current - window[0] >= 60:
+            window.popleft()
+        if len(window) >= config["model_requests_per_minute"]:
+            log_security_event("model_request_rate_limited", {"session": key})
+            raise HTTPException(429, "Model request limit reached; retry in one minute")
+        if active_model_runs[key] >= config["max_concurrent_model_runs"]:
+            log_security_event("model_concurrency_limited", {"session": key})
+            raise HTTPException(429, "Too many active model runs; wait for a run to finish")
+        window.append(current)
+        active_model_runs[key] += 1
+        return key
+
+    def release_model_request(key: str) -> None:
+        """Release one live model concurrency slot after background execution."""
+
+        active_model_runs[key] = max(0, active_model_runs[key] - 1)
 
     def patient_or_404(repo: DemoRepository | LiveRepository, patient_id: str) -> dict[str, Any]:
         item = repo.patients.get(patient_id)
@@ -1138,6 +1174,9 @@ def create_app() -> FastAPI:
         """Classify a request and return an audited workflow execution plan."""
 
         repo, role, user, _tenant = ctx
+        from capstone_agent.security import is_out_of_scope
+        if is_out_of_scope(body.query)[0]:
+            raise HTTPException(422, "Request is outside the clinical assistant scope")
         query = body.query.casefold()
         extraction_terms = ("extract", "upload", "image", "scan", "dicom", "document", "ocr")
         database_terms = ("sql", "database", "cohort", "population", "count", "analytics", "report", "across patients")
@@ -1179,6 +1218,7 @@ def create_app() -> FastAPI:
         """Execute evidence-grounded Q&A — live agent or deterministic demo."""
 
         repo, role, user, _tenant = ctx
+        model_slot = guard_model_request(repo, body.question) if not repo.is_demo else ""
         if repo.is_demo:
             # Validate before logging so a 404 never produces a fake
             # "question_answered" audit event for a request that never ran.
@@ -1241,6 +1281,8 @@ def create_app() -> FastAPI:
                 except Exception as exc:
                     item["status"] = "error"
                     item["steps"].append({"id": f"{run_id}-S2", "name": "Agent Execution", "status": "error", "detail": f"Execution failed: {exc}", "timestamp": now()})
+                finally:
+                    release_model_request(model_slot)
 
             asyncio.create_task(run_in_background())
             return item
@@ -1270,6 +1312,7 @@ def create_app() -> FastAPI:
         """Generate read-only SQL preview — live agent or deterministic demo."""
 
         repo, role, user, _tenant = ctx
+        model_slot = guard_model_request(repo, body.question) if not repo.is_demo else ""
         run_id = repo.identifier("RUN")
         audit = repo.log("database_preview_generated", user, role, run_id=run_id)
 
@@ -1311,6 +1354,8 @@ def create_app() -> FastAPI:
                     # the clinician never approves SQL the agent did not write.
                     item["status"] = "error"
                     item["steps"] = [{"id": f"{run_id}-S1", "name": "Agent Pipeline", "status": "error", "detail": f"SQL generation failed: {type(exc).__name__}: {exc}", "timestamp": now()}]
+                finally:
+                    release_model_request(model_slot)
 
             asyncio.create_task(run_in_background())
             return item

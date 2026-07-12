@@ -48,6 +48,8 @@ def get_config() -> dict:
         "model_id": os.getenv("MODEL_ID", "gemini-3.1-flash-lite"),
         "model_tier": os.getenv("MODEL_TIER", "flash-lite"),
         "max_tool_count": int(os.getenv("MAX_TOOL_COUNT", "15")),
+        "model_requests_per_minute": int(os.getenv("MODEL_REQUESTS_PER_MINUTE", "10")),
+        "max_concurrent_model_runs": int(os.getenv("MAX_CONCURRENT_MODEL_RUNS", "2")),
         "session_compact_after": int(os.getenv("SESSION_COMPACT_AFTER", "40")),
         # --- Observability ---
         "enable_tracing": os.getenv("ENABLE_TRACING", "FALSE").upper() == "TRUE",

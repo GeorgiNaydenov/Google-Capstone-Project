@@ -96,13 +96,13 @@ steps:
       - --memory=1Gi
       - --cpu=1
       - --no-cpu-throttling
-      - --concurrency=20
+      - --concurrency=4
       - --min-instances=0
       - --max-instances=1
       - --execution-environment=gen2
       - --add-volume=name=data,type=cloud-storage,bucket=${_DATA_BUCKET}
       - --add-volume-mount=volume=data,mount-path=/data
-      - --set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,HIPAA_MODE=TRUE,PHI_REDACTION=TRUE,MEMORY_BACKEND=vertex,SESSION_BACKEND=memory,ENABLE_TRACING=TRUE,TRACE_EXPORTER=gcp,CLINICAL_DATA_DIR=/data
+      - --set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,HIPAA_MODE=TRUE,PHI_REDACTION=TRUE,MEMORY_BACKEND=vertex,SESSION_BACKEND=memory,ENABLE_TRACING=TRUE,TRACE_EXPORTER=gcp,CLINICAL_DATA_DIR=/data,MODEL_REQUESTS_PER_MINUTE=10,MAX_CONCURRENT_MODEL_RUNS=2,MAX_TOOL_COUNT=15
       - --remove-secrets=GOOGLE_API_KEY
 
 images:

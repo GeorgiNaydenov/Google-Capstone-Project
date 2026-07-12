@@ -26,16 +26,18 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmRequest, LlmResponse
 from google.genai import types
 
+from .config import get_config
 from .observability import log_security_event
 from .security import (
     detect_pii,
     is_blocked_input,
+    is_out_of_scope,
     sanitize_input,
     scan_for_secrets,
 )
 
 # Max tool calls per tool per invocation (rate limiting).
-TOOL_RATE_LIMIT = 20
+TOOL_RATE_LIMIT = get_config()["max_tool_count"]
 
 
 def _make_block_response(message: str) -> LlmResponse:
@@ -87,6 +89,17 @@ def content_safety_callback(
         })
         return _make_block_response(
             "I'm unable to process that request. Please rephrase your question."
+        )
+
+    out_of_scope, category = is_out_of_scope(sanitized)
+    if out_of_scope:
+        log_security_event("out_of_scope_blocked", {
+            "category": category,
+            "input_length": len(sanitized),
+        })
+        return _make_block_response(
+            "I can only help with clinical evidence, patient questions, "
+            "extraction, and governed population analysis."
         )
 
     return None

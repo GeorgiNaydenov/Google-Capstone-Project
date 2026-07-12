@@ -13,6 +13,7 @@ import pytest
 from capstone_agent.security import (
     detect_pii,
     is_blocked_input,
+    is_out_of_scope,
     redact_pii,
     sanitize_input,
     scan_for_secrets,
@@ -105,6 +106,19 @@ def test_injection_detection(text, should_block):
     assert blocked == should_block, (
         f"Expected blocked={should_block} for '{text}', got blocked={blocked} reason={reason}"
     )
+
+
+@pytest.mark.parametrize("text,should_block", [
+    ("What is the difference between C, C++, and C#?", True),
+    ("Write a Python function to sort a list", True),
+    ("What is the weather today?", True),
+    ("Summarize this patient's latest imaging evidence", False),
+    ("Count patients grouped by clinical risk", False),
+    ("What changed since the last visit?", False),
+])
+def test_clinical_scope_detection(text, should_block):
+    blocked, _category = is_out_of_scope(text)
+    assert blocked is should_block
 
 
 # --- PII Detection Tests ---

@@ -47,6 +47,25 @@ INJECTION_PATTERNS: list[tuple[str, str]] = [
 
 _COMPILED_PATTERNS = [(re.compile(p, re.IGNORECASE), label) for p, label in INJECTION_PATTERNS]
 
+# Clear non-clinical categories are rejected before model execution. This is
+# intentionally narrower than a clinical allow-list: short follow-up questions
+# such as "what changed?" remain usable inside a patient-scoped conversation.
+OUT_OF_SCOPE_PATTERNS: list[tuple[str, str]] = [
+    (r"(?<!\w)(?:python|javascript|typescript|java|rust|golang|c\+\+|c#)(?!\w)", "software_programming"),
+    (r"\b(?:write|debug|compile|refactor)\b.{0,40}\b(?:code|program|script|function|class)\b", "software_programming"),
+    (r"\b(?:weather|forecast|temperature)\b", "weather"),
+    (r"\b(?:recipe|cook|bake|ingredients)\b", "cooking"),
+    (r"\b(?:football|soccer|basketball|baseball|cricket)\b", "sports"),
+    (r"\b(?:hotel|flight|vacation|tourist|trip to)\b", "travel"),
+    (r"\b(?:stock price|cryptocurrency|bitcoin|investment advice)\b", "finance"),
+    (r"\b(?:write|compose)\b.{0,30}\b(?:poem|song|story|joke)\b", "creative_writing"),
+]
+
+_COMPILED_OUT_OF_SCOPE = [
+    (re.compile(pattern, re.IGNORECASE), label)
+    for pattern, label in OUT_OF_SCOPE_PATTERNS
+]
+
 
 # --- PII detection patterns ---
 
@@ -95,6 +114,20 @@ def is_blocked_input(text: str) -> tuple[bool, str]:
     """
     normalized = text.lower().strip()
     for pattern, label in _COMPILED_PATTERNS:
+        if pattern.search(normalized):
+            return True, label
+    return False, ""
+
+
+def is_out_of_scope(text: str) -> tuple[bool, str]:
+    """Identify clearly non-clinical requests before they consume model quota.
+
+    Returns ``(out_of_scope, category)``. Ambiguous and conversational
+    follow-ups pass through so patient-scoped clinical workflows stay usable.
+    """
+
+    normalized = sanitize_input(text)
+    for pattern, label in _COMPILED_OUT_OF_SCOPE:
         if pattern.search(normalized):
             return True, label
     return False, ""
