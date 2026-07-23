@@ -221,7 +221,7 @@ multi-turn patient context. Deterministic contracts remain pytest territory.
 ### Deployment Gate
 
 - product server replaces ADK Web
-- Cloud Run `$PORT`, `/healthz`, and `/readyz`
+- Cloud Run `$PORT`, `/health`, and `/ready`
 - non-root container and runtime secrets only
 - compiled UI and API in one initial artifact
 - deterministic demo initialization

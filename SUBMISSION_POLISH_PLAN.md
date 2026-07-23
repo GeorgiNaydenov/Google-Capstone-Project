@@ -174,8 +174,8 @@ Existing endpoint shapes change only additively.
       Project Wiki/, .claude/, docs/, eval/, logs) — never bake capstone.db
 - [x] Optional `CLINICAL_DATA_DIR` env in repository.py + capstone_agent/database.py roots;
       document Cloud Run ephemeral FS + max-instances=1 in deployment/README.md
-- [x] `/readyz` runs component_checks (DB/dist/uploads), 503 on DB failure
-- [x] Verify: npm run build → docker build → run → /healthz /readyz / → capstone tenant →
+- [x] `/ready` runs component_checks (DB/dist/uploads), 503 on DB failure
+- [x] Verify: npm run build → docker build → run → /health /ready / → capstone tenant →
       volume survival
 - [x] `docs/submission/demo-script.md` — 5-min video shot list (onboarding → extraction HITL →
       Q&A citations → database SQL gate + chart → atlas → admin health → deploy slide)
@@ -202,7 +202,7 @@ Existing endpoint shapes change only additively.
 | Notifications | seeded, actionable | derived from run state |
 | Atlas | tabs/sub-tabs, zoom/pan/fullscreen | same |
 | Onboarding | V2 incl. atlas step; replay | same |
-| Container | builds; healthz/readyz; SPA served | volume persists capstone.db |
+| Container | builds; healthz/ready; SPA served | volume persists capstone.db |
 | Suites | `pytest tests/ -v`, `npm test`, `npm run typecheck` green (no GOOGLE_API_KEY) | — |
 | Submission | LICENSE present, repo public, README judge path, media + facts pack | — |
 

@@ -23,8 +23,8 @@ def test_health_v1_and_v2() -> None:
     api = client()
     headers = clinician()
 
-    # Root healthz
-    res = api.get("/healthz")
+    # Root liveness endpoint (Cloud Run reserves some paths ending in "z").
+    res = api.get("/health")
     assert res.status_code == 200
     assert res.json()["status"] == "ok"
 

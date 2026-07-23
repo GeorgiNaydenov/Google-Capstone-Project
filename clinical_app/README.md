@@ -68,7 +68,7 @@ The frontend diagram atlas is intentionally outside the OpenAPI schema. Its SVG 
 - `GET /api/orchestrate/plan` — View orchestration plan
 
 ### System
-- `GET /healthz` — Health check endpoint
+- `GET /health` — Health check endpoint
 - `GET /api/agent-catalog` — Agent pipeline catalog
 
 ---

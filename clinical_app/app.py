@@ -692,9 +692,15 @@ def create_app() -> FastAPI:
                 return call["output"].get("data") or {}
         return None
 
-    @api.get("/healthz")
+    @api.get("/health", tags=["Health"])
+    @api.get("/healthz", include_in_schema=False)
     def healthz() -> dict[str, str]:
-        """Report liveness for raw probes."""
+        """Report liveness.
+
+        ``/healthz`` remains a local compatibility alias, but Cloud Run
+        reserves some paths ending in ``z`` at its edge. Deployments and
+        external monitors must use ``/health``.
+        """
         return {"status": "ok", "mode": effective_mode(resolve_tenant(None))}
 
     @v1_router.get(
@@ -710,14 +716,16 @@ def create_app() -> FastAPI:
         """Report liveness for V1 API."""
         return {"status": "ok", "mode": effective_mode(resolve_tenant(None))}
 
-    @api.get("/readyz")
+    @api.get("/ready", tags=["Health"])
+    @api.get("/readyz", include_in_schema=False)
     def ready() -> dict[str, Any]:
         """Report readiness from real component checks.
 
         Returns 503 when the default-tenant database is unreachable so
         orchestrators (Cloud Run, Kubernetes) hold traffic until storage is
         writable; the frontend-bundle check is advisory and never fails
-        readiness so API-only deployments stay ready.
+        readiness so API-only deployments stay ready. ``/readyz`` is retained
+        only as a local compatibility alias; external monitors use ``/ready``.
         """
 
         default_repo = registry.get("readiness-probe", resolve_tenant(None))

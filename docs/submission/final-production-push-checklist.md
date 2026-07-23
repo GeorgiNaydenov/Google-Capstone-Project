@@ -42,8 +42,8 @@ Then start the product:
 
 Verify:
 
-- [ ] `http://127.0.0.1:8000/healthz` returns `{"status":"ok",...}`.
-- [ ] `http://127.0.0.1:8000/readyz` returns 200.
+- [ ] `http://127.0.0.1:8000/health` returns `{"status":"ok",...}`.
+- [ ] `http://127.0.0.1:8000/ready` returns 200.
 - [ ] `http://127.0.0.1:8000/` loads the product.
 - [ ] `http://127.0.0.1:8000/documentation` loads the documentation hub.
 
@@ -58,8 +58,8 @@ gcloud builds submit --config deployment/cloudbuild.yaml .
 After deployment:
 
 - [ ] Cloud Run service URL opens the product.
-- [ ] `/healthz` returns 200.
-- [ ] `/readyz` returns 200.
+- [ ] `/health` returns 200.
+- [ ] `/ready` returns 200.
 - [ ] `/documentation` opens.
 - [ ] `AGENT_EXECUTION_MODE=live` only if Vertex/Gemini credentials are configured.
 - [ ] Runtime service account has `roles/aiplatform.user`.

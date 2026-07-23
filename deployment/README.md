@@ -86,11 +86,16 @@ uploads to Cloud SQL plus object storage instead of GCS FUSE.
 
 ### Health and readiness
 
-- `GET /healthz` — liveness (used by the Docker `HEALTHCHECK`).
-- `GET /readyz` — runs real component checks (database reachable, uploads
+- `GET /health` — liveness (used by the Docker `HEALTHCHECK`).
+- `GET /ready` — runs real component checks (database reachable, uploads
   writable, agent + MCP importable) and returns `503` until the database and
   upload storage are usable. Check this URL after deploy before submitting the
   public project link.
+
+Do not rename these routes to paths ending in `z`. Cloud Run reserves some such
+paths at its edge, so a route such as `/healthz` can return a Google-generated
+404 before the request reaches FastAPI. See the
+[Cloud Run known issues](https://cloud.google.com/run/docs/known-issues#reserved-url-paths).
 
 ### Optional API-key deployment
 

@@ -94,9 +94,11 @@ def test_health_demo_and_camel_case_read_contracts() -> None:
     """Health, demo, dashboard, patient, and session shapes match frontend."""
 
     api = client()
+    assert api.get("/health").json() == {"status": "ok", "mode": "local"}
     assert api.get("/healthz").json() == {"status": "ok", "mode": "local"}
-    readiness = api.get("/readyz")
+    readiness = api.get("/ready")
     assert readiness.status_code == 200 and readiness.json()["status"] == "ready"
+    assert api.get("/readyz").status_code == 200
     assert any(
         component["name"] == "Clinical database"
         for component in readiness.json()["components"]

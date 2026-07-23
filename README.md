@@ -21,7 +21,7 @@ The demo tenants are deterministic. The **Capstone (Live)** tenant is the real A
 | Agent / multi-agent system with ADK | `capstone_agent/agent.py` root orchestrator and `capstone_agent/orchestration.py` with 22 pipeline sub-agents |
 | MCP Server | `mcp_server/server.py` exposes clinical tools through FastMCP over JSON-RPC/stdio |
 | Security | `capstone_agent/callbacks.py` and `capstone_agent/security.py` implement input, tool, and output safety layers |
-| Deployability | `deployment/Dockerfile`, `deployment/cloudbuild.yaml`, `/healthz`, `/readyz`, and Vertex AI Agent Engine config |
+| Deployability | `deployment/Dockerfile`, `deployment/cloudbuild.yaml`, `/health`, `/ready`, and Vertex AI Agent Engine config |
 | Agent Skills | `.agents/skills/` and `.claude/` provide reusable testing, deployment, documentation, and diagram workflows |
 
 ## Problem
@@ -136,8 +136,8 @@ Open `http://localhost:8000`.
 | --- | --- |
 | `http://localhost:8000/` | Clinical AI Kit product |
 | `http://localhost:8000/documentation` | Standalone documentation hub |
-| `http://localhost:8000/healthz` | Liveness |
-| `http://localhost:8000/readyz` | Readiness with real component checks |
+| `http://localhost:8000/health` | Liveness |
+| `http://localhost:8000/ready` | Readiness with real component checks |
 | `http://localhost:8000/docs` | FastAPI Swagger docs |
 | `http://localhost:8000/redoc` | FastAPI ReDoc |
 

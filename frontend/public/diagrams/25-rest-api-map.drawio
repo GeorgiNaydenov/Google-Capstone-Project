@@ -14,13 +14,13 @@
         <mxCell id="grp1" value="Infrastructure" style="swimlane;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;html=1;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="40" y="70" width="320" height="200" as="geometry" />
         </mxCell>
-        <mxCell id="h1" value="GET /healthz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="grp1">
+        <mxCell id="h1" value="GET /health" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="grp1">
           <mxGeometry x="20" y="40" width="130" height="35" as="geometry" />
         </mxCell>
         <mxCell id="h2" value="GET /api/health" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="grp1">
           <mxGeometry x="170" y="40" width="130" height="35" as="geometry" />
         </mxCell>
-        <mxCell id="h3" value="GET /readyz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="grp1">
+        <mxCell id="h3" value="GET /ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="grp1">
           <mxGeometry x="20" y="90" width="130" height="35" as="geometry" />
         </mxCell>
         <mxCell id="h4" value="GET /api/agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="grp1">

@@ -31,6 +31,6 @@ ENV CLINICAL_DATA_DIR=/data
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/healthz || exit 1
+    CMD curl -f http://localhost:${PORT}/health || exit 1
 
 CMD ["sh", "-c", "uvicorn clinical_app.app:app --host 0.0.0.0 --port ${PORT:-8080}"]

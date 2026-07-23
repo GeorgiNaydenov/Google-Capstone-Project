@@ -160,7 +160,7 @@ review thresholds, payload logging, and feature flags.
 
 - Run the product FastAPI server rather than ADK Web.
 - Serve the compiled frontend and API from one Cloud Run artifact initially.
-- Bind `$PORT`; add `/healthz` and `/readyz`; retain non-root execution.
+- Bind `$PORT`; add `/health` and `/ready`; retain non-root execution.
 - Use runtime service identity and Secret Manager.
 - Allow unauthenticated access only for the isolated synthetic demo.
 - Rewrite architecture, README, setup, deployment, agent-role, limitations,
