@@ -13,7 +13,9 @@ from clinical_app.repository import RepositoryRegistry
 product_app = import_module("clinical_app.app")
 
 
-def poll_until_settled(api: TestClient, headers: dict[str, str], run_id: str, timeout: float = 2.0) -> dict[str, object]:
+def poll_until_settled(
+    api: TestClient, headers: dict[str, str], run_id: str, timeout: float = 2.0
+) -> dict[str, object]:
     """Poll a live run until its background task moves it off "running".
 
     Live endpoints return immediately with status "running" and finish the
@@ -56,7 +58,9 @@ def first_patient_id(api: TestClient, request_headers: dict[str, str]) -> str:
     return api.get("/api/patients", headers=request_headers).json()[0]["id"]
 
 
-def first_patient_with_image_evidence(api: TestClient, request_headers: dict[str, str]) -> str:
+def first_patient_with_image_evidence(
+    api: TestClient, request_headers: dict[str, str]
+) -> str:
     """Return a patient id that exposes image evidence in the active demo dataset."""
 
     for patient in api.get("/api/patients", headers=request_headers).json()[:100]:
@@ -68,7 +72,9 @@ def first_patient_with_image_evidence(api: TestClient, request_headers: dict[str
     pytest.fail("at least one demo patient should expose image evidence")
 
 
-def upload_image(api: TestClient, request_headers: dict[str, str], patient_id: str) -> str:
+def upload_image(
+    api: TestClient, request_headers: dict[str, str], patient_id: str
+) -> str:
     """Upload a small, browser-renderable image and return its asset ID."""
 
     response = api.post(
@@ -81,7 +87,9 @@ def upload_image(api: TestClient, request_headers: dict[str, str], patient_id: s
     return response.json()["assetId"]
 
 
-def start_extraction(api: TestClient, request_headers: dict[str, str], patient_id: str) -> dict[str, Any]:
+def start_extraction(
+    api: TestClient, request_headers: dict[str, str], patient_id: str
+) -> dict[str, Any]:
     """Upload evidence and start the review-gated extraction workflow."""
 
     asset_id = upload_image(api, request_headers, patient_id)
@@ -92,14 +100,22 @@ def start_extraction(api: TestClient, request_headers: dict[str, str], patient_i
     )
     assert response.status_code == 201
     run = response.json()
-    assert "extract_clinical_text" in {item["tool"] for item in run["result"]["toolCalls"]}
+    assert "extract_clinical_text" in {
+        item["tool"] for item in run["result"]["toolCalls"]
+    }
     return run
 
 
 @pytest.mark.parametrize(
     ("query", "role", "needs_patient", "workflow", "route"),
     [
-        ("Extract this uploaded image", "clinician", True, "extraction", "/app/extraction"),
+        (
+            "Extract this uploaded image",
+            "clinician",
+            True,
+            "extraction",
+            "/app/extraction",
+        ),
         ("What changed in recent evidence?", "clinician", True, "qa", "/app/qa"),
         ("Count patients by risk", "clinician", False, "database", "/app/database"),
     ],
@@ -136,20 +152,26 @@ def test_clinician_can_preview_and_execute_database_query(api: TestClient) -> No
     preview_body = preview.json()
     assert preview_body["status"] == "review"
     assert preview_body["result"]["safe"] is True
-    assert "validate_sql_safety" in {item["tool"] for item in preview_body["result"]["toolCalls"]}
+    assert "validate_sql_safety" in {
+        item["tool"] for item in preview_body["result"]["toolCalls"]
+    }
 
     executed = api.post(
         f"/api/runs/database/{preview_body['id']}/execute",
         headers=request_headers,
     )
     assert executed.status_code == 200
-    assert "approve_sql_preview" in {item["tool"] for item in executed.json()["result"]["toolCalls"]}
+    assert "approve_sql_preview" in {
+        item["tool"] for item in executed.json()["result"]["toolCalls"]
+    }
     assert executed.json()["status"] == "completed"
     assert executed.json()["result"]["rows"]
     assert executed.json()["result"]["chart"]
 
 
-def test_extraction_approval_preserves_fields_and_updates_patient_state(api: TestClient) -> None:
+def test_extraction_approval_preserves_fields_and_updates_patient_state(
+    api: TestClient,
+) -> None:
     """Approval persists only edited fields and creates linked clinical evidence."""
 
     request_headers = headers(session="approved-extraction")
@@ -203,7 +225,9 @@ def test_extraction_approval_preserves_fields_and_updates_patient_state(api: Tes
     assert qa.json()["evidence"]
 
 
-def test_extraction_rejection_does_not_persist_or_create_records(api: TestClient) -> None:
+def test_extraction_rejection_does_not_persist_or_create_records(
+    api: TestClient,
+) -> None:
     """Rejected output must not create sessions, evidence, or storage receipts."""
 
     request_headers = headers(session="rejected-extraction")
@@ -211,7 +235,9 @@ def test_extraction_rejection_does_not_persist_or_create_records(api: TestClient
     sessions_before = api.get(
         "/api/sessions", headers=request_headers, params={"patient_id": patient_id}
     ).json()
-    persisted_before = api.get("/api/storage", headers=request_headers).json()["persistedCount"]
+    persisted_before = api.get("/api/storage", headers=request_headers).json()[
+        "persistedCount"
+    ]
     run = start_extraction(api, request_headers, patient_id)
     rejected = api.post(
         f"/api/runs/{run['id']}/review",
@@ -224,10 +250,16 @@ def test_extraction_rejection_does_not_persist_or_create_records(api: TestClient
         receipt["status"] == "synced"
         for receipt in rejected.json()["result"]["storageReceipts"]
     )
-    assert api.get(
-        "/api/sessions", headers=request_headers, params={"patient_id": patient_id}
-    ).json() == sessions_before
-    assert api.get("/api/storage", headers=request_headers).json()["persistedCount"] == persisted_before
+    assert (
+        api.get(
+            "/api/sessions", headers=request_headers, params={"patient_id": patient_id}
+        ).json()
+        == sessions_before
+    )
+    assert (
+        api.get("/api/storage", headers=request_headers).json()["persistedCount"]
+        == persisted_before
+    )
 
 
 def test_qa_image_citation_reopens_authorized_asset(api: TestClient) -> None:
@@ -255,7 +287,9 @@ def test_qa_image_citation_reopens_authorized_asset(api: TestClient) -> None:
     assert source.headers["content-type"].startswith("image/")
 
 
-def test_frontend_agent_configuration_keys_save_version_and_audit(api: TestClient) -> None:
+def test_frontend_agent_configuration_keys_save_version_and_audit(
+    api: TestClient,
+) -> None:
     """Every visible runtime control must round-trip through the API contract."""
 
     request_headers = headers("admin", "config-contract")
@@ -271,7 +305,12 @@ def test_frontend_agent_configuration_keys_save_version_and_audit(api: TestClien
     assert response.status_code == 200
     saved = response.json()
     assert saved["version"] == current["version"] + 1
-    for key in ("autoApprovalThreshold", "reviewThreshold", "maxConcurrentRuns", "databaseEnabled"):
+    for key in (
+        "autoApprovalThreshold",
+        "reviewThreshold",
+        "maxConcurrentRuns",
+        "databaseEnabled",
+    ):
         assert saved[key] == payload[key]
 
     audit = api.get("/api/audit", headers=request_headers).json()
@@ -284,7 +323,9 @@ def test_dashboard_and_users_match_rendered_frontend_contract(api: TestClient) -
     clinician_metrics = api.get(
         "/api/dashboard", headers=headers("clinician", "view-contract")
     ).json()["metrics"]
-    assert {"patients", "highRisk", "pendingReview", "syncRate"} <= set(clinician_metrics)
+    assert {"patients", "highRisk", "pendingReview", "syncRate"} <= set(
+        clinician_metrics
+    )
     assert clinician_metrics["highRisk"] > 0
     assert 0 <= clinician_metrics["syncRate"] <= 100
 
@@ -294,7 +335,10 @@ def test_dashboard_and_users_match_rendered_frontend_contract(api: TestClient) -
 
     users = api.get("/api/users", headers=admin_headers).json()
     assert users
-    assert all({"id", "name", "email", "roles", "scope", "status"} <= set(user) for user in users)
+    assert all(
+        {"id", "name", "email", "roles", "scope", "status"} <= set(user)
+        for user in users
+    )
     assert any({"Clinician", "Admin"} <= set(user["roles"]) for user in users)
 
 
@@ -314,7 +358,9 @@ def test_upload_limit_rejects_oversized_body(api: TestClient) -> None:
 
     request_headers = headers(session="upload-limit")
     patient_id = first_patient_id(api, request_headers)
-    asset_count_before = api.get("/api/storage", headers=request_headers).json()["assetCount"]
+    asset_count_before = api.get("/api/storage", headers=request_headers).json()[
+        "assetCount"
+    ]
     response = api.post(
         "/api/assets",
         headers=request_headers,
@@ -322,7 +368,10 @@ def test_upload_limit_rejects_oversized_body(api: TestClient) -> None:
         files={"file": ("too-large.pdf", b"x" * 10_000_001, "application/pdf")},
     )
     assert response.status_code == 413
-    assert api.get("/api/storage", headers=request_headers).json()["assetCount"] == asset_count_before
+    assert (
+        api.get("/api/storage", headers=request_headers).json()["assetCount"]
+        == asset_count_before
+    )
 
 
 def test_upload_rejects_unsupported_file_type(api: TestClient) -> None:
@@ -330,7 +379,9 @@ def test_upload_rejects_unsupported_file_type(api: TestClient) -> None:
 
     request_headers = headers(session="unsupported-upload")
     patient_id = first_patient_id(api, request_headers)
-    asset_count_before = api.get("/api/storage", headers=request_headers).json()["assetCount"]
+    asset_count_before = api.get("/api/storage", headers=request_headers).json()[
+        "assetCount"
+    ]
     response = api.post(
         "/api/assets",
         headers=request_headers,
@@ -338,7 +389,10 @@ def test_upload_rejects_unsupported_file_type(api: TestClient) -> None:
         files={"file": ("note.txt", b"plain clinical text", "text/plain")},
     )
     assert response.status_code == 415
-    assert api.get("/api/storage", headers=request_headers).json()["assetCount"] == asset_count_before
+    assert (
+        api.get("/api/storage", headers=request_headers).json()["assetCount"]
+        == asset_count_before
+    )
 
 
 def test_upload_rejects_mismatched_content_type(api: TestClient) -> None:
@@ -346,7 +400,9 @@ def test_upload_rejects_mismatched_content_type(api: TestClient) -> None:
 
     request_headers = headers(session="mismatch-upload")
     patient_id = first_patient_id(api, request_headers)
-    asset_count_before = api.get("/api/storage", headers=request_headers).json()["assetCount"]
+    asset_count_before = api.get("/api/storage", headers=request_headers).json()[
+        "assetCount"
+    ]
     response = api.post(
         "/api/assets",
         headers=request_headers,
@@ -354,7 +410,10 @@ def test_upload_rejects_mismatched_content_type(api: TestClient) -> None:
         files={"file": ("scan.pdf", b"\x89PNG\r\n\x1a\nsynthetic", "application/pdf")},
     )
     assert response.status_code == 422
-    assert api.get("/api/storage", headers=request_headers).json()["assetCount"] == asset_count_before
+    assert (
+        api.get("/api/storage", headers=request_headers).json()["assetCount"]
+        == asset_count_before
+    )
 
 
 def test_knowledge_base_upload_indexes_document_for_qa(api: TestClient) -> None:
@@ -366,7 +425,13 @@ def test_knowledge_base_upload_indexes_document_for_qa(api: TestClient) -> None:
         "/api/knowledge-base/assets",
         headers=request_headers,
         data={"patient_id": patient_id},
-        files={"file": ("care-plan.md", b"# Care plan\nBNP rising; repeat echo recommended.", "text/markdown")},
+        files={
+            "file": (
+                "care-plan.md",
+                b"# Care plan\nBNP rising; repeat echo recommended.",
+                "text/markdown",
+            )
+        },
     )
     assert uploaded.status_code == 201
     assert uploaded.json()["evidenceId"].startswith("KB-")
@@ -374,14 +439,24 @@ def test_knowledge_base_upload_indexes_document_for_qa(api: TestClient) -> None:
     qa = api.post(
         "/api/runs/qa",
         headers=request_headers,
-        json={"patientId": patient_id, "question": "What does the uploaded knowledge base say about BNP?", "source_types": ["document"], "filters": {}},
+        json={
+            "patientId": patient_id,
+            "question": "What does the uploaded knowledge base say about BNP?",
+            "source_types": ["document"],
+            "filters": {},
+        },
     )
 
     assert qa.status_code == 201
-    assert any(item["kind"] == "document" and "BNP rising" in item["excerpt"] for item in qa.json()["evidence"])
+    assert any(
+        item["kind"] == "document" and "BNP rising" in item["excerpt"]
+        for item in qa.json()["evidence"]
+    )
 
 
-def test_database_execute_rejects_unsafe_agent_sql(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_database_execute_rejects_unsafe_agent_sql(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Agent-generated SQL must be re-validated server-side before execution."""
 
     async def fake_execute_live(query: str, user_id: str, **_: Any) -> dict[str, Any]:
@@ -412,7 +487,9 @@ def test_database_execute_rejects_unsafe_agent_sql(tmp_path, monkeypatch: pytest
         f"/api/runs/database/{preview_body['id']}/execute", headers=request_headers
     )
     assert executed.status_code == 400
-    run = live_api.get(f"/api/runs/{preview_body['id']}", headers=request_headers).json()
+    run = live_api.get(
+        f"/api/runs/{preview_body['id']}", headers=request_headers
+    ).json()
     assert run["status"] == "review"
     assert "rows" not in run["result"]
 
@@ -431,7 +508,12 @@ def test_database_execute_completes_with_empty_result(
     assert preview.status_code == 201
     monkeypatch.setattr(
         "capstone_agent.clinical_schemas.execute_query",
-        lambda sql: {"columns": ["risk_level", "patient_count"], "rows": [], "row_count": 0, "table": "query_result"},
+        lambda sql: {
+            "columns": ["risk_level", "patient_count"],
+            "rows": [],
+            "row_count": 0,
+            "table": "query_result",
+        },
     )
     executed = api.post(
         f"/api/runs/database/{preview.json()['id']}/execute", headers=request_headers
@@ -457,7 +539,12 @@ def test_database_execute_surfaces_sql_errors(
     assert preview.status_code == 201
     monkeypatch.setattr(
         "capstone_agent.clinical_schemas.execute_query",
-        lambda sql: {"columns": [], "rows": [], "row_count": 0, "error": "no such column: nope"},
+        lambda sql: {
+            "columns": [],
+            "rows": [],
+            "row_count": 0,
+            "error": "no such column: nope",
+        },
     )
     executed = api.post(
         f"/api/runs/database/{preview.json()['id']}/execute", headers=request_headers
@@ -493,7 +580,9 @@ def test_visuals_route_rejects_paths_outside_uploads(api: TestClient, tmp_path) 
     assert response.status_code == 404
 
 
-def test_live_execution_mode_invokes_lazy_agent_bridge(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_live_execution_mode_invokes_lazy_agent_bridge(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The real (Capstone) tenant delegates to the ADK bridge, no model call."""
 
     calls: list[tuple[str, str]] = []
@@ -516,7 +605,11 @@ def test_live_execution_mode_invokes_lazy_agent_bridge(tmp_path, monkeypatch: py
     assert response.status_code == 201
     assert calls and calls[0][1] == "Integration Tester"
     assert PATIENT_ID in calls[0][0]
-    settled = poll_until_settled(live_api, {**headers(session="live-bridge"), "X-Tenant": "capstone"}, response.json()["id"])
+    settled = poll_until_settled(
+        live_api,
+        {**headers(session="live-bridge"), "X-Tenant": "capstone"},
+        response.json()["id"],
+    )
     assert settled["result"]["liveResponse"] == "Synthetic live response"
     assert settled["result"]["authorSteps"] == [
         {"author": "patient_qa_pipeline", "eventId": "event-1"}
@@ -569,7 +662,9 @@ def test_capstone_writes_isolated_from_clinical_db(tmp_path) -> None:
     assert database.get_patient(probe_id) is None
 
 
-def test_capstone_database_preview_has_no_static_fallback(api: TestClient, tmp_path, monkeypatch) -> None:
+def test_capstone_database_preview_has_no_static_fallback(
+    api: TestClient, tmp_path, monkeypatch
+) -> None:
     """A live SQL failure surfaces a 502 instead of canned fallback SQL."""
 
     monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
@@ -584,13 +679,17 @@ def test_capstone_database_preview_has_no_static_fallback(api: TestClient, tmp_p
         json={"question": "How many patients per risk level?"},
     )
     assert response.status_code == 201
-    settled = poll_until_settled(api, capstone_headers("capstone-fallback"), response.json()["id"])
+    settled = poll_until_settled(
+        api, capstone_headers("capstone-fallback"), response.json()["id"]
+    )
     assert settled["status"] == "error"
     assert "SQL generation failed" in settled["steps"][-1]["detail"]
     assert "SELECT risk_level" not in settled["result"]["sql"]
 
 
-def test_capstone_preview_rejects_empty_sql(api: TestClient, tmp_path, monkeypatch) -> None:
+def test_capstone_preview_rejects_empty_sql(
+    api: TestClient, tmp_path, monkeypatch
+) -> None:
     """An agent response without SQL is a surfaced error, not comment SQL."""
 
     monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
@@ -598,8 +697,12 @@ def test_capstone_preview_rejects_empty_sql(api: TestClient, tmp_path, monkeypat
     async def sqlless_execute_live(*_: Any, **__: Any) -> dict[str, Any]:
         return {
             "finalResponse": "I could not derive a query.",
-            "authorSteps": [], "toolCalls": [], "stateOutputs": {},
-            "fields": {}, "confidence": 0.9, "sql": "",
+            "authorSteps": [],
+            "toolCalls": [],
+            "stateOutputs": {},
+            "fields": {},
+            "confidence": 0.9,
+            "sql": "",
         }
 
     monkeypatch.setattr(product_app, "execute_live", sqlless_execute_live)
@@ -609,12 +712,16 @@ def test_capstone_preview_rejects_empty_sql(api: TestClient, tmp_path, monkeypat
         json={"question": "How many patients per risk level?"},
     )
     assert response.status_code == 201
-    settled = poll_until_settled(api, capstone_headers("capstone-empty-sql"), response.json()["id"])
+    settled = poll_until_settled(
+        api, capstone_headers("capstone-empty-sql"), response.json()["id"]
+    )
     assert settled["status"] == "error"
     assert "did not return SQL" in settled["steps"][-1]["detail"]
 
 
-def test_capstone_users_and_permissions_persist_across_sessions(api: TestClient, tmp_path, monkeypatch) -> None:
+def test_capstone_users_and_permissions_persist_across_sessions(
+    api: TestClient, tmp_path, monkeypatch
+) -> None:
     """The real tenant's directory is DB-seeded and matrix edits survive new sessions."""
 
     monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
@@ -634,15 +741,24 @@ def test_capstone_users_and_permissions_persist_across_sessions(api: TestClient,
     second = {**capstone_headers("capstone-perms-b"), "X-Clinical-Role": "admin"}
     persisted = api.get("/api/permissions", headers=second).json()
     assert persisted["version"] == saved["version"]
-    row = next(item for item in persisted["matrix"] if item["permission"] == edited[1]["permission"])
+    row = next(
+        item
+        for item in persisted["matrix"]
+        if item["permission"] == edited[1]["permission"]
+    )
     assert row["grants"]["Reviewer"] is True
 
 
-def test_capstone_monitoring_and_notifications_derive_from_runs(api: TestClient, tmp_path, monkeypatch) -> None:
+def test_capstone_monitoring_and_notifications_derive_from_runs(
+    api: TestClient, tmp_path, monkeypatch
+) -> None:
     """The real tenant reports no agent activity until something actually runs."""
 
     monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
-    request_headers = {**capstone_headers("capstone-honest"), "X-Clinical-Role": "admin"}
+    request_headers = {
+        **capstone_headers("capstone-honest"),
+        "X-Clinical-Role": "admin",
+    }
     assert api.get("/api/agents/monitoring", headers=request_headers).json() == []
     assert api.get("/api/notifications", headers=request_headers).json() == []
     summary = api.get("/api/summary", headers=request_headers).json()

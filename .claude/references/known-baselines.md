@@ -1,12 +1,13 @@
 # Known Baselines
 
-Baseline metrics and testing counts.
+Do not hardcode test counts here; `MEMORY.md` and generated Test Inventory own
+current counts.
 
-- **Lint status**: Passing (ruff format and ruff check compliant).
-- **Type safety**: Passing (no exceptions under standard import checks).
-- **Test suite count**:
-  - `tests/test_agent_eval.py`: 3 test cases.
-  - `tests/test_security.py`: 4 test cases.
-  - `tests/test_callbacks.py`: 3 test cases.
-  - `tests/test_tools.py`: 3 test cases.
-- **Scaffold status**: Fully enhanced with custom MCP capabilities, app server, and A2A hooks.
+- Harness structure: `python scripts/check_harness.py`.
+- Source safety: `python scripts/check_source_safety.py`.
+- Python correctness: `pytest tests/ -v` with model tests skipped when
+  credentials are absent.
+- Frontend correctness: commands defined by `frontend/package.json`.
+- Agent behavior: ADK eval, separate from deterministic pytest.
+- Global `agents-cli` launcher may be environment-specific; repository scripts
+  and `uv.lock` remain canonical.

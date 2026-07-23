@@ -19,7 +19,9 @@ DEFAULT_FRONTEND_PUBLIC = Path("frontend/public/demo-data/extraction")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate second-platform extraction demo assets.")
+    parser = argparse.ArgumentParser(
+        description="Generate second-platform extraction demo assets."
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--count", type=int, default=64)
     parser.add_argument("--seed", type=int, default=260705)
@@ -29,8 +31,29 @@ def main() -> None:
     args = parser.parse_args()
     from scripts.generate_extraction_showcase import generate
 
-    manifest = generate(args.output, args.count, args.seed, args.template, "demo2", args.frontend_public, args.patients_per_file, "PT-N")
-    print(json.dumps({"output": str(args.output), "demo_platform": "demo2", "synthetic_picker_count": manifest["frontend_contract"]["syntheticPickerCount"], "packet_count": manifest["packet_count"]}, indent=2))
+    manifest = generate(
+        args.output,
+        args.count,
+        args.seed,
+        args.template,
+        "demo2",
+        args.frontend_public,
+        args.patients_per_file,
+        "PT-N",
+    )
+    print(
+        json.dumps(
+            {
+                "output": str(args.output),
+                "demo_platform": "demo2",
+                "synthetic_picker_count": manifest["frontend_contract"][
+                    "syntheticPickerCount"
+                ],
+                "packet_count": manifest["packet_count"],
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

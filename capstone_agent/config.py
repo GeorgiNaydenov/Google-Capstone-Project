@@ -39,7 +39,8 @@ def get_config() -> dict:
     """
     config = {
         "google_api_key": os.getenv("GOOGLE_API_KEY", ""),
-        "use_vertex_ai": os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "FALSE").upper() == "TRUE",
+        "use_vertex_ai": os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "FALSE").upper()
+        == "TRUE",
         "gcp_project": os.getenv("GOOGLE_CLOUD_PROJECT", ""),
         "gcp_location": os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
         "app_name": os.getenv("APP_NAME", "capstone_agent"),
@@ -56,18 +57,26 @@ def get_config() -> dict:
         "trace_exporter": os.getenv("TRACE_EXPORTER", "otlp").lower(),  # otlp | gcp
         "log_format": os.getenv("LOG_FORMAT", "json"),
         # --- Memory backends (see memory.py factories) ---
-        "session_backend": os.getenv("SESSION_BACKEND", "memory").lower(),  # memory | database
-        "session_db_url": os.getenv("SESSION_DB_URL", "sqlite:///./capstone_sessions.db"),
-        "memory_backend": os.getenv("MEMORY_BACKEND", "memory").lower(),  # memory | vertex
+        "session_backend": os.getenv(
+            "SESSION_BACKEND", "memory"
+        ).lower(),  # memory | database
+        "session_db_url": os.getenv(
+            "SESSION_DB_URL", "sqlite:///./capstone_sessions.db"
+        ),
+        "memory_backend": os.getenv(
+            "MEMORY_BACKEND", "memory"
+        ).lower(),  # memory | vertex
         "agent_engine_id": os.getenv("AGENT_ENGINE_ID", ""),
         # --- Semantic retrieval (see vector_store.py) ---
-        "enable_vector_search": os.getenv("ENABLE_VECTOR_SEARCH", "TRUE").upper() == "TRUE",
+        "enable_vector_search": os.getenv("ENABLE_VECTOR_SEARCH", "TRUE").upper()
+        == "TRUE",
         "embedding_model": os.getenv("EMBEDDING_MODEL", "gemini-embedding-001"),
         "embedding_dimensions": int(os.getenv("EMBEDDING_DIMENSIONS", "768")),
         "enable_reranker": os.getenv("ENABLE_RERANKER", "TRUE").upper() == "TRUE",
         "reranker_model": os.getenv("RERANKER_MODEL", "semantic-ranker-default@latest"),
         # --- Resumability (human-in-the-loop, long-running ops) ---
-        "enable_resumability": os.getenv("ENABLE_RESUMABILITY", "TRUE").upper() == "TRUE",
+        "enable_resumability": os.getenv("ENABLE_RESUMABILITY", "TRUE").upper()
+        == "TRUE",
         # --- A2A serving (Day 5a) ---
         "a2a_port": int(os.getenv("A2A_PORT", "8001")),
         # --- Clinical governance ---

@@ -2636,6 +2636,13 @@ export const fallbackKnowledgeBase = (patientId?: string) => localKnowledgeBaseA
 export function fallbackExtractionRun(assetId: string, patientId: string): AgentRun {
   const runId = demoId("RUN");
   const option = [...syntheticExtractionOptionsPrimary, ...syntheticExtractionOptionsDemo2].find(item => item.assetId === assetId && item.patientId === patientId) ?? [...syntheticExtractionOptionsPrimary, ...syntheticExtractionOptionsDemo2].find(item => item.assetId === assetId);
+  const packetRecords = (option?.batchPatientIds ?? [patientId]).map((packetPatientId, index) => ({
+    patientId: packetPatientId,
+    patientName: packetPatientId === patientId ? option?.patientName ?? "Selected patient" : `Packet patient ${index + 1}`,
+    encounterDate: "Synthetic packet",
+    fields: packetPatientId === patientId ? option?.expectedFields ?? [] : [],
+  }));
+  const extractedContent = { ...(option?.extracted ?? {}), selectedPatientId: patientId, pageCount: option?.patientsInFile ?? 1, packetRecords };
   return {
     id: runId,
     workflow: "extraction",
@@ -2647,7 +2654,7 @@ export function fallbackExtractionRun(assetId: string, patientId: string): Agent
     traceId: demoId("TRACE"),
     steps: ["Source Quality Agent", "PDF Packet Parser", "Vision Agent", "Clinical Structuring Agent", "Validation Agent", "Clinical Review Gate"].map((name, index) => ({ id: `${runId}-S${index + 1}`, name, status: index === 5 ? "review" : "completed", detail: index === 5 ? "Awaiting clinician review" : "Deterministic demo fallback completed", timestamp: now() })),
     evidence: [{ id: assetId, label: option?.filename ?? "Synthetic demo evidence", kind: "document", sourceUrl: option?.sourceUrl ?? option?.previewUrl ?? "", excerpt: String(option?.extracted?.textPreview ?? "Synthetic extraction catalog evidence.") }],
-    result: { patientId, fields: { documentType: "Enterprise five-patient clinical packet", patientMatch: patientId, sourceFile: option?.filename, packetId: option?.packetId, batchPatients: option?.batchPatientIds, finding: option?.extracted?.textPreview ?? "Evidence ready for clinician verification" }, toolCalls: [], storageReceipts: [{ target: "json", status: "pending" }, { target: "relational", status: "pending" }, { target: "vector", status: "pending" }], persisted: false, extractedContent: option?.extracted },
+    result: { patientId, fields: { documentType: "Enterprise five-patient clinical packet", patientMatch: patientId, sourceFile: option?.filename, packetId: option?.packetId, batchPatients: option?.batchPatientIds, finding: option?.extracted?.textPreview ?? "Evidence ready for clinician verification" }, toolCalls: [], storageReceipts: [{ target: "json", status: "pending" }, { target: "relational", status: "pending" }, { target: "vector", status: "pending" }], persisted: false, extractedContent },
   };
 }
 

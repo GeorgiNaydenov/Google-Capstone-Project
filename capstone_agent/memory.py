@@ -27,7 +27,12 @@ from google.adk.sessions import InMemorySessionService
 
 from .config import get_config
 from .observability import log_security_event
-from .security import detect_phi, redact_phi
+from .security import (
+    detect_phi,
+    redact_detected_secrets,
+    redact_phi,
+    scan_for_secrets,
+)
 
 
 def create_session_service():
@@ -85,15 +90,57 @@ async def auto_save_memory_callback(callback_context) -> None:
     across sessions.
     """
     try:
-        # Redact PII in state values in-place so nothing sensitive is persisted.
+        # Replace session state with the governed copy before ADK serializes it.
+        # Deleting excluded keys matters: merely omitting temp: keys from the
+        # filtered mapping leaves them in callback_context.state and therefore
+        # still persists them when add_session_to_memory() reads the session.
         state = callback_context.state
         filtered = filter_state_for_storage(dict(state))
+        for key in list(state):
+            if key not in filtered:
+                del state[key]
         for key, value in filtered.items():
-            if state.get(key) != value:
-                state[key] = value  # write back the redacted value
+            state[key] = value
         await callback_context.add_session_to_memory()
     except Exception as e:
         log_security_event("memory_save_error", {"error": str(e)})
+
+
+def _filter_value_for_storage(value: Any, key_path: str) -> Any:
+    """Recursively redact sensitive strings inside supported containers."""
+    if isinstance(value, str):
+        phi_found = detect_phi(value)
+        secrets_found = scan_for_secrets(value)
+        if phi_found or secrets_found:
+            log_security_event(
+                "sensitive_data_filtered_from_memory",
+                {
+                    "key": key_path,
+                    "phi_types": [finding["type"] for finding in phi_found],
+                    "secret_types": [finding["type"] for finding in secrets_found],
+                },
+            )
+        return redact_detected_secrets(redact_phi(value))
+    if isinstance(value, dict):
+        return {
+            key: _filter_value_for_storage(
+                nested,
+                f"{key_path}.{key}",
+            )
+            for key, nested in value.items()
+            if not str(key).startswith("temp:")
+        }
+    if isinstance(value, list):
+        return [
+            _filter_value_for_storage(item, f"{key_path}[{index}]")
+            for index, item in enumerate(value)
+        ]
+    if isinstance(value, tuple):
+        return tuple(
+            _filter_value_for_storage(item, f"{key_path}[{index}]")
+            for index, item in enumerate(value)
+        )
+    return value
 
 
 def filter_state_for_storage(state: dict) -> dict:
@@ -108,19 +155,23 @@ def filter_state_for_storage(state: dict) -> dict:
     for key, value in state.items():
         if key.startswith("temp:"):
             continue
-        if isinstance(value, str):
-            phi_found = detect_phi(value)
-            if phi_found:
-                log_security_event("phi_filtered_from_memory", {
-                    "key": key,
-                    "phi_types": [p["type"] for p in phi_found],
-                })
-                filtered[key] = redact_phi(value)
-            else:
-                filtered[key] = value
-        else:
-            filtered[key] = value
+        filtered[key] = _filter_value_for_storage(value, key)
     return filtered
+
+
+def _is_shareable_a2a_value(value: Any) -> bool:
+    """Return whether a nested value is free of PHI, PII, and secrets."""
+    if isinstance(value, str):
+        return not detect_phi(value) and not scan_for_secrets(value)
+    if isinstance(value, dict):
+        return all(
+            not str(key).startswith(("temp:", "user:", "app:"))
+            and _is_shareable_a2a_value(nested)
+            for key, nested in value.items()
+        )
+    if isinstance(value, (list, tuple)):
+        return all(_is_shareable_a2a_value(item) for item in value)
+    return isinstance(value, (bool, int, float, type(None)))
 
 
 def prepare_a2a_context(task_description: str, state: dict) -> dict:
@@ -143,8 +194,9 @@ def prepare_a2a_context(task_description: str, state: dict) -> dict:
         # Skip scoped keys that shouldn't cross agent boundaries
         if key.startswith(("temp:", "user:", "app:")):
             continue
-        # Skip anything with PII or PHI
-        if isinstance(value, str) and detect_phi(value):
+        # Skip the whole field if any nested value contains sensitive data or
+        # an unsupported object that should not cross a process boundary.
+        if not _is_shareable_a2a_value(value):
             continue
         shareable[key] = value
 
@@ -177,15 +229,15 @@ async def search_past_conversations(
         results = []
         for entry in response.memories:
             if entry.content and entry.content.parts:
-                text_parts = [
-                    part.text for part in entry.content.parts if part.text
-                ]
+                text_parts = [part.text for part in entry.content.parts if part.text]
                 if text_parts:
                     results.append(" ".join(text_parts))
 
         return {
             "status": "success",
-            "results": results if results else ["No relevant past conversations found."],
+            "results": results
+            if results
+            else ["No relevant past conversations found."],
         }
     except Exception as e:
         return {

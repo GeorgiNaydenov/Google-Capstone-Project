@@ -14,13 +14,11 @@ from capstone_agent.models import (
     AuditTrailInput,
     ChartSpecInput,
     CitationBuildInput,
-    ClinicalAnswerInput,
     ClinicalImageInput,
     GcsFetchInput,
     GcsStoreInput,
     ClinicalNotesSearchInput,
     ImageQualityInput,
-    ImagingEvidenceInput,
     MemorySaveInput,
     MultiImageAnalysisInput,
     PatientRecordInput,
@@ -64,6 +62,7 @@ from capstone_agent.tools import (
 # Output contract tests
 # ---------------------------------------------------------------------------
 
+
 class TestOutputContracts:
     def test_tool_response_format(self):
         resp = ToolResponse(message="Done", data={"key": "value"})
@@ -88,6 +87,7 @@ class TestOutputContracts:
 # ---------------------------------------------------------------------------
 # Image Extraction Pipeline — Pydantic input validation
 # ---------------------------------------------------------------------------
+
 
 class TestImageExtractionInputs:
     def test_image_quality_input_valid(self):
@@ -127,6 +127,7 @@ class TestImageExtractionInputs:
 # Patient Q&A Pipeline — Pydantic input validation
 # ---------------------------------------------------------------------------
 
+
 class TestPatientQAInputs:
     def test_patient_record_input_valid(self):
         inp = PatientRecordInput(patient_id="PT-8829")
@@ -154,8 +155,7 @@ class TestPatientQAInputs:
 
     def test_multi_image_analysis_input_valid(self):
         inp = MultiImageAnalysisInput(
-            image_uris="gs://a/1.png,gs://a/2.png",
-            clinical_question="progression?"
+            image_uris="gs://a/1.png,gs://a/2.png", clinical_question="progression?"
         )
         assert "," in inp.image_uris
 
@@ -172,13 +172,16 @@ class TestPatientQAInputs:
 # DB Intelligence Pipeline — Pydantic input validation
 # ---------------------------------------------------------------------------
 
+
 class TestDBIntelligenceInputs:
     def test_schema_input_default(self):
         inp = SchemaInput()
         assert inp.tables == "all"
 
     def test_sql_generation_input_valid(self):
-        inp = SqlGenerationInput(question="count patients", schema_context="CREATE TABLE...")
+        inp = SqlGenerationInput(
+            question="count patients", schema_context="CREATE TABLE..."
+        )
         assert inp.question == "count patients"
 
     def test_sql_validation_input_valid(self):
@@ -202,6 +205,7 @@ class TestDBIntelligenceInputs:
 # Audit — Pydantic input validation
 # ---------------------------------------------------------------------------
 
+
 class TestAuditInputs:
     def test_audit_event_input_valid(self):
         inp = AuditEventInput(agent_name="qa_audit", action="query")
@@ -224,9 +228,13 @@ class TestAuditInputs:
 # Image Extraction Pipeline — tool function tests
 # ---------------------------------------------------------------------------
 
+
 class TestImageExtractionTools:
     def test_assess_image_quality_valid(self):
-        result = assess_image_quality("gs://clinical-data/PT-8829/sessions/SES-8829-003/ct-chest-axial.png", "PT-8829")
+        result = assess_image_quality(
+            "gs://clinical-data/PT-8829/sessions/SES-8829-003/ct-chest-axial.png",
+            "PT-8829",
+        )
         assert result["status"] == "success"
         assert "data" in result
         assert "quality_score" in result["data"]
@@ -242,7 +250,9 @@ class TestImageExtractionTools:
         assert result["error_code"] == "IMAGE_NOT_FOUND"
 
     def test_analyze_clinical_image_valid(self):
-        result = analyze_clinical_image("gs://clinical/PT-8829/session-3/ct-abdomen.png", "quality: passed")
+        result = analyze_clinical_image(
+            "gs://clinical/PT-8829/session-3/ct-abdomen.png", "quality: passed"
+        )
         assert result["status"] == "success"
         assert "data" in result
 
@@ -268,7 +278,10 @@ class TestImageExtractionTools:
     def test_flag_for_review_valid(self):
         result = flag_for_review("lesion_size", "3.5cm", 0.65)
         assert result["status"] == "success"
-        assert "flagged" in result["message"].lower() or "review" in result["message"].lower()
+        assert (
+            "flagged" in result["message"].lower()
+            or "review" in result["message"].lower()
+        )
 
     def test_flag_for_review_high_confidence(self):
         result = flag_for_review("modality", "CT", 0.98)
@@ -278,6 +291,7 @@ class TestImageExtractionTools:
 # ---------------------------------------------------------------------------
 # Patient Q&A Pipeline — tool function tests
 # ---------------------------------------------------------------------------
+
 
 class TestPatientQATools:
     def test_lookup_patient_record_exists(self):
@@ -325,7 +339,7 @@ class TestPatientQATools:
     def test_analyze_evidence_images_single(self):
         result = analyze_evidence_images(
             "gs://clinical-data/PT-8829/sessions/SES-8829-003/ct-chest-axial.png",
-            "Any progression?"
+            "Any progression?",
         )
         assert result["status"] == "success"
         assert "per_image_analysis" in result["data"]
@@ -337,10 +351,17 @@ class TestPatientQATools:
         assert "comparison_notes" in result["data"]
 
     def test_build_citations_valid(self):
-        items = json.dumps([
-            {"source_type": "text", "source_id": "note-1", "date": "2026-06-15",
-             "text": "Findings text", "relevance_score": 0.9},
-        ])
+        items = json.dumps(
+            [
+                {
+                    "source_type": "text",
+                    "source_id": "note-1",
+                    "date": "2026-06-15",
+                    "text": "Findings text",
+                    "relevance_score": 0.9,
+                },
+            ]
+        )
         result = build_citations(items)
         assert result["status"] == "success"
         assert "citations" in result["data"]
@@ -355,7 +376,7 @@ class TestPatientQATools:
             patient_context="PT-8829, NSCLC, high risk",
             evidence="text evidence here",
             image_analysis="CT shows growth",
-            citations="[1] CT scan, [2] Radiology note"
+            citations="[1] CT scan, [2] Radiology note",
         )
         assert result["status"] == "success"
         assert "answer" in result["data"]
@@ -369,6 +390,7 @@ class TestPatientQATools:
 # ---------------------------------------------------------------------------
 # DB Intelligence Pipeline — tool function tests
 # ---------------------------------------------------------------------------
+
 
 class TestDBIntelligenceTools:
     def test_get_database_schema_all(self):
@@ -390,7 +412,9 @@ class TestDBIntelligenceTools:
         assert result["status"] == "error"
 
     def test_validate_sql_safety_safe_query(self):
-        result = validate_sql_safety("SELECT count(*) FROM patients_core WHERE risk_level = 'high'")
+        result = validate_sql_safety(
+            "SELECT count(*) FROM patients_core WHERE risk_level = 'high'"
+        )
         assert result["status"] == "success"
         assert result["data"]["safe"] is True
 
@@ -409,7 +433,9 @@ class TestDBIntelligenceTools:
         assert result["status"] == "error"
 
     def test_execute_clinical_query_valid(self):
-        result = execute_clinical_query("SELECT count(*) as cnt FROM patients_core WHERE risk_level = 'high'")
+        result = execute_clinical_query(
+            "SELECT count(*) as cnt FROM patients_core WHERE risk_level = 'high'"
+        )
         assert result["status"] == "success"
         assert "rows" in result["data"]
 
@@ -419,11 +445,16 @@ class TestDBIntelligenceTools:
         assert result["error_code"] == "QUERY_EXECUTION_ERROR"
 
     def test_generate_chart_spec_valid(self):
-        query_results = json.dumps({
-            "columns": ["risk_level", "count"],
-            "rows": [{"risk_level": "high", "count": 2}, {"risk_level": "stable", "count": 1}],
-            "row_count": 2
-        })
+        query_results = json.dumps(
+            {
+                "columns": ["risk_level", "count"],
+                "rows": [
+                    {"risk_level": "high", "count": 2},
+                    {"risk_level": "stable", "count": 1},
+                ],
+                "row_count": 2,
+            }
+        )
         result = generate_chart_spec(query_results, "Patient risk distribution")
         assert result["status"] == "success"
         assert "chart_spec" in result["data"]
@@ -434,13 +465,16 @@ class TestDBIntelligenceTools:
         assert result["status"] == "success"
 
     def test_save_query_to_memory_valid(self):
-        result = save_query_to_memory("count high risk", "SELECT...", "Found 2 patients")
+        result = save_query_to_memory(
+            "count high risk", "SELECT...", "Found 2 patients"
+        )
         assert result["status"] == "success"
 
 
 # ---------------------------------------------------------------------------
 # Shared / Audit tools
 # ---------------------------------------------------------------------------
+
 
 class TestAuditTools:
     def test_log_audit_event_valid(self):

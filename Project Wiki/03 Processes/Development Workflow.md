@@ -2,7 +2,7 @@
 title: Development Workflow
 type: process
 status: active
-updated: 2026-07-04
+updated: 2026-07-23
 source: CLAUDE.md, .claude/settings.json, scripts/
 tags:
   - process
@@ -12,42 +12,35 @@ tags:
 
 # Development Workflow
 
-How work happens on this repository, including the automated wiki/harness sync layer. Lanes: Developer/Claude, Hooks, Sync.
-
 ```mermaid
 flowchart TD
-    subgraph LANE_DEV["Lane: Developer / Claude"]
-        EDIT["Edit code / docs / wiki"]
-        TEST["uv run pytest tests/ -v"]
-        GATE["Pre-commit gate:<br/>format + harness audit + pytest"]
-        COMMIT["git commit (files staged by name)"]
-    end
+    START["SessionStart: recover state + inject memory"]
+    AUDIT{"PreToolUse: harness valid?"}
+    WORK["Inspect / edit / test"]
+    SUB["SubagentStart / SubagentStop: ownership + handoff"]
+    GATE["Pre-commit gate"]
+    STOP["Stop: checkpoint turn"]
+    SYNC["sync_wiki + incremental sync_harness"]
+    END["SessionEnd: mark state ended"]
 
-    subgraph LANE_HOOK["Lane: Hooks (.claude/settings.json)"]
-        PRE{"PreToolUse:<br/>check_harness.py passes?"}
-        STOP["Stop hook: sync_wiki.py<br/>(end of each work turn)"]
-    end
-
-    subgraph LANE_SYNC["Lane: Deterministic sync (scripts/sync_wiki.py)"]
-        GEN["Regenerate _generated/ pages:<br/>Module Inventory, Test Inventory,<br/>Harness Index, Changelog, Drift Report"]
-        DEP["Rewrite AUTO:DEPGRAPH block<br/>in Module Dependency Graph"]
-        CMD["Rewrite AUTO:STRUCTURE block<br/>in CLAUDE.md + root MEMORY.md"]
-        MIRROR["sync_harness.py:<br/>.claude -> .agents, CLAUDE.md -> AGENTS.md"]
-    end
-
-    PRE -->|fail: fix harness first| EDIT
-    PRE -->|pass| EDIT
-    EDIT --> TEST --> GATE --> COMMIT
-    COMMIT --> STOP
-    EDIT -.->|every turn end| STOP
-    STOP --> GEN --> DEP --> CMD --> MIRROR --> DONE([Wiki + harness up to date])
+    START --> AUDIT
+    AUDIT -->|pass| WORK
+    AUDIT -->|fail| WORK
+    WORK -. delegate .-> SUB -. return .-> WORK
+    WORK --> GATE --> STOP --> SYNC
+    SYNC --> END
 ```
 
 Key facts:
 
-- `check_harness.py` runs before **every** tool call (PreToolUse, matcher `.*`) and fails fast on harness drift — see [[Claude Harness]].
-- `sync_wiki.py` runs at the end of every Claude work turn (Stop hook). It is deterministic (stdlib only, no LLM), idempotent, and always exits 0 — sync problems land in [[Drift Report]] instead of blocking.
-- Machine-owned pages live in `_generated/`; AUTO-marked blocks in [[Module Dependency Graph]], `CLAUDE.md`, and root `MEMORY.md` are rewritten in place. Hand-written prose is never touched.
-- After any CLAUDE.md change, `sync_harness.py` must mirror it to AGENTS.md — the sync script does this automatically as its last step.
+- `harness_runtime.py` manages SessionStart, PreCompact, subagent handoff, Stop,
+  and SessionEnd transitions under gitignored `.claude/state/`.
+- `check_harness.py` runs before every tool call and validates executable agent,
+  memory, state, hook, index, and mirror contracts.
+- `sync_wiki.py` is deterministic and idempotent; sync warnings land in
+  [[Drift Report]].
+- `sync_harness.py` only removes files named by its previous generated manifest,
+  so destination-only `.agents/` assets survive.
+- Machine-owned pages and `AUTO:*` blocks are never hand-edited.
 
 Related: [[Claude Harness]] · [[Testing and Eval]]

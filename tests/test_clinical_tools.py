@@ -5,10 +5,6 @@ cross-module references resolve correctly, and that the HITL
 clinical review tool behaves correctly for all three paths.
 """
 
-import json
-
-import pytest
-
 from capstone_agent import mock_data
 from capstone_agent.clinical_schemas import (
     ALLOWED_TABLES,
@@ -26,6 +22,7 @@ from capstone_agent.human_in_the_loop import (
 # ---------------------------------------------------------------------------
 # Mock data consistency
 # ---------------------------------------------------------------------------
+
 
 class TestMockDataConsistency:
     """Ensures fixture data is internally consistent for reliable demos."""
@@ -100,6 +97,7 @@ class TestMockDataConsistency:
 # Clinical schemas
 # ---------------------------------------------------------------------------
 
+
 class TestClinicalSchemas:
     def test_get_schema_all_returns_full_ddl(self):
         schema = get_schema("all")
@@ -123,7 +121,9 @@ class TestClinicalSchemas:
         assert result["safe"] is True
 
     def test_validate_sql_accepts_read_only_cte(self):
-        result = validate_sql("WITH recent AS (SELECT patient_id FROM lab_results) SELECT p.name FROM patients_core p JOIN recent r ON p.patient_id = r.patient_id")
+        result = validate_sql(
+            "WITH recent AS (SELECT patient_id FROM lab_results) SELECT p.name FROM patients_core p JOIN recent r ON p.patient_id = r.patient_id"
+        )
         assert result["safe"] is True
 
     def test_validate_sql_blocks_mutation_inside_cte(self):
@@ -133,7 +133,10 @@ class TestClinicalSchemas:
     def test_validate_sql_blocks_drop(self):
         result = validate_sql("DROP TABLE patients_core")
         assert result["safe"] is False
-        assert "select" in result["reason"].lower() or "blocked" in result["reason"].lower()
+        assert (
+            "select" in result["reason"].lower()
+            or "blocked" in result["reason"].lower()
+        )
 
     def test_validate_sql_blocks_insert(self):
         result = validate_sql("INSERT INTO patients_core VALUES (1, 'test')")
@@ -152,18 +155,23 @@ class TestClinicalSchemas:
         assert result["safe"] is False
 
     def test_execute_query_count_by_risk(self):
-        result = execute_query("SELECT risk_level, count(*) FROM patients_core GROUP BY risk_level")
+        result = execute_query(
+            "SELECT risk_level, count(*) FROM patients_core GROUP BY risk_level"
+        )
         assert "rows" in result
         assert len(result["rows"]) > 0
 
     def test_execute_query_returns_columns(self):
-        result = execute_query("SELECT risk_level, count(*) FROM patients_core GROUP BY risk_level")
+        result = execute_query(
+            "SELECT risk_level, count(*) FROM patients_core GROUP BY risk_level"
+        )
         assert "columns" in result
 
 
 # ---------------------------------------------------------------------------
 # Human-in-the-loop clinical review
 # ---------------------------------------------------------------------------
+
 
 class TestHumanInTheLoop:
     def test_auto_approve_high_confidence(self):

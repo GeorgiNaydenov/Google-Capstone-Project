@@ -4,7 +4,12 @@ Sets up the ADK runner with session service, memory service,
 and test helpers for agent evaluation.
 """
 
+import os
 import uuid
+
+# Unit and contract tests must never export spans to a real backend. Set this
+# before importing the agent because observability initializes at import time.
+os.environ["ENABLE_TRACING"] = "FALSE"
 
 import pytest
 from dotenv import load_dotenv

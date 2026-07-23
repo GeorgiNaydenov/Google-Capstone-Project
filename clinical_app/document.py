@@ -68,7 +68,9 @@ class UnsupportedUploadTypeError(UploadPolicyError):
     status_code = 415
 
 
-def validate_upload(contents: bytes, content_type: str, filename: str) -> dict[str, str | int]:
+def validate_upload(
+    contents: bytes, content_type: str, filename: str
+) -> dict[str, str | int]:
     """Validate size, MIME type, extension, and file signature before storage."""
 
     if len(contents) > MAX_UPLOAD_BYTES:
@@ -79,16 +81,26 @@ def validate_upload(contents: bytes, content_type: str, filename: str) -> dict[s
     signature_type = _detect_mime(contents)
 
     if normalized_type not in SUPPORTED_UPLOAD_TYPES and extension_type is None:
-        raise UnsupportedUploadTypeError("Supported uploads are PDF, JPEG, PNG, and WEBP files up to 10 MB")
+        raise UnsupportedUploadTypeError(
+            "Supported uploads are PDF, JPEG, PNG, and WEBP files up to 10 MB"
+        )
 
-    if normalized_type in SUPPORTED_UPLOAD_TYPES and extension_type and normalized_type != extension_type:
-        raise UploadPolicyError("File extension does not match the declared content type")
+    if (
+        normalized_type in SUPPORTED_UPLOAD_TYPES
+        and extension_type
+        and normalized_type != extension_type
+    ):
+        raise UploadPolicyError(
+            "File extension does not match the declared content type"
+        )
 
     if signature_type is None:
         raise UploadPolicyError("File signature could not be verified")
 
     if normalized_type in SUPPORTED_UPLOAD_TYPES and normalized_type != signature_type:
-        raise UploadPolicyError("File signature does not match the declared content type")
+        raise UploadPolicyError(
+            "File signature does not match the declared content type"
+        )
 
     if extension_type and extension_type != signature_type:
         raise UploadPolicyError("File signature does not match the filename extension")
@@ -101,7 +113,9 @@ def validate_upload(contents: bytes, content_type: str, filename: str) -> dict[s
     }
 
 
-def validate_knowledge_base_upload(contents: bytes, content_type: str, filename: str) -> dict[str, str | int]:
+def validate_knowledge_base_upload(
+    contents: bytes, content_type: str, filename: str
+) -> dict[str, str | int]:
     """Validate a searchable knowledge-base document without widening extraction uploads."""
 
     if len(contents) > MAX_UPLOAD_BYTES:
@@ -110,16 +124,22 @@ def validate_knowledge_base_upload(contents: bytes, content_type: str, filename:
     extension = Path(filename or "").suffix.lower()
     expected_type = KNOWLEDGE_BASE_EXTENSION_MIME_TYPES.get(extension)
     if expected_type is None:
-        raise UnsupportedUploadTypeError("Knowledge-base uploads support DOCX, PDF, MD, TXT, JSON, JPEG, PNG, and WEBP files up to 10 MB")
+        raise UnsupportedUploadTypeError(
+            "Knowledge-base uploads support DOCX, PDF, MD, TXT, JSON, JPEG, PNG, and WEBP files up to 10 MB"
+        )
 
     normalized_type = _normalize_content_type(content_type)
     declared_type = _coerce_knowledge_base_type(normalized_type, expected_type)
     if declared_type != expected_type:
-        raise UploadPolicyError("File extension does not match the declared content type")
+        raise UploadPolicyError(
+            "File extension does not match the declared content type"
+        )
 
     if expected_type == "application/pdf" and not contents.startswith(b"%PDF"):
         raise UploadPolicyError("PDF signature could not be verified")
-    if expected_type.endswith("wordprocessingml.document") and not _looks_like_docx(contents):
+    if expected_type.endswith("wordprocessingml.document") and not _looks_like_docx(
+        contents
+    ):
         raise UploadPolicyError("DOCX package could not be verified")
     if expected_type == "application/json":
         try:
@@ -130,7 +150,9 @@ def validate_knowledge_base_upload(contents: bytes, content_type: str, filename:
         try:
             _decode_text(contents)
         except UnicodeDecodeError as exc:
-            raise UploadPolicyError("Text document could not be decoded as UTF-8") from exc
+            raise UploadPolicyError(
+                "Text document could not be decoded as UTF-8"
+            ) from exc
     if expected_type.startswith("image/") and _detect_mime(contents) != expected_type:
         raise UploadPolicyError("Image signature does not match the filename extension")
 
@@ -156,7 +178,9 @@ def parse_upload(contents: bytes, content_type: str, filename: str) -> dict[str,
     return metadata
 
 
-def parse_knowledge_base_upload(contents: bytes, content_type: str, filename: str) -> dict[str, Any]:
+def parse_knowledge_base_upload(
+    contents: bytes, content_type: str, filename: str
+) -> dict[str, Any]:
     """Extract searchable text from DOCX, PDF, Markdown, TXT, and JSON uploads."""
 
     metadata = _base_metadata(contents, content_type, filename)
@@ -185,7 +209,15 @@ def parse_knowledge_base_upload(contents: bytes, content_type: str, filename: st
             "type": source_type,
             "pageCount": 1,
             "textPreview": text[:1000],
-            "pages": [{"pageNumber": 1, "text": text[:4000], "textBlocks": [{"text": block} for block in _paragraph_blocks(text)]}],
+            "pages": [
+                {
+                    "pageNumber": 1,
+                    "text": text[:4000],
+                    "textBlocks": [
+                        {"text": block} for block in _paragraph_blocks(text)
+                    ],
+                }
+            ],
         }
     )
     return metadata
@@ -193,7 +225,9 @@ def parse_knowledge_base_upload(contents: bytes, content_type: str, filename: st
 
 PATIENT_ID_PATTERNS = (
     # "Patient PT-D00008", "Patient ID: MRN-1234", "patient #A-1234"
-    re.compile(r"\bpatient(?:\s+id)?\s*[:#]?\s*([A-Z]{1,4}-[A-Z0-9]{3,12})\b", re.IGNORECASE),
+    re.compile(
+        r"\bpatient(?:\s+id)?\s*[:#]?\s*([A-Z]{1,4}-[A-Z0-9]{3,12})\b", re.IGNORECASE
+    ),
     # "Patient 900001", "Patient ID 900001"
     re.compile(r"\bpatient(?:\s+id)?\s*[:#]?\s*(\d{4,10})\b", re.IGNORECASE),
     # Standalone tenant-style identifiers, e.g. "PT-D00008" in a table cell.
@@ -221,7 +255,11 @@ def detect_patient_id_from_parsed(parsed: dict[str, Any]) -> str:
     """Scan parsed upload metadata (text preview, then page text) for a patient identifier."""
 
     texts = [str(parsed.get("textPreview") or "")]
-    texts.extend(str(page.get("text") or "") for page in parsed.get("pages", []) if isinstance(page, dict))
+    texts.extend(
+        str(page.get("text") or "")
+        for page in parsed.get("pages", [])
+        if isinstance(page, dict)
+    )
     for text in texts:
         detected = detect_patient_id(text)
         if detected:
@@ -315,7 +353,9 @@ def _parse_image(contents: bytes, metadata: dict[str, Any]) -> dict[str, Any]:
     try:
         from PIL import Image
     except ImportError:
-        metadata["textPreview"] = "Image accepted; Pillow is not installed for local metadata extraction."
+        metadata["textPreview"] = (
+            "Image accepted; Pillow is not installed for local metadata extraction."
+        )
         metadata["warnings"].append("image_metadata_unavailable:pillow_missing")
         return metadata
 
@@ -340,9 +380,15 @@ def _coerce_knowledge_base_type(normalized_type: str, expected_type: str) -> str
         return expected_type
     if expected_type == "text/markdown" and normalized_type == "text/plain":
         return expected_type
-    if expected_type == "application/json" and normalized_type in {"text/plain", "application/octet-stream"}:
+    if expected_type == "application/json" and normalized_type in {
+        "text/plain",
+        "application/octet-stream",
+    }:
         return expected_type
-    if expected_type.endswith("wordprocessingml.document") and normalized_type in {"application/zip", "application/octet-stream"}:
+    if expected_type.endswith("wordprocessingml.document") and normalized_type in {
+        "application/zip",
+        "application/octet-stream",
+    }:
         return expected_type
     return normalized_type
 
@@ -381,7 +427,9 @@ def _extract_docx_text(contents: bytes, warnings: list[str]) -> str:
     namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     paragraphs: list[str] = []
     for paragraph in root.iter(f"{namespace}p"):
-        text = "".join(node.text or "" for node in paragraph.iter(f"{namespace}t")).strip()
+        text = "".join(
+            node.text or "" for node in paragraph.iter(f"{namespace}t")
+        ).strip()
         if text:
             paragraphs.append(text)
     if not paragraphs:
@@ -428,7 +476,9 @@ def _extract_pdf_image_metadata(page: Any, page_number: int) -> list[dict[str, A
     return images
 
 
-def _extract_pdf_tables(page: Any, page_number: int, warnings: list[str]) -> list[dict[str, Any]]:
+def _extract_pdf_tables(
+    page: Any, page_number: int, warnings: list[str]
+) -> list[dict[str, Any]]:
     finder = getattr(page, "find_tables", None)
     if not callable(finder):
         warnings.append("pdf_table_extraction_unavailable:pymupdf_find_tables_missing")
@@ -473,7 +523,9 @@ def _render_image_thumbnail(img: Any) -> str:
 
 
 def _normalize_content_type(content_type: str) -> str:
-    normalized = (content_type or "application/octet-stream").split(";", 1)[0].strip().lower()
+    normalized = (
+        (content_type or "application/octet-stream").split(";", 1)[0].strip().lower()
+    )
     return "image/jpeg" if normalized == "image/jpg" else normalized
 
 

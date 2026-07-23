@@ -26,19 +26,13 @@ from .memory import search_past_conversations
 from .prompts import CLINICAL_INSTRUCTIONS
 from .tools import (
     # Document tools
-    upload_document,
     search_documents,
-    list_uploaded_documents,
-    # Image extraction
     assess_image_quality,
     extract_clinical_text,
     analyze_clinical_image,
     structure_clinical_findings,
     store_to_gcs,
     flag_for_review,
-    transition_extraction_review,
-    persist_extraction_relational,
-    persist_extraction_vector,
     # Patient Q&A
     lookup_patient_record,
     validate_qa_request,
@@ -92,6 +86,7 @@ def exit_loop(tool_context: ToolContext) -> dict:
 # ============================================================================
 # CLINICAL PIPELINE 1: Image Extraction
 # ============================================================================
+
 
 def build_image_extraction_pipeline() -> SequentialAgent:
     """Build extraction with OCR, review, persistence, and audit stages.
@@ -164,39 +159,21 @@ def build_image_extraction_pipeline() -> SequentialAgent:
         max_iterations=2,
     )
 
-    review_gate = LlmAgent(
+    review_request = LlmAgent(
         model=build_model("flash-lite"),
-        name="clinical_review_gate_agent",
-        description="Applies explicit clinician approval or rejection.",
+        name="clinical_review_request_agent",
+        description="Prepares a pending packet for the external clinician review flow.",
         instruction=CLINICAL_INSTRUCTIONS["clinical_review_gate"],
-        tools=[transition_extraction_review],
-        output_key="review_decision",
-    )
-
-    persistence = LlmAgent(
-        model=build_model("flash-lite"),
-        name="extraction_persistence_agent",
-        description="Persists approved extraction to relational and vector stores.",
-        instruction=CLINICAL_INSTRUCTIONS["extraction_persistence"],
-        tools=[store_to_gcs, persist_extraction_relational, persist_extraction_vector],
-        output_key="persistence_receipts",
-    )
-
-    extraction_audit = LlmAgent(
-        model=build_model("flash-lite"),
-        name="extraction_audit_agent",
-        description="Records review and persistence receipts in the audit trail.",
-        instruction=CLINICAL_INSTRUCTIONS["extraction_audit"],
-        tools=[log_audit_event],
-        output_key="extraction_audit_receipt",
+        tools=[],
+        output_key="review_request",
     )
 
     return SequentialAgent(
         name="image_extraction_pipeline",
         description=(
             "Extracts structured clinical data from medical images. "
-            "Runs quality, OCR, vision, structuring, clinician review, "
-            "approved persistence, and audit stages."
+            "Runs quality, OCR, vision, structuring, and validation, then "
+            "returns a pending packet to the external clinician review flow."
         ),
         sub_agents=[
             quality_assessor,
@@ -204,9 +181,7 @@ def build_image_extraction_pipeline() -> SequentialAgent:
             vision_analyzer,
             clinical_structurer,
             validation_gate,
-            review_gate,
-            persistence,
-            extraction_audit,
+            review_request,
         ],
     )
 
@@ -215,8 +190,9 @@ def build_image_extraction_pipeline() -> SequentialAgent:
 # CLINICAL PIPELINE 2: Patient Q&A
 # ============================================================================
 
+
 def build_patient_qa_pipeline() -> SequentialAgent:
-    """Build the patient Q&A pipeline (6 agents, sequential).
+    """Build the patient Q&A pipeline with audited final-answer delivery.
 
     Pipeline: context_assembly → evidence_retrieval → image_evidence
               → citation_builder → answer_synthesis → qa_audit
@@ -250,7 +226,12 @@ def build_patient_qa_pipeline() -> SequentialAgent:
         name="evidence_retrieval_agent",
         description="Retrieves text and image evidence from database and vector search.",
         instruction=CLINICAL_INSTRUCTIONS["evidence_retrieval"],
-        tools=[search_clinical_notes, search_vector_store, search_documents, retrieve_imaging_evidence],
+        tools=[
+            search_clinical_notes,
+            search_vector_store,
+            search_documents,
+            retrieve_imaging_evidence,
+        ],
         output_key="retrieved_evidence",
     )
 
@@ -290,6 +271,15 @@ def build_patient_qa_pipeline() -> SequentialAgent:
         output_key="qa_audit_event",
     )
 
+    qa_response = LlmAgent(
+        model=build_model("flash-lite"),
+        name="qa_response_agent",
+        description="Returns the cited clinical answer after audit and memory writes.",
+        instruction=CLINICAL_INSTRUCTIONS["qa_response"],
+        tools=[],
+        output_key="qa_final_response",
+    )
+
     return SequentialAgent(
         name="patient_qa_pipeline",
         description=(
@@ -298,8 +288,14 @@ def build_patient_qa_pipeline() -> SequentialAgent:
             "Returns cited answers with inline image references."
         ),
         sub_agents=[
-            request_validation, context_assembly, evidence_retrieval, image_evidence,
-            citation_builder, answer_synthesis, qa_audit,
+            request_validation,
+            context_assembly,
+            evidence_retrieval,
+            image_evidence,
+            citation_builder,
+            answer_synthesis,
+            qa_audit,
+            qa_response,
         ],
     )
 
@@ -307,6 +303,7 @@ def build_patient_qa_pipeline() -> SequentialAgent:
 # ============================================================================
 # CLINICAL PIPELINE 3: DB Intelligence
 # ============================================================================
+
 
 def build_db_intelligence_pipeline() -> SequentialAgent:
     """Build database intelligence with explicit preview approval.
@@ -377,7 +374,12 @@ def build_db_intelligence_pipeline() -> SequentialAgent:
         name="insight_chart_agent",
         description="Generates insights and charts from query results.",
         instruction=CLINICAL_INSTRUCTIONS["insight_chart"],
-        tools=[generate_chart_spec, generate_clinical_visual, log_audit_event, save_query_to_memory],
+        tools=[
+            generate_chart_spec,
+            generate_clinical_visual,
+            log_audit_event,
+            save_query_to_memory,
+        ],
         output_key="insight_summary",
     )
 
@@ -426,7 +428,9 @@ def build_sql_draft_agent() -> LlmAgent:
         description="Drafts one read-only SQL query for the population-insights preview.",
         # Placeholder replaced at build time so ADK never sees literal braces
         # from state templating in the schema DDL.
-        instruction=CLINICAL_INSTRUCTIONS["sql_draft"].replace("__SCHEMA_DDL__", FULL_SCHEMA),
+        instruction=CLINICAL_INSTRUCTIONS["sql_draft"].replace(
+            "__SCHEMA_DDL__", FULL_SCHEMA
+        ),
         output_key="generated_sql",
         before_model_callback=content_safety_callback,
         after_model_callback=output_safety_callback,
@@ -436,6 +440,7 @@ def build_sql_draft_agent() -> LlmAgent:
 # ============================================================================
 # GENERIC PATTERNS (from the course — kept as reference/reusable)
 # ============================================================================
+
 
 def build_writing_pipeline() -> SequentialAgent:
     """Three-stage assembly line where each stage builds on the previous one."""
@@ -460,10 +465,14 @@ def build_writing_pipeline() -> SequentialAgent:
         instruction="Polish this draft for clarity and flow:\n{draft}",
         output_key="final",
     )
-    return SequentialAgent(name="writing_pipeline", sub_agents=[outliner, writer, editor])
+    return SequentialAgent(
+        name="writing_pipeline", sub_agents=[outliner, writer, editor]
+    )
 
 
-def build_parallel_research(topics: tuple[str, ...] = ("technology", "health", "finance")) -> SequentialAgent:
+def build_parallel_research(
+    topics: tuple[str, ...] = ("technology", "health", "finance"),
+) -> SequentialAgent:
     """Run one researcher per topic concurrently, then aggregate the findings."""
     researchers = [
         LlmAgent(

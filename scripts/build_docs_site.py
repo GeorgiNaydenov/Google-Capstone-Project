@@ -128,7 +128,7 @@ def strip_frontmatter(text: str) -> str:
     if text.startswith("---"):
         end = text.find("\n---", 3)
         if end != -1:
-            return text[end + 4:].lstrip("\n")
+            return text[end + 4 :].lstrip("\n")
     return text
 
 
@@ -151,10 +151,21 @@ def render_mermaid_blocks(body: str) -> str:
     def replace(match: re.Match[str]) -> str:
         return f'<pre class="mermaid">{html.unescape(match.group(1))}</pre>'
 
-    return re.sub(r'<pre><code class="language-mermaid">(.*?)</code></pre>', replace, body, flags=re.DOTALL)
+    return re.sub(
+        r'<pre><code class="language-mermaid">(.*?)</code></pre>',
+        replace,
+        body,
+        flags=re.DOTALL,
+    )
 
 
-def build_tree(source: Path, destination: Path, renderer: MarkdownIt, link_index: dict[str, str], wikilinks: bool) -> list[tuple[str, str]]:
+def build_tree(
+    source: Path,
+    destination: Path,
+    renderer: MarkdownIt,
+    link_index: dict[str, str],
+    wikilinks: bool,
+) -> list[tuple[str, str]]:
     """Convert one markdown tree to HTML pages; return (title, relative_href) rows."""
 
     pages: list[tuple[str, str]] = []
@@ -169,6 +180,7 @@ def build_tree(source: Path, destination: Path, renderer: MarkdownIt, link_index
         depth = len(out_path.relative_to(OUTPUT_ROOT).parts) - 1
 
         if wikilinks:
+
             def replace_wikilink(match: re.Match[str]) -> str:
                 raw, _, custom_label = match.group(1).partition("|")
                 raw = raw.strip()
@@ -182,6 +194,7 @@ def build_tree(source: Path, destination: Path, renderer: MarkdownIt, link_index
                     encoded = ("../" * depth + href).replace(" ", "%20")
                     return f"[{label}]({encoded})"
                 return label
+
             text = re.sub(r"(?<!\!)\[\[([^\]]+)\]\]", replace_wikilink, text)
 
             def replace_embed(match: re.Match[str]) -> str:
@@ -196,15 +209,29 @@ def build_tree(source: Path, destination: Path, renderer: MarkdownIt, link_index
                 if re.search(r"\.(png|jpe?g|gif)$", name, re.IGNORECASE):
                     return f"![{name}](/diagrams/{name})"
                 return f"`{target}`"
+
             text = re.sub(r"\!\[\[([^\]]+)\]\]", replace_embed, text)
             # Obsidian callouts render as titled blockquotes.
-            text = re.sub(r"^>\s*\[!(\w+)\][-+]?\s*(.*)$", lambda match: f"> **{match.group(1).title()}:** {match.group(2)}", text, flags=re.MULTILINE)
+            text = re.sub(
+                r"^>\s*\[!(\w+)\][-+]?\s*(.*)$",
+                lambda match: f"> **{match.group(1).title()}:** {match.group(2)}",
+                text,
+                flags=re.MULTILINE,
+            )
 
         # Relative .md links become .html links inside the same tree.
-        text = re.sub(r"\(([^)\s]+)\.md(#[^)\s]*)?\)", lambda match: f"({match.group(1)}.html{match.group(2) or ''})", text)
+        text = re.sub(
+            r"\(([^)\s]+)\.md(#[^)\s]*)?\)",
+            lambda match: f"({match.group(1)}.html{match.group(2) or ''})",
+            text,
+        )
         # Image links into the wiki diagrams folder resolve to the app's
         # public diagram assets, which the same origin already serves.
-        text = re.sub(r"\((?:\.\./)*(?:02 Architecture/)?diagrams/([^)\s]+)\)", lambda match: f"(/diagrams/{match.group(1)})", text)
+        text = re.sub(
+            r"\((?:\.\./)*(?:02 Architecture/)?diagrams/([^)\s]+)\)",
+            lambda match: f"(/diagrams/{match.group(1)})",
+            text,
+        )
 
         body = renderer.render(text)
         body = render_mermaid_blocks(body)
@@ -221,7 +248,9 @@ def obsidian_link_index(destination_prefix: str) -> dict[str, str]:
         if any(part in SKIP_DIRS for part in path.parts):
             continue
         relative = path.relative_to(OBSIDIAN_ROOT).with_suffix(".html")
-        index[path.stem.casefold()] = f"{destination_prefix}/{str(relative).replace(chr(92), '/')}"
+        index[path.stem.casefold()] = (
+            f"{destination_prefix}/{str(relative).replace(chr(92), '/')}"
+        )
     return index
 
 
@@ -235,10 +264,14 @@ def section_list(rows: list[tuple[str, str]], prefix: str) -> str:
     return f'<ul class="section-list">\n{items}\n</ul>'
 
 
-def build_hub(llm_pages: list[tuple[str, str]], obsidian_pages: list[tuple[str, str]]) -> None:
+def build_hub(
+    llm_pages: list[tuple[str, str]], obsidian_pages: list[tuple[str, str]]
+) -> None:
     """Write the hub index tying the three documentation forms together."""
 
-    llm_index = next((href for title, href in llm_pages if href.endswith("index.html")), "index.html")
+    llm_index = next(
+        (href for title, href in llm_pages if href.endswith("index.html")), "index.html"
+    )
     body = f"""
 <h1>Nexus documentation</h1>
 <p>Standalone, readable documentation for the Nexus Clinical AI Command Center.
@@ -270,7 +303,9 @@ to the main page or straight into the clinician/admin workspace.</p>
 <h2>Obsidian Project Wiki pages</h2>
 {section_list(obsidian_pages, "project-wiki")}
 """
-    (OUTPUT_ROOT / "index.html").write_text(page("Overview", body, 0), encoding="utf-8", newline="\n")
+    (OUTPUT_ROOT / "index.html").write_text(
+        page("Overview", body, 0), encoding="utf-8", newline="\n"
+    )
 
 
 def main() -> None:
@@ -279,14 +314,30 @@ def main() -> None:
     if OUTPUT_ROOT.exists():
         shutil.rmtree(OUTPUT_ROOT)
     OUTPUT_ROOT.mkdir(parents=True)
-    (OUTPUT_ROOT / "docs.css").write_text(CSS.strip() + "\n", encoding="utf-8", newline="\n")
+    (OUTPUT_ROOT / "docs.css").write_text(
+        CSS.strip() + "\n", encoding="utf-8", newline="\n"
+    )
 
     renderer = md_renderer()
     link_index = obsidian_link_index("project-wiki")
-    llm_pages = build_tree(LLM_WIKI_ROOT, OUTPUT_ROOT / "llm-wiki", renderer, {}, wikilinks=False) if LLM_WIKI_ROOT.is_dir() else []
-    obsidian_pages = build_tree(OBSIDIAN_ROOT, OUTPUT_ROOT / "project-wiki", renderer, link_index, wikilinks=True)
+    llm_pages = (
+        build_tree(
+            LLM_WIKI_ROOT, OUTPUT_ROOT / "llm-wiki", renderer, {}, wikilinks=False
+        )
+        if LLM_WIKI_ROOT.is_dir()
+        else []
+    )
+    obsidian_pages = build_tree(
+        OBSIDIAN_ROOT,
+        OUTPUT_ROOT / "project-wiki",
+        renderer,
+        link_index,
+        wikilinks=True,
+    )
     build_hub(llm_pages, obsidian_pages)
-    print(f"docs_site built: {len(llm_pages)} LLM wiki pages, {len(obsidian_pages)} project wiki pages")
+    print(
+        f"docs_site built: {len(llm_pages)} LLM wiki pages, {len(obsidian_pages)} project wiki pages"
+    )
 
 
 if __name__ == "__main__":

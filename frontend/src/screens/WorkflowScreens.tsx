@@ -72,14 +72,16 @@ function useTurnHistory(key: string, workflow: "extraction" | "qa" | "database",
     const cached = loadTurns(key);
     setTurns(cached);
     setRun(cached.length ? cached[cached.length - 1].run : null);
-    if (cached.length || !hydrate) return;
+    if (!hydrate) return;
     let cancelled = false;
     void api.runs(workflow, patientId).then(rows => {
-      if (cancelled || !rows.length) return;
-      const restored = rows.map(row => ({ id: row.id, question: String(row.result?.question ?? ""), run: row }));
+      if (cancelled) return;
+      const byId = new Map(cached.map(turn => [turn.id, turn]));
+      rows.forEach(row => byId.set(row.id, { id: row.id, question: String(row.result?.question ?? ""), run: row }));
+      const restored = [...byId.values()].sort((left, right) => String(left.run.createdAt ?? "").localeCompare(String(right.run.createdAt ?? "")));
       saveTurns(key, restored);
       setTurns(restored);
-      setRun(restored[restored.length - 1].run);
+      setRun(restored.length ? restored[restored.length - 1].run : null);
     }).catch(() => undefined);
     return () => { cancelled = true; };
   }, [key]);
@@ -155,6 +157,7 @@ function WorkflowRunSpinner({ label, agents, detail }: { label: string; agents: 
 type ParsedPage = { pageNumber?: number; text?: string; imageCount?: number; tableCount?: number; textBlocks?: Array<{ text?: string; bbox?: number[] }> };
 type ParsedTable = { tableId?: string; pageNumber?: number; rowCount?: number; columnCount?: number; rows?: unknown[][] };
 type ParsedImage = { imageId?: string; pageNumber?: number | null; mimeType?: string; width?: number; height?: number; format?: string; role?: string };
+type PacketRecord = { patientId?: string; patientName?: string; encounterDate?: string; fields?: Array<Record<string, unknown>> };
 
 function readArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? value as T[] : [];
@@ -164,10 +167,11 @@ function ParsedEvidencePanel({ extracted }: { extracted: Record<string, unknown>
   const pages = readArray<ParsedPage>(extracted.pages);
   const tables = readArray<ParsedTable>(extracted.tables);
   const images = readArray<ParsedImage>(extracted.images);
+  const packetRecords = readArray<PacketRecord>(extracted.packetRecords);
   const warnings = readArray<string>(extracted.warnings);
   const dimensions = extracted.dimensions as { width?: number; height?: number } | undefined;
   const tableRows = tables.flatMap(table => (table.rows ?? []).map((row, rowIndex) => ({ id: `${table.tableId ?? "table"}-${rowIndex}`, table: table.tableId ?? "table", page: table.pageNumber ?? "-", row: rowIndex + 1, cells: row.map(cell => String(cell ?? "")).join(" | ") })));
-  return <Card title="Parsed evidence"><dl className="compact-facts">{extracted.type != null && <div><dt>Type</dt><dd>{String(extracted.type)}</dd></div>}{extracted.pageCount != null && <div><dt>Pages</dt><dd>{String(extracted.pageCount)}</dd></div>}{extracted.imageCount != null && <div><dt>Images</dt><dd>{String(extracted.imageCount)}</dd></div>}{tables.length > 0 && <div><dt>Tables</dt><dd>{tables.length}</dd></div>}{dimensions && <div><dt>Dimensions</dt><dd>{String(dimensions.width ?? "-")}x{String(dimensions.height ?? "-")}</dd></div>}</dl>{warnings.length > 0 && <div className="parse-warnings">{warnings.map(warning => <StatusBadge key={warning} tone="warning">{warning.replaceAll("_", " ")}</StatusBadge>)}</div>}{extracted.thumbnail != null && String(extracted.thumbnail) && <img className="parsed-thumb" src={`data:image/png;base64,${String(extracted.thumbnail)}`} alt="Document thumbnail"/>}{extracted.textPreview != null && String(extracted.textPreview) && <details className="text-preview-details" open><summary>Text preview</summary><pre className="text-preview">{String(extracted.textPreview)}</pre></details>}{pages.length > 0 && <details className="parsed-section"><summary>Page text and blocks</summary>{pages.map(page => <article key={page.pageNumber ?? page.text} className="parsed-page"><header><strong>Page {page.pageNumber ?? "-"}</strong><span>{page.imageCount ?? 0} images - {page.tableCount ?? 0} tables</span></header>{page.text && <pre>{page.text}</pre>}{readArray<{ text?: string }>(page.textBlocks).slice(0, 4).map((block, index) => <p key={index}>{block.text}</p>)}</article>)}</details>}{images.length > 0 && <details className="parsed-section"><summary>Image metadata</summary><DenseTable columns={[{ key: "imageId", label: "Image" }, { key: "pageNumber", label: "Page" }, { key: "mimeType", label: "Type" }, { key: "size", label: "Size" }, { key: "role", label: "Role" }]} rows={images.map((image, index) => ({ id: image.imageId ?? index, imageId: image.imageId ?? "source", pageNumber: image.pageNumber ?? "-", mimeType: image.mimeType ?? image.format ?? "-", size: image.width && image.height ? `${image.width}x${image.height}` : "-", role: image.role ?? "embedded" }))}/></details>}{tableRows.length > 0 && <details className="parsed-section" open><summary>Extracted tables</summary><DenseTable columns={[{ key: "table", label: "Table" }, { key: "page", label: "Page" }, { key: "row", label: "Row" }, { key: "cells", label: "Cells" }]} rows={tableRows}/></details>}</Card>;
+  return <Card title="Parsed evidence"><dl className="compact-facts">{extracted.type != null && <div><dt>Type</dt><dd>{String(extracted.type)}</dd></div>}{extracted.pageCount != null && <div><dt>Pages</dt><dd>{String(extracted.pageCount)}</dd></div>}{extracted.imageCount != null && <div><dt>Images</dt><dd>{String(extracted.imageCount)}</dd></div>}{tables.length > 0 && <div><dt>Tables</dt><dd>{tables.length}</dd></div>}{dimensions && <div><dt>Dimensions</dt><dd>{String(dimensions.width ?? "-")}x{String(dimensions.height ?? "-")}</dd></div>}</dl>{warnings.length > 0 && <div className="parse-warnings">{warnings.map(warning => <StatusBadge key={warning} tone="warning">{warning.replaceAll("_", " ")}</StatusBadge>)}</div>}{extracted.thumbnail != null && String(extracted.thumbnail) && <img className="parsed-thumb" src={`data:image/png;base64,${String(extracted.thumbnail)}`} alt="Document thumbnail"/>}{packetRecords.length > 0 && <details className="parsed-section" open><summary>Five-patient packet map</summary><DenseTable columns={[{ key: "record", label: "Record" }, { key: "patient", label: "Patient" }, { key: "encounter", label: "Encounter" }, { key: "fields", label: "Fields" }, { key: "scope", label: "Review scope" }]} rows={packetRecords.map((record, index) => ({ id: record.patientId ?? index, record: index + 1, patient: `${record.patientName ?? "Patient"} (${record.patientId ?? "-"})`, encounter: record.encounterDate ?? "-", fields: record.fields?.length ?? 0, scope: record.patientId === extracted.selectedPatientId ? "Selected" : "In packet" }))}/></details>}{extracted.textPreview != null && String(extracted.textPreview) && <details className="text-preview-details" open><summary>Selected patient text</summary><pre className="text-preview">{String(extracted.textPreview)}</pre></details>}{pages.length > 0 && <details className="parsed-section"><summary>Page text and blocks</summary>{pages.map(page => <article key={page.pageNumber ?? page.text} className="parsed-page"><header><strong>Page {page.pageNumber ?? "-"}</strong><span>{page.imageCount ?? 0} images - {page.tableCount ?? 0} tables</span></header>{page.text && <pre>{page.text}</pre>}{readArray<{ text?: string }>(page.textBlocks).slice(0, 4).map((block, index) => <p key={index}>{block.text}</p>)}</article>)}</details>}{images.length > 0 && <details className="parsed-section"><summary>Image metadata</summary><DenseTable columns={[{ key: "imageId", label: "Image" }, { key: "pageNumber", label: "Page" }, { key: "mimeType", label: "Type" }, { key: "size", label: "Size" }, { key: "role", label: "Role" }]} rows={images.map((image, index) => ({ id: image.imageId ?? index, imageId: image.imageId ?? "source", pageNumber: image.pageNumber ?? "-", mimeType: image.mimeType ?? image.format ?? "-", size: image.width && image.height ? `${image.width}x${image.height}` : "-", role: image.role ?? "embedded" }))}/></details>}{tableRows.length > 0 && <details className="parsed-section" open><summary>Extracted tables</summary><DenseTable columns={[{ key: "table", label: "Table" }, { key: "page", label: "Page" }, { key: "row", label: "Row" }, { key: "cells", label: "Cells" }]} rows={tableRows}/></details>}</Card>;
 }
 
 function confidenceForField(field: string, extracted: Record<string, unknown> | null, fallback: number): number {
@@ -309,7 +313,14 @@ export function Extraction() {
       if (!source) return;
       setBusy(true); setError("");
       setWizardStep("execution");
-      try { setExtracted(extractedFromSource(source)); setPatientId(source.patientId); const next = await api.runSyntheticExtraction(source.assetId, source.patientId); setRun(next); record(next); setWizardStep("execution"); }
+      try {
+        setExtracted(extractedFromSource(source));
+        setPatientId(source.patientId);
+        const next = await api.runSyntheticExtraction(source.assetId, source.patientId);
+        const content = next.result?.extractedContent;
+        if (content && typeof content === "object") setExtracted(content as Record<string, unknown>);
+        setRun(next); record(next); setWizardStep("execution");
+      }
       catch (reason) { setError(reason instanceof Error ? reason.message : "Document processing failed"); }
       finally { setBusy(false); }
       return;
@@ -488,6 +499,7 @@ export function PatientQa() {
   const patientKbCount = (kbAssets.data ?? []).filter(asset => asset.patientId === patientId).length;
   const summaryRows = ((run?.result?.summaryRows ?? []) as Array<Record<string, unknown>>);
   const imageEvidence = run?.result?.imageEvidence as Evidence | undefined;
+  const answerSections = (run?.result?.answerSections ?? {}) as { keyEvidence?: string; recommendedAction?: string; limitations?: string };
   const showImage = imageEvidence?.sourceUrl || evidence.find(item => item.kind === "image" && item.sourceUrl)?.sourceUrl;
   const qaAgents = qaPipeline?.agents ?? ["context_assembly_agent", "evidence_retrieval_agent", "image_evidence_agent", "citation_builder_agent", "answer_synthesis_agent", "qa_audit_agent"];
   const qaWaiting = busy || ["queued", "running"].includes(run?.status ?? "");
@@ -601,7 +613,7 @@ export function DatabaseIntelligence() {
           // ("Schema Discovery Agent generated the SQL").
           const citations = [
             { id: `${turn.id}-sql`, label: "[sql]", detail: "Read-only SQL drafted by the NL-to-SQL agent and safety-checked before execution." },
-            { id: `${turn.id}-results`, label: "[results]", detail: `Query execution returned ${turnRows.length} row${turnRows.length === 1 ? "" : "s"} from the governed clinical database.` },
+            { id: `${turn.id}-results`, label: "[clinical]", detail: `${String(turn.run.result?.clinicalSummary ?? `Query execution returned ${turnRows.length} governed row${turnRows.length === 1 ? "" : "s"}.`)} ${String(turn.run.result?.recommendedAction ?? "")}`.trim() },
             { id: `${turn.id}-chart`, label: "[chart]", detail: "Visualization rendered directly from the executed query rows." },
             { id: `${turn.id}-audit`, label: "[audit]", detail: `Audit trail recorded event ${turn.run.auditId ?? "pending"} for this run.` },
           ];

@@ -185,7 +185,9 @@ def find_pending_confirmation(events: list) -> dict[str, Any] | None:
     """
     for event in events:
         actions = getattr(event, "actions", None)
-        requested = getattr(actions, "requested_tool_confirmations", None) if actions else None
+        requested = (
+            getattr(actions, "requested_tool_confirmations", None) if actions else None
+        )
         if requested:
             function_call_id, confirmation = next(iter(requested.items()))
             return {

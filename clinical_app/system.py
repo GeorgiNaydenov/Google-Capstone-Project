@@ -36,22 +36,106 @@ class DirectoryUser(BaseModel):
 
 
 DEFAULT_USERS: list[DirectoryUser] = [
-    DirectoryUser(id="USR-001", name="Dr. Sarah Miller", email="sarah.miller@capstone.health", roles=["Admin", "Clinician", "Reviewer"], scope="Organization"),
-    DirectoryUser(id="USR-002", name="Dr. Elena Park", email="elena.park@capstone.health", roles=["Clinician"], scope="Assigned patients"),
-    DirectoryUser(id="USR-003", name="Dr. James Patel", email="james.patel@capstone.health", roles=["Clinician", "Reviewer"], scope="Assigned patients"),
-    DirectoryUser(id="USR-004", name="Alex Morgan", email="alex.morgan@capstone.health", roles=["Data Manager"], scope="Data platform"),
-    DirectoryUser(id="USR-005", name="Riley Chen", email="riley.chen@capstone.health", roles=["Read-only Viewer"], scope="Audit and reports"),
+    DirectoryUser(
+        id="USR-001",
+        name="Dr. Sarah Miller",
+        email="sarah.miller@capstone.health",
+        roles=["Admin", "Clinician", "Reviewer"],
+        scope="Organization",
+    ),
+    DirectoryUser(
+        id="USR-002",
+        name="Dr. Elena Park",
+        email="elena.park@capstone.health",
+        roles=["Clinician"],
+        scope="Assigned patients",
+    ),
+    DirectoryUser(
+        id="USR-003",
+        name="Dr. James Patel",
+        email="james.patel@capstone.health",
+        roles=["Clinician", "Reviewer"],
+        scope="Assigned patients",
+    ),
+    DirectoryUser(
+        id="USR-004",
+        name="Alex Morgan",
+        email="alex.morgan@capstone.health",
+        roles=["Data Manager"],
+        scope="Data platform",
+    ),
+    DirectoryUser(
+        id="USR-005",
+        name="Riley Chen",
+        email="riley.chen@capstone.health",
+        roles=["Read-only Viewer"],
+        scope="Audit and reports",
+    ),
 ]
 
 # Default matrix mirrors the product permission model; the real tenant
 # persists admin edits on top of it, demo tenants keep it session-scoped.
 DEFAULT_PERMISSIONS: list[dict[str, Any]] = [
-    {"permission": "View assigned patients", "grants": {"Admin": True, "Clinician": True, "Reviewer": True, "Read-only Viewer": True, "Data Manager": False}},
-    {"permission": "Run clinical agents", "grants": {"Admin": True, "Clinician": True, "Reviewer": False, "Read-only Viewer": False, "Data Manager": False}},
-    {"permission": "Approve clinical output", "grants": {"Admin": True, "Clinician": True, "Reviewer": True, "Read-only Viewer": False, "Data Manager": False}},
-    {"permission": "Query population database", "grants": {"Admin": True, "Clinician": True, "Reviewer": False, "Read-only Viewer": True, "Data Manager": True}},
-    {"permission": "Configure agent policy", "grants": {"Admin": True, "Clinician": False, "Reviewer": False, "Read-only Viewer": False, "Data Manager": False}},
-    {"permission": "Manage storage and indexes", "grants": {"Admin": True, "Clinician": False, "Reviewer": False, "Read-only Viewer": False, "Data Manager": True}},
+    {
+        "permission": "View assigned patients",
+        "grants": {
+            "Admin": True,
+            "Clinician": True,
+            "Reviewer": True,
+            "Read-only Viewer": True,
+            "Data Manager": False,
+        },
+    },
+    {
+        "permission": "Run clinical agents",
+        "grants": {
+            "Admin": True,
+            "Clinician": True,
+            "Reviewer": False,
+            "Read-only Viewer": False,
+            "Data Manager": False,
+        },
+    },
+    {
+        "permission": "Approve clinical output",
+        "grants": {
+            "Admin": True,
+            "Clinician": True,
+            "Reviewer": True,
+            "Read-only Viewer": False,
+            "Data Manager": False,
+        },
+    },
+    {
+        "permission": "Query population database",
+        "grants": {
+            "Admin": True,
+            "Clinician": True,
+            "Reviewer": False,
+            "Read-only Viewer": True,
+            "Data Manager": True,
+        },
+    },
+    {
+        "permission": "Configure agent policy",
+        "grants": {
+            "Admin": True,
+            "Clinician": False,
+            "Reviewer": False,
+            "Read-only Viewer": False,
+            "Data Manager": False,
+        },
+    },
+    {
+        "permission": "Manage storage and indexes",
+        "grants": {
+            "Admin": True,
+            "Clinician": False,
+            "Reviewer": False,
+            "Read-only Viewer": False,
+            "Data Manager": True,
+        },
+    },
 ]
 
 
@@ -67,7 +151,11 @@ def _timed(check: Any) -> tuple[str, str, float]:
         detail = check()
         return "operational", str(detail), (monotonic() - started) * 1000.0
     except Exception as exc:  # component check must never take the API down
-        return "unavailable", f"{type(exc).__name__}: {exc}", (monotonic() - started) * 1000.0
+        return (
+            "unavailable",
+            f"{type(exc).__name__}: {exc}",
+            (monotonic() - started) * 1000.0,
+        )
 
 
 def component_checks(repo: Any) -> list[dict[str, Any]]:
@@ -103,9 +191,15 @@ def component_checks(repo: Any) -> list[dict[str, Any]]:
         return "MCP clinical server module importable"
 
     def check_uploads() -> str:
-        target = Path(uploads_root) if uploads_root is not None else Path(tempfile.gettempdir())
+        target = (
+            Path(uploads_root)
+            if uploads_root is not None
+            else Path(tempfile.gettempdir())
+        )
         target.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(dir=target, prefix=".healthcheck-", delete=True):
+        with tempfile.NamedTemporaryFile(
+            dir=target, prefix=".healthcheck-", delete=True
+        ):
             pass
         label = target.name if uploads_root is not None else "temp storage"
         return f"Uploads writable ({label})"
@@ -113,13 +207,17 @@ def component_checks(repo: Any) -> list[dict[str, Any]]:
     def check_model_config() -> str:
         if os.environ.get("GOOGLE_API_KEY"):
             return "Gemini API key configured"
-        if os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").upper() == "TRUE" and os.environ.get("GOOGLE_CLOUD_PROJECT"):
+        if os.environ.get(
+            "GOOGLE_GENAI_USE_VERTEXAI", ""
+        ).upper() == "TRUE" and os.environ.get("GOOGLE_CLOUD_PROJECT"):
             return f"Vertex AI configured ({os.environ['GOOGLE_CLOUD_PROJECT']})"
         raise LookupError("No GOOGLE_API_KEY or Vertex AI project configured")
 
     def check_frontend() -> str:
         if not (PROJECT_ROOT / "frontend" / "dist" / "index.html").is_file():
-            raise FileNotFoundError("frontend/dist/index.html missing; run npm run build")
+            raise FileNotFoundError(
+                "frontend/dist/index.html missing; run npm run build"
+            )
         return "Frontend production bundle present"
 
     components = []
@@ -132,7 +230,14 @@ def component_checks(repo: Any) -> list[dict[str, Any]]:
         ("Frontend bundle", check_frontend),
     ):
         status, detail, latency = _timed(check)
-        components.append({"name": name, "status": status, "detail": detail, "latencyMs": round(latency, 1)})
+        components.append(
+            {
+                "name": name,
+                "status": status,
+                "detail": detail,
+                "latencyMs": round(latency, 1),
+            }
+        )
     return components
 
 
@@ -167,7 +272,14 @@ def seed_users(db_path: Path) -> None:
         for user in DEFAULT_USERS:
             connection.execute(
                 "INSERT OR IGNORE INTO users (user_id, name, email, roles, scope, status) VALUES (?, ?, ?, ?, ?, ?)",
-                (user.id, user.name, user.email, json.dumps(user.roles), user.scope, user.status),
+                (
+                    user.id,
+                    user.name,
+                    user.email,
+                    json.dumps(user.roles),
+                    user.scope,
+                    user.status,
+                ),
             )
         for row in DEFAULT_PERMISSIONS:
             connection.execute(
@@ -181,9 +293,18 @@ def load_users(db_path: Path) -> list[dict[str, Any]]:
     """Return the persisted user directory for a real tenant."""
 
     with _governance_connection(db_path) as connection:
-        rows = connection.execute("SELECT user_id, name, email, roles, scope, status FROM users ORDER BY user_id").fetchall()
+        rows = connection.execute(
+            "SELECT user_id, name, email, roles, scope, status FROM users ORDER BY user_id"
+        ).fetchall()
     return [
-        {"id": row["user_id"], "name": row["name"], "email": row["email"], "roles": json.loads(row["roles"]), "scope": row["scope"], "status": row["status"]}
+        {
+            "id": row["user_id"],
+            "name": row["name"],
+            "email": row["email"],
+            "roles": json.loads(row["roles"]),
+            "scope": row["scope"],
+            "status": row["status"],
+        }
         for row in rows
     ]
 
@@ -192,15 +313,22 @@ def load_permissions(db_path: Path) -> dict[str, Any]:
     """Return the persisted permission matrix for a real tenant."""
 
     with _governance_connection(db_path) as connection:
-        rows = connection.execute("SELECT permission, grants, version FROM role_permissions").fetchall()
+        rows = connection.execute(
+            "SELECT permission, grants, version FROM role_permissions"
+        ).fetchall()
     order = {row["permission"]: index for index, row in enumerate(DEFAULT_PERMISSIONS)}
-    matrix = [{"permission": row["permission"], "grants": json.loads(row["grants"])} for row in rows]
+    matrix = [
+        {"permission": row["permission"], "grants": json.loads(row["grants"])}
+        for row in rows
+    ]
     matrix.sort(key=lambda row: order.get(row["permission"], len(order)))
     version = max((row["version"] for row in rows), default=1)
     return {"roles": ROLES, "matrix": matrix, "version": version}
 
 
-def save_permissions(db_path: Path, matrix: list[dict[str, Any]], actor: str) -> dict[str, Any]:
+def save_permissions(
+    db_path: Path, matrix: list[dict[str, Any]], actor: str
+) -> dict[str, Any]:
     """Persist an edited permission matrix and bump its version."""
 
     current = load_permissions(db_path)

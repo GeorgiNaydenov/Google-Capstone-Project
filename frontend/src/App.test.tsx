@@ -39,6 +39,9 @@ describe("clinical product shell", () => {
     expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /run selected packet/i }));
     expect(await screen.findByDisplayValue(/Enterprise five-patient clinical packet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Five-patient packet map/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/In packet/i)).toHaveLength(4);
+    expect(screen.getByText(/^Selected$/i)).toBeInTheDocument();
     expect(await screen.findByText(/Visual extraction board/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Extraction confidence visualization/i)).toBeInTheDocument();
     expect(await screen.findByText(/Evidence sources for this run/i)).toBeInTheDocument();

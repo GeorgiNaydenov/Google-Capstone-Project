@@ -75,7 +75,9 @@ def setup_tracing() -> None:
         exporter = _build_span_exporter(config["trace_exporter"])
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
-        _logger.info(f"OpenTelemetry tracing initialized (exporter={config['trace_exporter']})")
+        _logger.info(
+            f"OpenTelemetry tracing initialized (exporter={config['trace_exporter']})"
+        )
     except ImportError:
         _logger.warning("OpenTelemetry packages not installed; tracing disabled")
 
@@ -125,9 +127,7 @@ def log_security_event(event_type: str, details: dict[str, Any]) -> None:
     in production for threat detection.
     """
     _logger.warning(
-        redact_secrets(
-            f"security_event: type={event_type} details={details}"
-        )
+        redact_secrets(f"security_event: type={event_type} details={details}")
     )
 
 
@@ -161,9 +161,7 @@ def log_clinical_event(
         "data_classification": "phi" if patient_id else "internal",
         **details,
     }
-    _logger.info(
-        redact_secrets(f"clinical_event: {audit_payload}")
-    )
+    _logger.info(redact_secrets(f"clinical_event: {audit_payload}"))
 
 
 @contextmanager
@@ -179,4 +177,6 @@ def timed_operation(operation_name: str):
         yield
     finally:
         duration_ms = (time.perf_counter() - start) * 1000
-        _logger.debug(f"timing: operation={operation_name} duration_ms={duration_ms:.1f}")
+        _logger.debug(
+            f"timing: operation={operation_name} duration_ms={duration_ms:.1f}"
+        )

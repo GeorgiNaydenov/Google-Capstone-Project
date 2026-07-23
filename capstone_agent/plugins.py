@@ -146,7 +146,11 @@ class ClinicalAuditPlugin(BasePlugin):
                 patient_id=str(patient_id) if patient_id else None,
             )
 
-        if tool_name in {"search_clinical_notes", "search_vector_store", "retrieve_imaging_evidence"}:
+        if tool_name in {
+            "search_clinical_notes",
+            "search_vector_store",
+            "retrieve_imaging_evidence",
+        }:
             self._evidence_retrievals += 1
 
         return None
@@ -174,9 +178,7 @@ class ClinicalAuditPlugin(BasePlugin):
 
     # -- agent hooks ---------------------------------------------------------
 
-    async def after_agent_callback(
-        self, *, callback_context, **kwargs
-    ) -> None:
+    async def after_agent_callback(self, *, callback_context, **kwargs) -> None:
         """Flush per-turn clinical metrics summary and reset counters."""
         if self._tools_invoked == 0:
             return

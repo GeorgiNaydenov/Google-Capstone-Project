@@ -44,9 +44,24 @@ PATIENTS: dict[str, dict[str, Any]] = {
             "emergency_contact": "Jane Doe (spouse)",
         },
         "diagnoses": [
-            {"code": "C34.1", "description": "NSCLC, right upper lobe", "date": "2025-11-10", "status": "active"},
-            {"code": "C78.7", "description": "Hepatic metastases", "date": "2026-01-22", "status": "active"},
-            {"code": "J44.1", "description": "COPD with acute exacerbation", "date": "2024-08-15", "status": "resolved"},
+            {
+                "code": "C34.1",
+                "description": "NSCLC, right upper lobe",
+                "date": "2025-11-10",
+                "status": "active",
+            },
+            {
+                "code": "C78.7",
+                "description": "Hepatic metastases",
+                "date": "2026-01-22",
+                "status": "active",
+            },
+            {
+                "code": "J44.1",
+                "description": "COPD with acute exacerbation",
+                "date": "2024-08-15",
+                "status": "resolved",
+            },
         ],
         "medications": [
             {"name": "Pembrolizumab", "dose": "200mg IV q3w", "status": "active"},
@@ -55,7 +70,11 @@ PATIENTS: dict[str, dict[str, Any]] = {
             {"name": "Albuterol", "dose": "90mcg INH PRN", "status": "active"},
         ],
         "allergies": ["Sulfonamides", "Iodine contrast (mild)"],
-        "care_team": ["Dr. Sarah Chen (Oncology)", "Dr. James Park (Pulmonology)", "RN Lisa Wong"],
+        "care_team": [
+            "Dr. Sarah Chen (Oncology)",
+            "Dr. James Park (Pulmonology)",
+            "RN Lisa Wong",
+        ],
     },
     "PT-1044": {
         "patient_id": "PT-1044",
@@ -78,9 +97,24 @@ PATIENTS: dict[str, dict[str, Any]] = {
             "emergency_contact": "Robert Smith (brother)",
         },
         "diagnoses": [
-            {"code": "E11.65", "description": "T2DM with hyperglycemia", "date": "2022-03-10", "status": "active"},
-            {"code": "I10", "description": "Essential hypertension", "date": "2023-01-15", "status": "active"},
-            {"code": "E78.5", "description": "Hyperlipidemia", "date": "2023-06-20", "status": "active"},
+            {
+                "code": "E11.65",
+                "description": "T2DM with hyperglycemia",
+                "date": "2022-03-10",
+                "status": "active",
+            },
+            {
+                "code": "I10",
+                "description": "Essential hypertension",
+                "date": "2023-01-15",
+                "status": "active",
+            },
+            {
+                "code": "E78.5",
+                "description": "Hyperlipidemia",
+                "date": "2023-06-20",
+                "status": "active",
+            },
         ],
         "medications": [
             {"name": "Metformin", "dose": "1000mg BID", "status": "active"},
@@ -112,8 +146,18 @@ PATIENTS: dict[str, dict[str, Any]] = {
             "emergency_contact": "Lin Chen (mother)",
         },
         "diagnoses": [
-            {"code": "F33.1", "description": "MDD, recurrent, moderate", "date": "2024-02-10", "status": "active"},
-            {"code": "F41.1", "description": "Generalized anxiety disorder", "date": "2024-02-10", "status": "active"},
+            {
+                "code": "F33.1",
+                "description": "MDD, recurrent, moderate",
+                "date": "2024-02-10",
+                "status": "active",
+            },
+            {
+                "code": "F41.1",
+                "description": "Generalized anxiety disorder",
+                "date": "2024-02-10",
+                "status": "active",
+            },
         ],
         "medications": [
             {"name": "Sertraline", "dose": "100mg daily", "status": "active"},
@@ -143,9 +187,24 @@ PATIENTS: dict[str, dict[str, Any]] = {
             "emergency_contact": "Carlos Garcia (son)",
         },
         "diagnoses": [
-            {"code": "I50.9", "description": "Heart failure, unspecified", "date": "2025-08-20", "status": "active"},
-            {"code": "I48.0", "description": "Atrial fibrillation, paroxysmal", "date": "2025-09-10", "status": "active"},
-            {"code": "N18.3", "description": "CKD stage 3", "date": "2025-10-05", "status": "active"},
+            {
+                "code": "I50.9",
+                "description": "Heart failure, unspecified",
+                "date": "2025-08-20",
+                "status": "active",
+            },
+            {
+                "code": "I48.0",
+                "description": "Atrial fibrillation, paroxysmal",
+                "date": "2025-09-10",
+                "status": "active",
+            },
+            {
+                "code": "N18.3",
+                "description": "CKD stage 3",
+                "date": "2025-10-05",
+                "status": "active",
+            },
         ],
         "medications": [
             {"name": "Furosemide", "dose": "40mg daily", "status": "active"},
@@ -154,7 +213,11 @@ PATIENTS: dict[str, dict[str, Any]] = {
             {"name": "Sacubitril/Valsartan", "dose": "49/51mg BID", "status": "active"},
         ],
         "allergies": ["ACE inhibitors (cough)", "Aspirin (GI bleed)"],
-        "care_team": ["Dr. Sarah Chen (Cardiology)", "Dr. Raj Patel (Nephrology)", "RN Lisa Wong"],
+        "care_team": [
+            "Dr. Sarah Chen (Cardiology)",
+            "Dr. Raj Patel (Nephrology)",
+            "RN Lisa Wong",
+        ],
     },
 }
 
@@ -191,12 +254,42 @@ SESSIONS: dict[str, list[dict[str, Any]]] = {
             "vector_sync_status": "synced",
             "audit_status": "logged",
             "extracted_fields": [
-                {"field_name": "primary_tumor_size", "value": "4.2cm", "confidence": 0.91, "ontology_code": "SNOMED:399417005"},
-                {"field_name": "tumor_location", "value": "Right upper lobe", "confidence": 0.95, "ontology_code": "SNOMED:44029006"},
-                {"field_name": "lymph_node_status", "value": "Mediastinal lymphadenopathy, 2.1cm", "confidence": 0.82, "ontology_code": "SNOMED:274744008"},
-                {"field_name": "hepatic_lesion_count", "value": "3", "confidence": 0.88, "ontology_code": "SNOMED:126851005"},
-                {"field_name": "largest_hepatic_lesion", "value": "3.5cm", "confidence": 0.85, "ontology_code": "SNOMED:126851005"},
-                {"field_name": "pleural_effusion", "value": "Small, right-sided", "confidence": 0.93, "ontology_code": "SNOMED:60046008"},
+                {
+                    "field_name": "primary_tumor_size",
+                    "value": "4.2cm",
+                    "confidence": 0.91,
+                    "ontology_code": "SNOMED:399417005",
+                },
+                {
+                    "field_name": "tumor_location",
+                    "value": "Right upper lobe",
+                    "confidence": 0.95,
+                    "ontology_code": "SNOMED:44029006",
+                },
+                {
+                    "field_name": "lymph_node_status",
+                    "value": "Mediastinal lymphadenopathy, 2.1cm",
+                    "confidence": 0.82,
+                    "ontology_code": "SNOMED:274744008",
+                },
+                {
+                    "field_name": "hepatic_lesion_count",
+                    "value": "3",
+                    "confidence": 0.88,
+                    "ontology_code": "SNOMED:126851005",
+                },
+                {
+                    "field_name": "largest_hepatic_lesion",
+                    "value": "3.5cm",
+                    "confidence": 0.85,
+                    "ontology_code": "SNOMED:126851005",
+                },
+                {
+                    "field_name": "pleural_effusion",
+                    "value": "Small, right-sided",
+                    "confidence": 0.93,
+                    "ontology_code": "SNOMED:60046008",
+                },
             ],
         },
         {
@@ -225,12 +318,42 @@ SESSIONS: dict[str, list[dict[str, Any]]] = {
             "vector_sync_status": "synced",
             "audit_status": "logged",
             "extracted_fields": [
-                {"field_name": "primary_tumor_size", "value": "3.8cm", "confidence": 0.93, "ontology_code": "SNOMED:399417005"},
-                {"field_name": "tumor_location", "value": "Right upper lobe", "confidence": 0.96, "ontology_code": "SNOMED:44029006"},
-                {"field_name": "lymph_node_status", "value": "Mediastinal lymphadenopathy, 1.8cm", "confidence": 0.85, "ontology_code": "SNOMED:274744008"},
-                {"field_name": "hepatic_lesion_count", "value": "2", "confidence": 0.90, "ontology_code": "SNOMED:126851005"},
-                {"field_name": "largest_hepatic_lesion", "value": "2.3cm", "confidence": 0.88, "ontology_code": "SNOMED:126851005"},
-                {"field_name": "pleural_effusion", "value": "Trace, right-sided", "confidence": 0.94, "ontology_code": "SNOMED:60046008"},
+                {
+                    "field_name": "primary_tumor_size",
+                    "value": "3.8cm",
+                    "confidence": 0.93,
+                    "ontology_code": "SNOMED:399417005",
+                },
+                {
+                    "field_name": "tumor_location",
+                    "value": "Right upper lobe",
+                    "confidence": 0.96,
+                    "ontology_code": "SNOMED:44029006",
+                },
+                {
+                    "field_name": "lymph_node_status",
+                    "value": "Mediastinal lymphadenopathy, 1.8cm",
+                    "confidence": 0.85,
+                    "ontology_code": "SNOMED:274744008",
+                },
+                {
+                    "field_name": "hepatic_lesion_count",
+                    "value": "2",
+                    "confidence": 0.90,
+                    "ontology_code": "SNOMED:126851005",
+                },
+                {
+                    "field_name": "largest_hepatic_lesion",
+                    "value": "2.3cm",
+                    "confidence": 0.88,
+                    "ontology_code": "SNOMED:126851005",
+                },
+                {
+                    "field_name": "pleural_effusion",
+                    "value": "Trace, right-sided",
+                    "confidence": 0.94,
+                    "ontology_code": "SNOMED:60046008",
+                },
             ],
         },
         {
@@ -253,11 +376,36 @@ SESSIONS: dict[str, list[dict[str, Any]]] = {
             "vector_sync_status": "synced",
             "audit_status": "logged",
             "extracted_fields": [
-                {"field_name": "primary_tumor_size", "value": "3.2cm", "confidence": 0.94, "ontology_code": "SNOMED:399417005"},
-                {"field_name": "tumor_location", "value": "Right upper lobe", "confidence": 0.97, "ontology_code": "SNOMED:44029006"},
-                {"field_name": "lymph_node_status", "value": "No significant lymphadenopathy", "confidence": 0.91, "ontology_code": "SNOMED:274744008"},
-                {"field_name": "hepatic_lesion_count", "value": "0", "confidence": 0.96, "ontology_code": "SNOMED:126851005"},
-                {"field_name": "pleural_effusion", "value": "None", "confidence": 0.98, "ontology_code": "SNOMED:60046008"},
+                {
+                    "field_name": "primary_tumor_size",
+                    "value": "3.2cm",
+                    "confidence": 0.94,
+                    "ontology_code": "SNOMED:399417005",
+                },
+                {
+                    "field_name": "tumor_location",
+                    "value": "Right upper lobe",
+                    "confidence": 0.97,
+                    "ontology_code": "SNOMED:44029006",
+                },
+                {
+                    "field_name": "lymph_node_status",
+                    "value": "No significant lymphadenopathy",
+                    "confidence": 0.91,
+                    "ontology_code": "SNOMED:274744008",
+                },
+                {
+                    "field_name": "hepatic_lesion_count",
+                    "value": "0",
+                    "confidence": 0.96,
+                    "ontology_code": "SNOMED:126851005",
+                },
+                {
+                    "field_name": "pleural_effusion",
+                    "value": "None",
+                    "confidence": 0.98,
+                    "ontology_code": "SNOMED:60046008",
+                },
             ],
         },
     ],
@@ -282,10 +430,30 @@ SESSIONS: dict[str, list[dict[str, Any]]] = {
             "vector_sync_status": "pending",
             "audit_status": "logged",
             "extracted_fields": [
-                {"field_name": "retinopathy_grade", "value": "Moderate NPDR", "confidence": 0.74, "ontology_code": "SNOMED:390834004"},
-                {"field_name": "macular_edema", "value": "Possible", "confidence": 0.65, "ontology_code": "SNOMED:37231002"},
-                {"field_name": "hemorrhage_count", "value": "Multiple dot-blot", "confidence": 0.78, "ontology_code": "SNOMED:78144005"},
-                {"field_name": "hard_exudates", "value": "Present, perifoveal", "confidence": 0.70, "ontology_code": "SNOMED:247099008"},
+                {
+                    "field_name": "retinopathy_grade",
+                    "value": "Moderate NPDR",
+                    "confidence": 0.74,
+                    "ontology_code": "SNOMED:390834004",
+                },
+                {
+                    "field_name": "macular_edema",
+                    "value": "Possible",
+                    "confidence": 0.65,
+                    "ontology_code": "SNOMED:37231002",
+                },
+                {
+                    "field_name": "hemorrhage_count",
+                    "value": "Multiple dot-blot",
+                    "confidence": 0.78,
+                    "ontology_code": "SNOMED:78144005",
+                },
+                {
+                    "field_name": "hard_exudates",
+                    "value": "Present, perifoveal",
+                    "confidence": 0.70,
+                    "ontology_code": "SNOMED:247099008",
+                },
             ],
         },
     ],
@@ -310,10 +478,30 @@ SESSIONS: dict[str, list[dict[str, Any]]] = {
             "vector_sync_status": "synced",
             "audit_status": "logged",
             "extracted_fields": [
-                {"field_name": "phq9_total_score", "value": "8", "confidence": 0.96, "ontology_code": "LOINC:44261-6"},
-                {"field_name": "severity_category", "value": "Mild depression", "confidence": 0.95, "ontology_code": "LOINC:44261-6"},
-                {"field_name": "suicidal_ideation_item", "value": "0 - Not at all", "confidence": 0.98, "ontology_code": "LOINC:44260-8"},
-                {"field_name": "functional_impairment", "value": "Somewhat difficult", "confidence": 0.93, "ontology_code": "LOINC:69722-7"},
+                {
+                    "field_name": "phq9_total_score",
+                    "value": "8",
+                    "confidence": 0.96,
+                    "ontology_code": "LOINC:44261-6",
+                },
+                {
+                    "field_name": "severity_category",
+                    "value": "Mild depression",
+                    "confidence": 0.95,
+                    "ontology_code": "LOINC:44261-6",
+                },
+                {
+                    "field_name": "suicidal_ideation_item",
+                    "value": "0 - Not at all",
+                    "confidence": 0.98,
+                    "ontology_code": "LOINC:44260-8",
+                },
+                {
+                    "field_name": "functional_impairment",
+                    "value": "Somewhat difficult",
+                    "confidence": 0.93,
+                    "ontology_code": "LOINC:69722-7",
+                },
             ],
         },
     ],
@@ -338,10 +526,30 @@ SESSIONS: dict[str, list[dict[str, Any]]] = {
             "vector_sync_status": "pending",
             "audit_status": "logged",
             "extracted_fields": [
-                {"field_name": "cardiac_silhouette", "value": "Enlarged, CTR 0.62", "confidence": 0.88, "ontology_code": "SNOMED:24484000"},
-                {"field_name": "pulmonary_edema", "value": "Mild interstitial", "confidence": 0.76, "ontology_code": "SNOMED:19242006"},
-                {"field_name": "pleural_effusion", "value": "Bilateral, small", "confidence": 0.82, "ontology_code": "SNOMED:60046008"},
-                {"field_name": "lung_fields", "value": "Vascular cephalization", "confidence": 0.71, "ontology_code": "SNOMED:274744008"},
+                {
+                    "field_name": "cardiac_silhouette",
+                    "value": "Enlarged, CTR 0.62",
+                    "confidence": 0.88,
+                    "ontology_code": "SNOMED:24484000",
+                },
+                {
+                    "field_name": "pulmonary_edema",
+                    "value": "Mild interstitial",
+                    "confidence": 0.76,
+                    "ontology_code": "SNOMED:19242006",
+                },
+                {
+                    "field_name": "pleural_effusion",
+                    "value": "Bilateral, small",
+                    "confidence": 0.82,
+                    "ontology_code": "SNOMED:60046008",
+                },
+                {
+                    "field_name": "lung_fields",
+                    "value": "Vascular cephalization",
+                    "confidence": 0.71,
+                    "ontology_code": "SNOMED:274744008",
+                },
             ],
         },
     ],
@@ -493,29 +701,165 @@ CLINICAL_NOTES: dict[str, list[dict[str, Any]]] = {
 
 LAB_RESULTS: dict[str, list[dict[str, Any]]] = {
     "PT-8829": [
-        {"date": "2026-06-14", "test": "CBC", "component": "Hemoglobin", "value": "10.8", "unit": "g/dL", "reference_range": "13.5-17.5", "flag": "low"},
-        {"date": "2026-06-14", "test": "CBC", "component": "WBC", "value": "3.2", "unit": "K/uL", "reference_range": "4.5-11.0", "flag": "low"},
-        {"date": "2026-06-14", "test": "CBC", "component": "Platelets", "value": "145", "unit": "K/uL", "reference_range": "150-400", "flag": "low"},
-        {"date": "2026-06-14", "test": "CMP", "component": "ALT", "value": "52", "unit": "U/L", "reference_range": "7-56", "flag": "normal"},
-        {"date": "2026-06-14", "test": "CMP", "component": "AST", "value": "68", "unit": "U/L", "reference_range": "10-40", "flag": "high"},
-        {"date": "2026-06-14", "test": "Tumor Marker", "component": "CEA", "value": "12.4", "unit": "ng/mL", "reference_range": "<3.0", "flag": "high"},
+        {
+            "date": "2026-06-14",
+            "test": "CBC",
+            "component": "Hemoglobin",
+            "value": "10.8",
+            "unit": "g/dL",
+            "reference_range": "13.5-17.5",
+            "flag": "low",
+        },
+        {
+            "date": "2026-06-14",
+            "test": "CBC",
+            "component": "WBC",
+            "value": "3.2",
+            "unit": "K/uL",
+            "reference_range": "4.5-11.0",
+            "flag": "low",
+        },
+        {
+            "date": "2026-06-14",
+            "test": "CBC",
+            "component": "Platelets",
+            "value": "145",
+            "unit": "K/uL",
+            "reference_range": "150-400",
+            "flag": "low",
+        },
+        {
+            "date": "2026-06-14",
+            "test": "CMP",
+            "component": "ALT",
+            "value": "52",
+            "unit": "U/L",
+            "reference_range": "7-56",
+            "flag": "normal",
+        },
+        {
+            "date": "2026-06-14",
+            "test": "CMP",
+            "component": "AST",
+            "value": "68",
+            "unit": "U/L",
+            "reference_range": "10-40",
+            "flag": "high",
+        },
+        {
+            "date": "2026-06-14",
+            "test": "Tumor Marker",
+            "component": "CEA",
+            "value": "12.4",
+            "unit": "ng/mL",
+            "reference_range": "<3.0",
+            "flag": "high",
+        },
     ],
     "PT-1044": [
-        {"date": "2026-06-10", "test": "HbA1c", "component": "HbA1c", "value": "8.2", "unit": "%", "reference_range": "<7.0", "flag": "high"},
-        {"date": "2026-06-10", "test": "Lipid Panel", "component": "LDL", "value": "102", "unit": "mg/dL", "reference_range": "<100", "flag": "high"},
-        {"date": "2026-06-10", "test": "CMP", "component": "Creatinine", "value": "0.9", "unit": "mg/dL", "reference_range": "0.6-1.2", "flag": "normal"},
-        {"date": "2026-06-10", "test": "CMP", "component": "eGFR", "value": "82", "unit": "mL/min", "reference_range": ">60", "flag": "normal"},
+        {
+            "date": "2026-06-10",
+            "test": "HbA1c",
+            "component": "HbA1c",
+            "value": "8.2",
+            "unit": "%",
+            "reference_range": "<7.0",
+            "flag": "high",
+        },
+        {
+            "date": "2026-06-10",
+            "test": "Lipid Panel",
+            "component": "LDL",
+            "value": "102",
+            "unit": "mg/dL",
+            "reference_range": "<100",
+            "flag": "high",
+        },
+        {
+            "date": "2026-06-10",
+            "test": "CMP",
+            "component": "Creatinine",
+            "value": "0.9",
+            "unit": "mg/dL",
+            "reference_range": "0.6-1.2",
+            "flag": "normal",
+        },
+        {
+            "date": "2026-06-10",
+            "test": "CMP",
+            "component": "eGFR",
+            "value": "82",
+            "unit": "mL/min",
+            "reference_range": ">60",
+            "flag": "normal",
+        },
     ],
     "PT-5510": [
-        {"date": "2026-06-15", "test": "TSH", "component": "TSH", "value": "2.1", "unit": "mIU/L", "reference_range": "0.4-4.0", "flag": "normal"},
-        {"date": "2026-06-15", "test": "CBC", "component": "Hemoglobin", "value": "14.5", "unit": "g/dL", "reference_range": "13.5-17.5", "flag": "normal"},
+        {
+            "date": "2026-06-15",
+            "test": "TSH",
+            "component": "TSH",
+            "value": "2.1",
+            "unit": "mIU/L",
+            "reference_range": "0.4-4.0",
+            "flag": "normal",
+        },
+        {
+            "date": "2026-06-15",
+            "test": "CBC",
+            "component": "Hemoglobin",
+            "value": "14.5",
+            "unit": "g/dL",
+            "reference_range": "13.5-17.5",
+            "flag": "normal",
+        },
     ],
     "PT-9921": [
-        {"date": "2026-06-09", "test": "BNP", "component": "BNP", "value": "890", "unit": "pg/mL", "reference_range": "<100", "flag": "high"},
-        {"date": "2026-06-09", "test": "CMP", "component": "Creatinine", "value": "1.6", "unit": "mg/dL", "reference_range": "0.6-1.2", "flag": "high"},
-        {"date": "2026-06-09", "test": "CMP", "component": "eGFR", "value": "42", "unit": "mL/min", "reference_range": ">60", "flag": "low"},
-        {"date": "2026-06-09", "test": "CMP", "component": "Potassium", "value": "5.1", "unit": "mEq/L", "reference_range": "3.5-5.0", "flag": "high"},
-        {"date": "2026-06-09", "test": "CMP", "component": "Sodium", "value": "132", "unit": "mEq/L", "reference_range": "136-145", "flag": "low"},
+        {
+            "date": "2026-06-09",
+            "test": "BNP",
+            "component": "BNP",
+            "value": "890",
+            "unit": "pg/mL",
+            "reference_range": "<100",
+            "flag": "high",
+        },
+        {
+            "date": "2026-06-09",
+            "test": "CMP",
+            "component": "Creatinine",
+            "value": "1.6",
+            "unit": "mg/dL",
+            "reference_range": "0.6-1.2",
+            "flag": "high",
+        },
+        {
+            "date": "2026-06-09",
+            "test": "CMP",
+            "component": "eGFR",
+            "value": "42",
+            "unit": "mL/min",
+            "reference_range": ">60",
+            "flag": "low",
+        },
+        {
+            "date": "2026-06-09",
+            "test": "CMP",
+            "component": "Potassium",
+            "value": "5.1",
+            "unit": "mEq/L",
+            "reference_range": "3.5-5.0",
+            "flag": "high",
+        },
+        {
+            "date": "2026-06-09",
+            "test": "CMP",
+            "component": "Sodium",
+            "value": "132",
+            "unit": "mEq/L",
+            "reference_range": "136-145",
+            "flag": "low",
+        },
     ],
 }
 
@@ -526,44 +870,109 @@ LAB_RESULTS: dict[str, list[dict[str, Any]]] = {
 
 VECTOR_CHUNKS: list[dict[str, Any]] = [
     # PT-8829 text chunks
-    {"chunk_id": "VEC-8829-005-001", "patient_id": "PT-8829", "source_type": "text", "source_id": "NOTE-8829-005",
-     "date": "2026-06-15", "text": "CT shows interval increase RUL mass 3.8cm to 4.2cm. New hepatic lesion, total 3, largest 3.5cm. Disease progression on pembrolizumab/carboplatin.",
-     "keywords": ["tumor progression", "hepatic lesion", "CT findings", "NSCLC"]},
-    {"chunk_id": "VEC-8829-004-001", "patient_id": "PT-8829", "source_type": "text", "source_id": "NOTE-8829-004",
-     "date": "2026-04-10", "text": "Restaging CT slight increase primary tumor 3.8cm. Two hepatic lesions, largest 2.3cm. Mixed response. Continue treatment.",
-     "keywords": ["restaging", "hepatic lesion", "mixed response"]},
-    {"chunk_id": "VEC-8829-003-001", "patient_id": "PT-8829", "source_type": "text", "source_id": "NOTE-8829-003",
-     "date": "2026-01-22", "text": "Newly diagnosed NSCLC RUL 3.2cm. Adenocarcinoma PD-L1 60%. No distant metastases. Initiated pembrolizumab/carboplatin.",
-     "keywords": ["initial staging", "NSCLC diagnosis", "treatment initiation"]},
+    {
+        "chunk_id": "VEC-8829-005-001",
+        "patient_id": "PT-8829",
+        "source_type": "text",
+        "source_id": "NOTE-8829-005",
+        "date": "2026-06-15",
+        "text": "CT shows interval increase RUL mass 3.8cm to 4.2cm. New hepatic lesion, total 3, largest 3.5cm. Disease progression on pembrolizumab/carboplatin.",
+        "keywords": ["tumor progression", "hepatic lesion", "CT findings", "NSCLC"],
+    },
+    {
+        "chunk_id": "VEC-8829-004-001",
+        "patient_id": "PT-8829",
+        "source_type": "text",
+        "source_id": "NOTE-8829-004",
+        "date": "2026-04-10",
+        "text": "Restaging CT slight increase primary tumor 3.8cm. Two hepatic lesions, largest 2.3cm. Mixed response. Continue treatment.",
+        "keywords": ["restaging", "hepatic lesion", "mixed response"],
+    },
+    {
+        "chunk_id": "VEC-8829-003-001",
+        "patient_id": "PT-8829",
+        "source_type": "text",
+        "source_id": "NOTE-8829-003",
+        "date": "2026-01-22",
+        "text": "Newly diagnosed NSCLC RUL 3.2cm. Adenocarcinoma PD-L1 60%. No distant metastases. Initiated pembrolizumab/carboplatin.",
+        "keywords": ["initial staging", "NSCLC diagnosis", "treatment initiation"],
+    },
     # PT-8829 image chunks
-    {"chunk_id": "VEC-8829-IMG-003", "patient_id": "PT-8829", "source_type": "image", "source_id": "SES-8829-003",
-     "date": "2026-06-15", "gcs_uri": "gs://clinical-data/PT-8829/sessions/SES-8829-003/ct-abdomen-portal.png",
-     "text": "CT abdomen portal venous phase showing 3 hepatic lesions, largest 3.5cm in right lobe segment VII.",
-     "keywords": ["hepatic lesion", "CT abdomen", "liver metastasis"]},
-    {"chunk_id": "VEC-8829-IMG-002", "patient_id": "PT-8829", "source_type": "image", "source_id": "SES-8829-002",
-     "date": "2026-04-10", "gcs_uri": "gs://clinical-data/PT-8829/sessions/SES-8829-002/ct-abdomen-portal.png",
-     "text": "CT abdomen portal venous phase showing 2 hepatic lesions, largest 2.3cm in right lobe segment VII.",
-     "keywords": ["hepatic lesion", "CT abdomen", "liver metastasis"]},
-    {"chunk_id": "VEC-8829-IMG-001", "patient_id": "PT-8829", "source_type": "image", "source_id": "SES-8829-001",
-     "date": "2026-01-22", "gcs_uri": "gs://clinical-data/PT-8829/sessions/SES-8829-001/ct-chest-axial.png",
-     "text": "CT chest axial initial staging. 3.2cm RUL mass. No mediastinal lymphadenopathy. No hepatic lesions.",
-     "keywords": ["initial staging", "CT chest", "baseline"]},
+    {
+        "chunk_id": "VEC-8829-IMG-003",
+        "patient_id": "PT-8829",
+        "source_type": "image",
+        "source_id": "SES-8829-003",
+        "date": "2026-06-15",
+        "gcs_uri": "gs://clinical-data/PT-8829/sessions/SES-8829-003/ct-abdomen-portal.png",
+        "text": "CT abdomen portal venous phase showing 3 hepatic lesions, largest 3.5cm in right lobe segment VII.",
+        "keywords": ["hepatic lesion", "CT abdomen", "liver metastasis"],
+    },
+    {
+        "chunk_id": "VEC-8829-IMG-002",
+        "patient_id": "PT-8829",
+        "source_type": "image",
+        "source_id": "SES-8829-002",
+        "date": "2026-04-10",
+        "gcs_uri": "gs://clinical-data/PT-8829/sessions/SES-8829-002/ct-abdomen-portal.png",
+        "text": "CT abdomen portal venous phase showing 2 hepatic lesions, largest 2.3cm in right lobe segment VII.",
+        "keywords": ["hepatic lesion", "CT abdomen", "liver metastasis"],
+    },
+    {
+        "chunk_id": "VEC-8829-IMG-001",
+        "patient_id": "PT-8829",
+        "source_type": "image",
+        "source_id": "SES-8829-001",
+        "date": "2026-01-22",
+        "gcs_uri": "gs://clinical-data/PT-8829/sessions/SES-8829-001/ct-chest-axial.png",
+        "text": "CT chest axial initial staging. 3.2cm RUL mass. No mediastinal lymphadenopathy. No hepatic lesions.",
+        "keywords": ["initial staging", "CT chest", "baseline"],
+    },
     # PT-1044 chunks
-    {"chunk_id": "VEC-1044-002-001", "patient_id": "PT-1044", "source_type": "text", "source_id": "NOTE-1044-002",
-     "date": "2026-06-12", "text": "HbA1c 8.2% worsened. Moderate NPDR on fundoscopy. Medication conflict identified: patient reports 500mg vs prescribed 1000mg metformin.",
-     "keywords": ["diabetes", "retinopathy", "medication adherence", "HbA1c"]},
-    {"chunk_id": "VEC-1044-IMG-001", "patient_id": "PT-1044", "source_type": "image", "source_id": "SES-1044-001",
-     "date": "2026-06-12", "gcs_uri": "gs://clinical-data/PT-1044/sessions/SES-1044-001/fundoscopy-right.png",
-     "text": "Right eye fundoscopy showing moderate NPDR: multiple dot-blot hemorrhages, hard exudates perifoveal, possible macular edema.",
-     "keywords": ["diabetic retinopathy", "fundoscopy", "NPDR", "macular edema"]},
+    {
+        "chunk_id": "VEC-1044-002-001",
+        "patient_id": "PT-1044",
+        "source_type": "text",
+        "source_id": "NOTE-1044-002",
+        "date": "2026-06-12",
+        "text": "HbA1c 8.2% worsened. Moderate NPDR on fundoscopy. Medication conflict identified: patient reports 500mg vs prescribed 1000mg metformin.",
+        "keywords": ["diabetes", "retinopathy", "medication adherence", "HbA1c"],
+    },
+    {
+        "chunk_id": "VEC-1044-IMG-001",
+        "patient_id": "PT-1044",
+        "source_type": "image",
+        "source_id": "SES-1044-001",
+        "date": "2026-06-12",
+        "gcs_uri": "gs://clinical-data/PT-1044/sessions/SES-1044-001/fundoscopy-right.png",
+        "text": "Right eye fundoscopy showing moderate NPDR: multiple dot-blot hemorrhages, hard exudates perifoveal, possible macular edema.",
+        "keywords": ["diabetic retinopathy", "fundoscopy", "NPDR", "macular edema"],
+    },
     # PT-9921 chunks
-    {"chunk_id": "VEC-9921-002-001", "patient_id": "PT-9921", "source_type": "text", "source_id": "NOTE-9921-002",
-     "date": "2026-06-10", "text": "CHF exacerbation, EF 35%. CXR enlarged heart, bilateral effusions. BNP 890. Weight up 3kg. Increase furosemide.",
-     "keywords": ["heart failure", "CHF exacerbation", "volume overload", "BNP"]},
-    {"chunk_id": "VEC-9921-IMG-001", "patient_id": "PT-9921", "source_type": "image", "source_id": "SES-9921-001",
-     "date": "2026-06-10", "gcs_uri": "gs://clinical-data/PT-9921/sessions/SES-9921-001/chest-xr-pa.png",
-     "text": "Chest X-ray PA: enlarged cardiac silhouette CTR 0.62, vascular cephalization, mild interstitial edema, bilateral small pleural effusions.",
-     "keywords": ["heart failure", "cardiomegaly", "pulmonary edema", "pleural effusion"]},
+    {
+        "chunk_id": "VEC-9921-002-001",
+        "patient_id": "PT-9921",
+        "source_type": "text",
+        "source_id": "NOTE-9921-002",
+        "date": "2026-06-10",
+        "text": "CHF exacerbation, EF 35%. CXR enlarged heart, bilateral effusions. BNP 890. Weight up 3kg. Increase furosemide.",
+        "keywords": ["heart failure", "CHF exacerbation", "volume overload", "BNP"],
+    },
+    {
+        "chunk_id": "VEC-9921-IMG-001",
+        "patient_id": "PT-9921",
+        "source_type": "image",
+        "source_id": "SES-9921-001",
+        "date": "2026-06-10",
+        "gcs_uri": "gs://clinical-data/PT-9921/sessions/SES-9921-001/chest-xr-pa.png",
+        "text": "Chest X-ray PA: enlarged cardiac silhouette CTR 0.62, vascular cephalization, mild interstitial edema, bilateral small pleural effusions.",
+        "keywords": [
+            "heart failure",
+            "cardiomegaly",
+            "pulmonary edema",
+            "pleural effusion",
+        ],
+    },
 ]
 
 
@@ -572,13 +981,87 @@ VECTOR_CHUNKS: list[dict[str, Any]] = [
 # ---------------------------------------------------------------------------
 
 AUDIT_EVENTS: list[dict[str, Any]] = [
-    {"timestamp": "2026-06-15T14:32:00Z", "agent_name": "image_extraction_pipeline", "action": "extraction_complete", "patient_id": "PT-8829", "session_id": "SES-8829-003", "details": {"fields_extracted": 6, "avg_confidence": 0.87, "needs_review": True}, "user_role": "clinician"},
-    {"timestamp": "2026-06-15T14:30:00Z", "agent_name": "vision_analyzer_agent", "action": "image_analyzed", "patient_id": "PT-8829", "session_id": "SES-8829-003", "details": {"images_processed": 2, "modality": "CT"}, "user_role": "system"},
-    {"timestamp": "2026-06-15T14:28:00Z", "agent_name": "quality_assessor_agent", "action": "quality_check_passed", "patient_id": "PT-8829", "session_id": "SES-8829-003", "details": {"resolution": "512x512", "quality_score": 0.91}, "user_role": "system"},
-    {"timestamp": "2026-06-12T10:15:00Z", "agent_name": "image_extraction_pipeline", "action": "extraction_complete", "patient_id": "PT-1044", "session_id": "SES-1044-001", "details": {"fields_extracted": 4, "avg_confidence": 0.72, "needs_review": True}, "user_role": "clinician"},
-    {"timestamp": "2026-06-18T09:45:00Z", "agent_name": "image_extraction_pipeline", "action": "extraction_verified", "patient_id": "PT-5510", "session_id": "SES-5510-001", "details": {"fields_extracted": 4, "avg_confidence": 0.94, "verified_by": "Dr. Emily Nakamura"}, "user_role": "clinician"},
-    {"timestamp": "2026-06-10T16:20:00Z", "agent_name": "patient_qa_pipeline", "action": "question_answered", "patient_id": "PT-9921", "details": {"question_type": "clinical_status", "sources_used": 3, "confidence": 0.85}, "user_role": "clinician"},
-    {"timestamp": "2026-06-10T11:30:00Z", "agent_name": "db_intelligence_pipeline", "action": "query_executed", "patient_id": None, "details": {"question": "How many high-risk patients this month?", "rows_returned": 12, "chart_generated": True}, "user_role": "admin"},
+    {
+        "timestamp": "2026-06-15T14:32:00Z",
+        "agent_name": "image_extraction_pipeline",
+        "action": "extraction_complete",
+        "patient_id": "PT-8829",
+        "session_id": "SES-8829-003",
+        "details": {
+            "fields_extracted": 6,
+            "avg_confidence": 0.87,
+            "needs_review": True,
+        },
+        "user_role": "clinician",
+    },
+    {
+        "timestamp": "2026-06-15T14:30:00Z",
+        "agent_name": "vision_analyzer_agent",
+        "action": "image_analyzed",
+        "patient_id": "PT-8829",
+        "session_id": "SES-8829-003",
+        "details": {"images_processed": 2, "modality": "CT"},
+        "user_role": "system",
+    },
+    {
+        "timestamp": "2026-06-15T14:28:00Z",
+        "agent_name": "quality_assessor_agent",
+        "action": "quality_check_passed",
+        "patient_id": "PT-8829",
+        "session_id": "SES-8829-003",
+        "details": {"resolution": "512x512", "quality_score": 0.91},
+        "user_role": "system",
+    },
+    {
+        "timestamp": "2026-06-12T10:15:00Z",
+        "agent_name": "image_extraction_pipeline",
+        "action": "extraction_complete",
+        "patient_id": "PT-1044",
+        "session_id": "SES-1044-001",
+        "details": {
+            "fields_extracted": 4,
+            "avg_confidence": 0.72,
+            "needs_review": True,
+        },
+        "user_role": "clinician",
+    },
+    {
+        "timestamp": "2026-06-18T09:45:00Z",
+        "agent_name": "image_extraction_pipeline",
+        "action": "extraction_verified",
+        "patient_id": "PT-5510",
+        "session_id": "SES-5510-001",
+        "details": {
+            "fields_extracted": 4,
+            "avg_confidence": 0.94,
+            "verified_by": "Dr. Emily Nakamura",
+        },
+        "user_role": "clinician",
+    },
+    {
+        "timestamp": "2026-06-10T16:20:00Z",
+        "agent_name": "patient_qa_pipeline",
+        "action": "question_answered",
+        "patient_id": "PT-9921",
+        "details": {
+            "question_type": "clinical_status",
+            "sources_used": 3,
+            "confidence": 0.85,
+        },
+        "user_role": "clinician",
+    },
+    {
+        "timestamp": "2026-06-10T11:30:00Z",
+        "agent_name": "db_intelligence_pipeline",
+        "action": "query_executed",
+        "patient_id": None,
+        "details": {
+            "question": "How many high-risk patients this month?",
+            "rows_returned": 12,
+            "chart_generated": True,
+        },
+        "user_role": "admin",
+    },
 ]
 
 
@@ -664,9 +1147,11 @@ IMAGE_QUALITY_DB: dict[str, dict[str, Any]] = {
 # Lookup helpers (replace these with real service clients)
 # ---------------------------------------------------------------------------
 
+
 def get_patient(patient_id: str) -> dict[str, Any] | None:
     """Retrieve a patient record by ID from SQLite."""
     from .database import execute_sql
+
     res = execute_sql(f"SELECT * FROM patients_core WHERE patient_id = '{patient_id}'")
     if res["rows"]:
         pt = dict(res["rows"][0])
@@ -680,6 +1165,7 @@ def get_patient(patient_id: str) -> dict[str, Any] | None:
 def get_all_patients() -> list[dict[str, Any]]:
     """List all patients from SQLite."""
     from .database import execute_sql
+
     res = execute_sql("SELECT * FROM patients_core")
     pts = []
     for row in res["rows"]:
@@ -693,6 +1179,7 @@ def get_all_patients() -> list[dict[str, Any]]:
 def get_sessions(patient_id: str) -> list[dict[str, Any]]:
     """Get extraction sessions for a patient from SQLite."""
     from .database import execute_sql
+
     res = execute_sql(f"SELECT * FROM sessions WHERE patient_id = '{patient_id}'")
     return [dict(row) for row in res["rows"]]
 
@@ -700,6 +1187,7 @@ def get_sessions(patient_id: str) -> list[dict[str, Any]]:
 def get_session(session_id: str) -> dict[str, Any] | None:
     """Get a specific session by ID from SQLite."""
     from .database import execute_sql
+
     res = execute_sql(f"SELECT * FROM sessions WHERE session_id = '{session_id}'")
     if res["rows"]:
         return dict(res["rows"][0])
@@ -721,9 +1209,12 @@ def get_image_quality(gcs_uri: str) -> dict[str, Any] | None:
     return IMAGE_QUALITY_DB.get(gcs_uri)
 
 
-def search_vectors(patient_id: str, query_keywords: list[str],
-                   source_types: list[str] | None = None,
-                   max_results: int = 10) -> list[dict[str, Any]]:
+def search_vectors(
+    patient_id: str,
+    query_keywords: list[str],
+    source_types: list[str] | None = None,
+    max_results: int = 10,
+) -> list[dict[str, Any]]:
     """Search vector store for relevant chunks. (Mock: Vertex AI Vector Search.)
 
     Simulates semantic search by keyword overlap scoring.
@@ -743,8 +1234,9 @@ def search_vectors(patient_id: str, query_keywords: list[str],
     return results[:max_results]
 
 
-def get_audit_events(patient_id: str | None = None,
-                     limit: int = 20) -> list[dict[str, Any]]:
+def get_audit_events(
+    patient_id: str | None = None, limit: int = 20
+) -> list[dict[str, Any]]:
     """Get audit events, optionally filtered by patient. (Mock: Cloud Logging.)"""
     if patient_id:
         events = [e for e in AUDIT_EVENTS if e.get("patient_id") == patient_id]

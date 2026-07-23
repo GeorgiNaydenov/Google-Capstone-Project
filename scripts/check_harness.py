@@ -1,161 +1,267 @@
-import os
+"""Deterministically validate executable repository harness configuration."""
+
+from __future__ import annotations
+
+import json
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
-def check_harness():
-    # Hooks may run from frontend/ or another project subdirectory. Anchor all
-    # harness paths to this script instead of inheriting the caller's CWD.
-    root = str(Path(__file__).resolve().parents[1])
-    errors = []
 
-    def require_exists(rel_path):
-        abs_path = os.path.join(root, rel_path)
-        if not os.path.exists(abs_path):
-            errors.append(f"Missing {rel_path}")
-            return False
-        return True
+ROOT = Path(__file__).resolve().parents[1]
+REQUIRED_DIRECTORIES = (
+    ".claude/agents",
+    ".claude/agent-memory",
+    ".claude/commands",
+    ".claude/memory",
+    ".claude/references",
+    ".claude/rules",
+    ".claude/skills",
+    ".claude/state",
+)
+REQUIRED_FILES = (
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".claude/settings.json",
+    ".claude/memory/project.md",
+    ".claude/memory/handoff-protocol.md",
+    "scripts/harness_runtime.py",
+    "scripts/sync_harness.py",
+)
+REQUIRED_HOOKS = {
+    "SessionStart": "harness_runtime.py",
+    "PreToolUse": "check_harness.py",
+    "PreCompact": "harness_runtime.py",
+    "SubagentStart": "harness_runtime.py",
+    "SubagentStop": "harness_runtime.py",
+    "Stop": "harness_runtime.py",
+    "SessionEnd": "harness_runtime.py",
+}
 
-    def read_file(rel_path):
-        with open(os.path.join(root, rel_path), "r", encoding="utf-8") as f:
-            return f.read()
 
-    # 1. Check directories
-    required_directories = [
-        ".claude/agents",
-        ".claude/commands",
-        ".claude/memory",
-        ".claude/references",
-        ".claude/rules",
-        ".claude/skills",
-        ".claude/state"
-    ]
-    for directory in required_directories:
-        require_exists(directory)
+def _read(relative: str) -> str:
+    """Read one UTF-8 repository file."""
+    return (ROOT / relative).read_text(encoding="utf-8")
 
-    # 2. Check root indexes
-    root_indexes = ["CLAUDE.md", "AGENTS.md"]
-    for idx in root_indexes:
-        require_exists(idx)
 
-    if len(errors) > 0:
-        print_errors_and_exit(errors)
+def _frontmatter(text: str) -> dict[str, str]:
+    """Parse scalar top-level YAML frontmatter without external dependencies."""
+    match = re.match(r"^---\r?\n([\s\S]*?)\r?\n---\r?\n", text)
+    if not match:
+        return {}
+    values: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        if line.startswith((" ", "\t", "-")) or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        values[key.strip()] = value.strip()
+    return values
 
-    # 3. Check gitignore
-    if require_exists(".gitignore"):
-        gitignore = read_file(".gitignore")
-        required_ignores = [
-            ".claude/settings.local.json",
-            ".claude/state/",
-            ".agents/state/",
-            ".agents/settings.local.json"
-        ]
-        for pattern in required_ignores:
-            if pattern not in gitignore:
-                errors.append(f".gitignore missing '{pattern}'")
 
-    # 4. Check CLAUDE.md and AGENTS.md syncing (excluding path differences)
-    claude = read_file("CLAUDE.md")
-    agents = read_file("AGENTS.md")
+def _hook_commands(settings: dict[str, Any], event: str) -> list[str]:
+    """Extract command hook strings for one lifecycle event."""
+    commands: list[str] = []
+    hooks = settings.get("hooks", {})
+    groups = hooks.get(event, []) if isinstance(hooks, dict) else []
+    if not isinstance(groups, list):
+        return commands
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        handlers = group.get("hooks", [])
+        if not isinstance(handlers, list):
+            continue
+        for handler in handlers:
+            if isinstance(handler, dict) and handler.get("type") == "command":
+                command = handler.get("command")
+                if isinstance(command, str):
+                    commands.append(command)
+    return commands
 
-    # Sync starts from "## Default Style" or "## Harness Rules & Customizations"
-    start_marker = "## Default Style"
-    if start_marker in claude and start_marker in agents:
-        claude_shared = claude[claude.index(start_marker):]
-        agents_shared = agents[agents.index(start_marker):]
-        
-        # Translate .agents back to .claude in agents_shared to verify logical equality
-        translated_agents_shared = agents_shared.replace(".agents/", ".claude/")
-        if claude_shared != translated_agents_shared:
-            errors.append("CLAUDE.md and AGENTS.md drift after '## Default Style' section")
+
+def _indexed_paths(prefix: str) -> list[str]:
+    """Return portable harness paths that must appear in the root index."""
+    root = ROOT / prefix
+    paths: list[str] = []
+    for section in ("rules", "commands", "references", "agents", "memory"):
+        folder = root / section
+        if folder.is_dir():
+            for path in sorted(folder.glob("*.md")):
+                paths.append(f"{prefix}/{section}/{path.name}")
+    skills = root / "skills"
+    if skills.is_dir():
+        for directory in sorted(path for path in skills.iterdir() if path.is_dir()):
+            skill = directory / "SKILL.md"
+            if skill.is_file():
+                paths.append(f"{prefix}/skills/{directory.name}/SKILL.md")
+    return paths
+
+
+def _validate_skills(errors: list[str]) -> None:
+    """Validate portable skill frontmatter in the canonical harness."""
+    skills = ROOT / ".claude" / "skills"
+    for directory in sorted(path for path in skills.iterdir() if path.is_dir()):
+        skill = directory / "SKILL.md"
+        if not skill.is_file():
+            errors.append(f"Missing .claude/skills/{directory.name}/SKILL.md")
+            continue
+        metadata = _frontmatter(skill.read_text(encoding="utf-8"))
+        if metadata.get("name") != directory.name:
+            errors.append(
+                f"{skill.relative_to(ROOT).as_posix()} name must match folder"
+            )
+        description = metadata.get("description", "")
+        if len(description) < 40:
+            errors.append(
+                f"{skill.relative_to(ROOT).as_posix()} description is too short"
+            )
+        unexpected = set(metadata) - {"name", "description"}
+        if unexpected:
+            errors.append(
+                f"{skill.relative_to(ROOT).as_posix()} has non-portable "
+                f"frontmatter keys: {', '.join(sorted(unexpected))}"
+            )
+
+
+def _validate_agents(errors: list[str]) -> None:
+    """Validate executable subagent profiles and project-scoped memory."""
+    profiles = sorted((ROOT / ".claude" / "agents").glob("*.md"))
+    if not profiles:
+        errors.append(".claude/agents contains no executable agent profiles")
+        return
+    for profile in profiles:
+        metadata = _frontmatter(profile.read_text(encoding="utf-8"))
+        expected_name = profile.stem
+        if metadata.get("name") != expected_name:
+            errors.append(
+                f"{profile.relative_to(ROOT).as_posix()} name must be '{expected_name}'"
+            )
+        if len(metadata.get("description", "")) < 40:
+            errors.append(
+                f"{profile.relative_to(ROOT).as_posix()} description is too short"
+            )
+        if metadata.get("memory") != "project":
+            errors.append(
+                f"{profile.relative_to(ROOT).as_posix()} must use project memory"
+            )
+        memory = ROOT / ".claude" / "agent-memory" / expected_name / "MEMORY.md"
+        if not memory.is_file():
+            errors.append(f"Missing project agent memory for '{expected_name}'")
+
+
+def _validate_settings(errors: list[str]) -> None:
+    """Validate lifecycle hooks are wired to executable repository scripts."""
+    try:
+        settings = json.loads(_read(".claude/settings.json"))
+    except json.JSONDecodeError as exc:
+        errors.append(f".claude/settings.json is invalid JSON: {exc}")
+        return
+    for event, expected_script in REQUIRED_HOOKS.items():
+        commands = _hook_commands(settings, event)
+        if not commands:
+            errors.append(f".claude/settings.json missing {event} command hook")
+        elif not any(expected_script in command for command in commands):
+            errors.append(f"{event} hook must invoke scripts/{expected_script}")
+        elif not all(
+            "uv run --no-project --python 3.11" in command for command in commands
+        ):
+            errors.append(f"{event} hook must use the dependency-free uv launcher")
+
+
+def _validate_mirror(errors: list[str]) -> None:
+    """Validate root indexes and all manifest-managed mirror files."""
+    claude = _read("CLAUDE.md")
+    agents = _read("AGENTS.md")
+    marker = "## Default Style"
+    if marker not in claude or marker not in agents:
+        errors.append(f"Missing '{marker}' section in CLAUDE.md or AGENTS.md")
     else:
-        errors.append(f"Missing '{start_marker}' section in CLAUDE.md or AGENTS.md")
+        claude_shared = claude[claude.index(marker) :]
+        agents_shared = agents[agents.index(marker) :].replace(".agents/", ".claude/")
+        if claude_shared != agents_shared:
+            errors.append("CLAUDE.md and AGENTS.md drift after '## Default Style'")
 
-    # 5. Check skills and frontmatter
-    skills_dir = os.path.join(root, ".claude/skills")
-    if os.path.exists(skills_dir):
-        skills = [d for d in os.listdir(skills_dir) if os.path.isdir(os.path.join(skills_dir, d))]
-        for skill in skills:
-            skill_path = f".claude/skills/{skill}/SKILL.md"
-            if not require_exists(skill_path):
-                continue
-            
-            body = read_file(skill_path)
-            fm_match = re.match(r"^---\r?\n([\s\S]*?)\r?\n---\r?\n", body)
-            if not fm_match:
-                errors.append(f"{skill_path} missing YAML frontmatter enclosed in '---'")
-                continue
-            
-            frontmatter_lines = fm_match.group(1).strip().splitlines()
-            keys = []
-            name_val = None
-            desc_val = None
-            
-            for line in frontmatter_lines:
-                if ":" not in line:
-                    continue
-                k, v = line.split(":", 1)
-                k = k.strip()
-                v = v.strip()
-                keys.append(k)
-                if k == "name":
-                    name_val = v
-                elif k == "description":
-                    desc_val = v
+    for prefix, index, name in (
+        (".claude", claude, "CLAUDE.md"),
+        (".agents", agents, "AGENTS.md"),
+    ):
+        for path in _indexed_paths(prefix):
+            if path not in index:
+                errors.append(f"{name} missing reference to {path}")
 
-            unexpected_keys = [k for k in keys if k not in ["name", "description"]]
-            if name_val != skill:
-                errors.append(f"{skill_path} name '{name_val}' must match folder '{skill}'")
-            if not desc_val or len(desc_val) < 40:
-                errors.append(f"{skill_path} description is too short or missing (min 40 chars)")
-            if unexpected_keys:
-                errors.append(f"{skill_path} has non-portable frontmatter keys: {', '.join(unexpected_keys)}")
+    manifest_path = ROOT / ".agents" / ".sync-manifest.json"
+    if not manifest_path.is_file():
+        errors.append("Missing .agents/.sync-manifest.json; run sync_harness.py")
+        return
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        errors.append(f".agents/.sync-manifest.json is invalid: {exc}")
+        return
+    for relative in manifest.get("files", []):
+        source = ROOT / ".claude" / relative
+        target = ROOT / ".agents" / relative
+        if not source.is_file() or not target.is_file():
+            errors.append(f"Managed mirror file missing: {relative}")
+            continue
+        try:
+            source_text = source.read_text(encoding="utf-8")
+            target_text = target.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            if source.read_bytes() != target.read_bytes():
+                errors.append(f"Managed binary mirror drift: {relative}")
+            continue
+        expected = source_text.replace(".claude/", ".agents/")
+        if target_text != expected:
+            errors.append(f"Managed mirror drift: {relative}")
 
-    # 6. Check indexing inside CLAUDE.md and AGENTS.md
-    def check_indexed_paths(prefix, index_file_content, index_name):
-        paths = []
-        
-        # Helper to collect files in a subdirectory
-        def collect_files(subdir):
-            full_subdir = os.path.join(root, prefix, subdir)
-            if os.path.exists(full_subdir):
-                for f in os.listdir(full_subdir):
-                    if f == ".gitkeep":
-                        continue
-                    full_f = os.path.join(full_subdir, f)
-                    if os.path.isfile(full_f):
-                        paths.append(f"{prefix}/{subdir}/{f}")
 
-        collect_files("rules")
-        collect_files("commands")
-        collect_files("references")
-        collect_files("agents")
+def check_harness() -> list[str]:
+    """Return all harness integrity errors; an empty list means valid."""
+    errors: list[str] = []
+    for relative in REQUIRED_DIRECTORIES:
+        if not (ROOT / relative).is_dir():
+            errors.append(f"Missing {relative}")
+    for relative in REQUIRED_FILES:
+        if not (ROOT / relative).is_file():
+            errors.append(f"Missing {relative}")
+    if errors:
+        return errors
 
-        # Collect skills
-        skills_sub = os.path.join(root, prefix, "skills")
-        if os.path.exists(skills_sub):
-            for s in os.listdir(skills_sub):
-                if os.path.isdir(os.path.join(skills_sub, s)):
-                    paths.append(f"{prefix}/skills/{s}/SKILL.md")
+    gitignore = _read(".gitignore")
+    for pattern in (
+        ".claude/settings.local.json",
+        ".claude/state/",
+        ".agents/state/",
+        ".agents/settings.local.json",
+        "/MEMORY.md",
+    ):
+        if pattern not in gitignore:
+            errors.append(f".gitignore missing '{pattern}'")
+    if any(line.strip() == "MEMORY.md" for line in gitignore.splitlines()):
+        errors.append(
+            ".gitignore must not hide project-scoped subagent MEMORY.md files"
+        )
 
-        for p in paths:
-            if p not in index_file_content:
-                errors.append(f"{index_name} missing reference to {p}")
+    _validate_settings(errors)
+    _validate_skills(errors)
+    _validate_agents(errors)
+    _validate_mirror(errors)
+    return errors
 
-    check_indexed_paths(".claude", claude, "CLAUDE.md")
-    check_indexed_paths(".agents", agents, "AGENTS.md")
 
-    if len(errors) > 0:
-        print_errors_and_exit(errors)
-    else:
-        print(f"Harness check passed successfully.")
-        sys.exit(0)
+def main() -> int:
+    """Print harness audit result and return a process exit code."""
+    errors = check_harness()
+    if errors:
+        print("Harness check failed:", file=sys.stderr)
+        for error in errors:
+            print(f"- {error}", file=sys.stderr)
+        return 1
+    print("Harness check passed successfully.")
+    return 0
 
-def print_errors_and_exit(errors):
-    print("Harness check failed:", file=sys.stderr)
-    for error in errors:
-        print(f"- {error}", file=sys.stderr)
-    sys.exit(1)
 
 if __name__ == "__main__":
-    check_harness()
+    raise SystemExit(main())

@@ -52,7 +52,9 @@ _STATE_OUTPUT_KEYS = (
 # surfaced mid-stream after the connection succeeded.
 # gRPC status codes are matched case-sensitively: a lowercase "unavailable"
 # usually describes a missing local runtime, not a retryable server error.
-_TRANSIENT_PATTERN = re.compile(r"429|RESOURCE_EXHAUSTED|UNAVAILABLE|503|DEADLINE|[Oo]verloaded")
+_TRANSIENT_PATTERN = re.compile(
+    r"429|RESOURCE_EXHAUSTED|UNAVAILABLE|503|DEADLINE|[Oo]verloaded"
+)
 
 
 def _is_transient(text: str) -> bool:
@@ -94,10 +96,14 @@ async def execute_live(
     for attempt in range(1, max_attempts + 1):
         try:
             return await _execute_once(
-                query, user_id,
-                file_bytes=file_bytes, file_mime=file_mime,
-                patient_context=patient_context, session_key=session_key,
-                on_step=on_step, target=target,
+                query,
+                user_id,
+                file_bytes=file_bytes,
+                file_mime=file_mime,
+                patient_context=patient_context,
+                session_key=session_key,
+                on_step=on_step,
+                target=target,
             )
         except Exception as exc:
             if attempt >= max_attempts or not _is_transient(str(exc)):
@@ -163,13 +169,17 @@ async def _execute_once(
     session_service = _session_service
     session_id = f"live-{session_key}" if session_key else f"live-{uuid4().hex}"
     session = await session_service.get_session(
-        app_name=app_name, user_id=user_id, session_id=session_id,
+        app_name=app_name,
+        user_id=user_id,
+        session_id=session_id,
     )
     if session is None:
         # State must be passed at creation: create_session returns a copy, so
         # post-hoc session.state mutations never reach the stored session.
         session = await session_service.create_session(
-            app_name=app_name, user_id=user_id, session_id=session_id,
+            app_name=app_name,
+            user_id=user_id,
+            session_id=session_id,
             state=dict(patient_context or {}),
         )
     # Snapshot so only keys written by THIS run surface as outputs. Resumed
@@ -180,7 +190,10 @@ async def _execute_once(
     effective_query = query
     if file_bytes and file_mime:
         extension = _MIME_EXTENSIONS.get(file_mime, "")
-        saved_path = UPLOAD_DIR / f"{generate_document_id('live-upload' + extension, file_bytes)}{extension}"
+        saved_path = (
+            UPLOAD_DIR
+            / f"{generate_document_id('live-upload' + extension, file_bytes)}{extension}"
+        )
         if not saved_path.exists():
             saved_path.write_bytes(file_bytes)
         # Pipeline tools (assess_image_quality, extract_clinical_text,
@@ -194,7 +207,9 @@ async def _execute_once(
 
     parts: list[types.Part] = [types.Part(text=effective_query)]
     if file_bytes and file_mime:
-        parts.append(types.Part(inline_data=types.Blob(mime_type=file_mime, data=file_bytes)))
+        parts.append(
+            types.Part(inline_data=types.Blob(mime_type=file_mime, data=file_bytes))
+        )
 
     content = types.Content(role="user", parts=parts)
     runner = Runner(
@@ -208,21 +223,27 @@ async def _execute_once(
     author_steps: list[dict[str, Any]] = []
     tool_calls: list[dict[str, Any]] = []
 
-    async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
+    async for event in runner.run_async(
+        user_id=user_id, session_id=session_id, new_message=content
+    ):
         author = getattr(event, "author", None) or "unknown"
         if not author_steps or author_steps[-1]["author"] != author:
-            author_steps.append({"author": author, "eventId": getattr(event, "id", None)})
+            author_steps.append(
+                {"author": author, "eventId": getattr(event, "id", None)}
+            )
             if on_step:
                 # A copy: author_steps keeps growing after this call, and the
                 # caller may hold onto what it was given across an await.
                 on_step(list(author_steps))
 
         for fc in event.get_function_calls():
-            tool_calls.append({
-                "tool": getattr(fc, "name", "unknown"),
-                "status": "success",
-                "args": _safe_json(getattr(fc, "args", {})),
-            })
+            tool_calls.append(
+                {
+                    "tool": getattr(fc, "name", "unknown"),
+                    "status": "success",
+                    "args": _safe_json(getattr(fc, "args", {})),
+                }
+            )
 
         for fr in event.get_function_responses():
             for tc in reversed(tool_calls):
@@ -232,27 +253,38 @@ async def _execute_once(
 
         if event.is_final_response() and event.content and event.content.parts:
             final_text = "".join(
-                part.text or "" for part in event.content.parts if getattr(part, "text", None)
+                part.text or ""
+                for part in event.content.parts
+                if getattr(part, "text", None)
             )
 
     final_session = await session_service.get_session(
-        app_name=app_name, user_id=user_id, session_id=session_id,
+        app_name=app_name,
+        user_id=user_id,
+        session_id=session_id,
     )
     state = dict(final_session.state) if final_session else {}
     state_outputs: dict[str, Any] = {}
     for key in _STATE_OUTPUT_KEYS:
         if key in state and state[key] != baseline_state.get(key):
             value = state[key]
-            state_outputs[key] = redact_pii(redact_secrets(value)) if isinstance(value, str) else value
+            state_outputs[key] = (
+                redact_pii(redact_secrets(value)) if isinstance(value, str) else value
+            )
 
     safe_text = redact_pii(redact_secrets(final_text))
 
-    fields_source = _string_source(state_outputs, ("structured_output", "refined_output")) or safe_text
+    fields_source = (
+        _string_source(state_outputs, ("structured_output", "refined_output"))
+        or safe_text
+    )
     # generated_sql is the nl_to_sql stage's own SQL text; validated_sql is the
     # sql_validator's pass/fail verdict on it ("do not rewrite the SQL
     # yourself" per its prompt) and normally contains no SELECT statement at
     # all, so it must never be preferred over the actual SQL source.
-    sql_source = _string_source(state_outputs, ("generated_sql", "validated_sql")) or safe_text
+    sql_source = (
+        _string_source(state_outputs, ("generated_sql", "validated_sql")) or safe_text
+    )
 
     return {
         "finalResponse": safe_text,
@@ -338,7 +370,9 @@ def _extract_fields(text: str) -> dict[str, str]:
             # value ("Dyspnea on exertion") rather than the raw JSON object.
             if isinstance(value, dict) and "value" in value:
                 value = value["value"]
-            fields[_snake_key(str(key))] = value if isinstance(value, str) else json.dumps(value)
+            fields[_snake_key(str(key))] = (
+                value if isinstance(value, str) else json.dumps(value)
+            )
     if not fields:
         for line in text.split("\n"):
             # Markdown table rows and separators produce garbage keys — the

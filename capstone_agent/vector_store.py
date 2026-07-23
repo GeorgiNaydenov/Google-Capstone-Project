@@ -103,10 +103,14 @@ class VertexEmbeddingClient:
                     location=config["gcp_location"],
                 )
             else:
-                self._client = genai.Client(api_key=config["google_api_key"], vertexai=False)
+                self._client = genai.Client(
+                    api_key=config["google_api_key"], vertexai=False
+                )
         return self._client
 
-    def embed(self, texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list[list[float]]:
+    def embed(
+        self, texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT"
+    ) -> list[list[float]]:
         """Embed texts in batches; returns one vector per input text.
 
         Raises on failure — callers decide whether that means "fall back to
@@ -115,11 +119,14 @@ class VertexEmbeddingClient:
         client = self._genai_client()
         vectors: list[list[float]] = []
         for start in range(0, len(texts), _EMBED_BATCH_SIZE):
-            batch = texts[start:start + _EMBED_BATCH_SIZE]
+            batch = texts[start : start + _EMBED_BATCH_SIZE]
             response = client.models.embed_content(
                 model=self.model,
                 contents=batch,
-                config={"task_type": task_type, "output_dimensionality": self.dimensions},
+                config={
+                    "task_type": task_type,
+                    "output_dimensionality": self.dimensions,
+                },
             )
             vectors.extend([list(item.values) for item in response.embeddings])
         return vectors
@@ -147,7 +154,9 @@ class VertexReranker:
         """Whether reranking should be attempted in this environment."""
         return self._enabled
 
-    def rerank(self, query: str, records: list[dict[str, Any]]) -> list[dict[str, Any]] | None:
+    def rerank(
+        self, query: str, records: list[dict[str, Any]]
+    ) -> list[dict[str, Any]] | None:
         """Return records re-ordered by the Ranking API, or None on any failure.
 
         Each record must have ``chunk_id`` and ``text``; the returned records
@@ -159,7 +168,9 @@ class VertexReranker:
             import google.auth
             import google.auth.transport.requests
 
-            credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+            credentials, _ = google.auth.default(
+                scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            )
             credentials.refresh(google.auth.transport.requests.Request())
             config = get_config()
             payload = {
@@ -192,7 +203,12 @@ class VertexReranker:
 class ClinicalVectorStore:
     """Tenant-scoped semantic index persisted in the clinical SQLite store."""
 
-    def __init__(self, db: database.DatabaseManager, embedder: VertexEmbeddingClient, reranker: VertexReranker) -> None:
+    def __init__(
+        self,
+        db: database.DatabaseManager,
+        embedder: VertexEmbeddingClient,
+        reranker: VertexReranker,
+    ) -> None:
         """Bind the store to the shared database manager and Vertex clients."""
         self._db = db
         self._embedder = embedder
@@ -225,7 +241,9 @@ class ClinicalVectorStore:
         payload = [c for c in chunks if str(c.get("text") or "").strip()]
         if not payload or not self._embedder.available():
             return 0
-        vectors = self._embedder.embed([c["text"] for c in payload], task_type="RETRIEVAL_DOCUMENT")
+        vectors = self._embedder.embed(
+            [c["text"] for c in payload], task_type="RETRIEVAL_DOCUMENT"
+        )
         now = datetime.now(timezone.utc).isoformat()
         self._db.init_db()
         with self._db.get_connection() as conn:
@@ -269,7 +287,9 @@ class ClinicalVectorStore:
         try:
             query_vector = self._embedder.embed([query], task_type="RETRIEVAL_QUERY")[0]
         except Exception as exc:
-            logger.warning("Query embedding failed, falling back to keyword search: %s", exc)
+            logger.warning(
+                "Query embedding failed, falling back to keyword search: %s", exc
+            )
             return []
         self._db.init_db()
         with self._db.get_connection() as conn:
@@ -298,7 +318,9 @@ class ClinicalVectorStore:
                     "source_type": item["source_type"],
                     "source_id": item["source_id"],
                     "text": item["chunk_text"],
-                    "relevance_score": round(_cosine_similarity(query_vector, vector), 4),
+                    "relevance_score": round(
+                        _cosine_similarity(query_vector, vector), 4
+                    ),
                     "retrieval": "vector",
                 }
             )
@@ -328,9 +350,13 @@ class ClinicalVectorStore:
         chunks: list[dict[str, Any]] = []
         with self._db.get_connection() as conn:
             self.ensure_table(conn)
-            already = {row["chunk_id"] for row in conn.execute("SELECT chunk_id FROM vector_chunks").fetchall()}
+            already = {
+                row["chunk_id"]
+                for row in conn.execute("SELECT chunk_id FROM vector_chunks").fetchall()
+            }
             for row in conn.execute(
-                "SELECT note_id, patient_id, note_type, note_text FROM clinical_notes LIMIT ?", (limit,)
+                "SELECT note_id, patient_id, note_type, note_text FROM clinical_notes LIMIT ?",
+                (limit,),
             ).fetchall():
                 chunk_id = f"note-{row['note_id']}"
                 if chunk_id not in already:
@@ -344,7 +370,8 @@ class ClinicalVectorStore:
                         }
                     )
             for row in conn.execute(
-                "SELECT chunk_id, document_id, patient_id, chunk_text FROM document_chunks LIMIT ?", (limit,)
+                "SELECT chunk_id, document_id, patient_id, chunk_text FROM document_chunks LIMIT ?",
+                (limit,),
             ).fetchall():
                 chunk_id = f"doc-{row['document_id']}-{row['chunk_id']}"
                 if chunk_id not in already:
@@ -358,7 +385,8 @@ class ClinicalVectorStore:
                         }
                     )
             field_rows = conn.execute(
-                "SELECT session_id, patient_id, field_name, field_value FROM extracted_fields LIMIT ?", (limit,)
+                "SELECT session_id, patient_id, field_name, field_value FROM extracted_fields LIMIT ?",
+                (limit,),
             ).fetchall()
         by_session: dict[str, dict[str, Any]] = {}
         for row in field_rows:
@@ -375,16 +403,23 @@ class ClinicalVectorStore:
                     "patient_id": entry["patient_id"],
                     "source_type": "structured",
                     "source_id": session_id,
-                    "text": "Extracted clinical fields. " + "; ".join(entry["lines"][:40]),
+                    "text": "Extracted clinical fields. "
+                    + "; ".join(entry["lines"][:40]),
                 }
             )
         chunks = chunks[:limit]
         try:
             indexed = self.index_chunks(chunks)
         except Exception as exc:
-            logger.warning("Vector backfill failed (keyword search still available): %s", exc)
+            logger.warning(
+                "Vector backfill failed (keyword search still available): %s", exc
+            )
             return {"indexed": 0, "error": str(exc)}
-        logger.info("Vector index backfill complete: %s chunks embedded into %s", indexed, path_key)
+        logger.info(
+            "Vector index backfill complete: %s chunks embedded into %s",
+            indexed,
+            path_key,
+        )
         return {"indexed": indexed, "candidates": len(chunks)}
 
     def status(self) -> dict[str, Any]:
@@ -393,7 +428,9 @@ class ClinicalVectorStore:
             "available": self.available(),
             "embedding_model": self._embedder.model,
             "dimensions": self._embedder.dimensions,
-            "reranker": self._reranker.model if self._reranker.available() else "disabled",
+            "reranker": self._reranker.model
+            if self._reranker.available()
+            else "disabled",
             "indexed_chunks": self.count(),
             "database": str(self._db.active_db_path().name),
         }

@@ -102,7 +102,9 @@ def compact_history(
         char_limit = available_for_summary * 4
         summary_text = summary_text[:char_limit] + "...[truncated]"
 
-    compacted = [{"role": "system", "content": f"[Earlier conversation summary: {summary_text}]"}]
+    compacted = [
+        {"role": "system", "content": f"[Earlier conversation summary: {summary_text}]"}
+    ]
     compacted.extend(recent_turns)
 
     return compacted

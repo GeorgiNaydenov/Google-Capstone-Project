@@ -8,6 +8,7 @@ Google ADK capstone project for Kaggle's 5-Day AI Agents: Intensive Vibe Coding 
 
 - **Framework**: Google ADK (`google-adk`) — Python
 - **LLM**: Google Gemini 3.1 via a 3-tier registry (`llm.build_model`): `flash-lite` (default), `pro`, `pro-customtools`
+- **Retrieval**: Vertex AI `gemini-embedding-001` embeddings + Vertex AI Ranking API reranker over a tenant-scoped SQLite vector store (`vector_store.py`); deterministic keyword fallback without credentials
 - **MCP**: Model Context Protocol for tool interoperability
 - **A2A**: Agent2Agent protocol for cross-agent communication (`a2a_server.py`, `google-adk[a2a]`)
 - **Observability**: OpenTelemetry (OTLP / Cloud Trace) + ADK plugins + structured JSON logging
@@ -42,6 +43,7 @@ capstone_agent/
   prompts.py                # Clinical AI Command Center — agent instruction templates.
   security.py               # Security module — PII detection, secret scanning, input sanitization.
   tools.py                  # Clinical AI Command Center — tool definitions (production).
+  vector_store.py           # Semantic vector store — Vertex AI embeddings over the clinical corpus.
 clinical_app/
   agent_runtime.py          # Deterministic product adapters for the real clinical agent tool layer.
   app.py                    # FastAPI routes for clinician-facing deterministic application.
@@ -56,7 +58,8 @@ mcp_server/
 scripts/
   build_docs_site.py        # Build the standalone documentation hub served at /documentation.
   build_llm_wiki.py         # Script to compile the Obsidian Project Wiki into the Karpathy LLM Wiki structure.
-  check_harness.py
+  build_vector_index.py     # Backfill the semantic vector index for a tenant clinical database.
+  check_harness.py          # Deterministically validate executable repository harness configuration.
   check_source_safety.py    # Repository safety gate for public source and commit metadata.
   export_diagrams.py        # Export Project Wiki draw.io diagrams into frontend public assets.
   generate_database_showcase.py # Generate a large governed SQLite cohort for the database agent.
@@ -66,10 +69,11 @@ scripts/
   generate_live_test_data.py # Generate a small live test dataset (database cohort, PDF, images) and run ETL ingestion.
   generate_multimodal_patient_showcase.py # Generate multimodal patient bundles for the Q&A agent.
   generate_multimodal_patient_showcase_demo2.py # Generate the second-platform multimodal Q&A demo bundle set.
+  harness_runtime.py        # Lifecycle state and handoff runtime for the repository agent harness.
   ingest_capstone_live_samples.py # Ingest the corrected multi-patient live sample dataset into the real Capstone tenant database.
   run_clinical_app_dev.py   # Run the clinical FastAPI app from the local Windows dev environment.
   showcase_clinical_core.py # Shared clinically coherent synthetic cohort engine for all showcase generators.
-  sync_harness.py
+  sync_harness.py           # Safely mirror the Claude harness into the cross-agent ``.agents`` tree.
   sync_wiki.py              # Deterministic Project Wiki and harness synchronization.
 tests/
   conftest.py               # Pytest configuration and shared fixtures for agent evaluation.
@@ -80,6 +84,7 @@ tests/
   test_context.py           # Tests for context engineering utilities (Day 1 working memory).
   test_document_parsing.py  # Document upload policy and extraction contract tests.
   test_eval.py              # ADK evaluation harness test (Day 4b).
+  test_harness_runtime.py   # Tests for lifecycle state, handoff, and safe mirror harness tooling.
   test_live_bridge.py       # Unit tests for the live-mode ADK bridge parsing helpers.
   test_live_ingestion.py    # Unit tests for live mode ingestion, ETL, and database seeding.
   test_memory.py            # Tests for memory governance (Day 3b).
@@ -90,6 +95,7 @@ tests/
   test_showcase_generators.py # Smoke tests for showcase data generators.
   test_template_generators.py # Unit tests for template-based showcase data generators.
   test_tools.py             # Clinical tool validation tests — ensures consistent I/O contracts.
+  test_vector_store.py      # Unit tests for the semantic vector store (capstone_agent/vector_store.py).
   test_versioned_api.py     # Unit tests for the versioned API backend endpoints (V1 and V2).
   test_wiki_sync.py         # Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py).
 frontend/                   # React/Vite/TypeScript clinical UI (16 routes)
@@ -244,6 +250,7 @@ adk deploy agent_engine --project=PROJECT_ID --region=us-central1 --agent_engine
 ## Harness Rules & Customizations
 
 This harness controls and validates agent executions.
+Shared durable harness context: @.agents/memory/project.md
 
 ### Rules
 
@@ -268,7 +275,17 @@ This harness controls and validates agent executions.
 | `.agents/skills/obsidian-bases/SKILL.md` | Create and edit Obsidian Bases |
 | `.agents/skills/obsidian-cli/SKILL.md` | Interact with vaults via Obsidian CLI |
 | `.agents/skills/drawio/SKILL.md` | Generate .drawio diagrams (architecture, ERD, UML, flowcharts, network) and export PNG/SVG/PDF via draw.io CLI |
-| `.agents/skills/drawio-skill/SKILL.md` | Wrapper for the vendored upstream drawio-skill package |`r`n
+| `.agents/skills/drawio-skill/SKILL.md` | Wrapper for the vendored upstream drawio-skill package |
+
+### Agents
+
+| Agent | Ownership |
+|---|---|
+| `.agents/agents/harness-governor.md` | Hooks, sync, harness contracts, and state lifecycle |
+| `.agents/agents/memory-state-reviewer.md` | ADK state, memory governance, compaction, and A2A boundaries |
+| `.agents/agents/security-reviewer.md` | Read-only security boundary and data-leak review |
+| `.agents/agents/verification-runner.md` | Deterministic checks, pytest, lint, and eval gate reporting |
+
 ### Commands
 
 | Command | Purpose |
@@ -276,6 +293,8 @@ This harness controls and validates agent executions.
 | `.agents/commands/pre-commit-gate.md` | Runs formatting, harness audit, and pytest |
 | `.agents/commands/harness-audit.md` | Audits the files indexing and sync status |
 | `.agents/commands/sync-agents-md.md` | Mirrors .claude to .agents and CLAUDE.md to AGENTS.md |
+| `.agents/commands/harness-status.md` | Shows current lifecycle state and recent handoffs |
+| `.agents/commands/handoff.md` | Writes a sanitized machine-readable agent handoff |
 
 ### References
 
@@ -284,17 +303,24 @@ This harness controls and validates agent executions.
 | `.agents/references/critical-defaults.md` | Always-on agent behaviors |
 | `.agents/references/known-baselines.md` | Baseline stats and linting status |
 | `.agents/references/source-policy.md` | Local check priorities and link citations |
+| `.agents/references/state-contract.md` | Ephemeral state schema and lifecycle transitions |
 
 ### Memory
 
 | File | Contains |
 |---|---|
-| `MEMORY.md` | Workspace variables and active model registers (Developer Agent Memory) |
+| `MEMORY.md` | Generated workspace variables and active model registers |
+| `.agents/memory/README.md` | Memory location and ownership guide |
+| `.agents/memory/project.md` | Shared durable harness facts loaded at session boundaries |
+| `.agents/memory/handoff-protocol.md` | Cross-agent return contract |
+| `.agents/agent-memory/*/MEMORY.md` | Project-scoped learned memory for named subagents |
+| `.agents/state/` | Gitignored ephemeral lifecycle state and handoff queue |
 
 ### Project Wiki (auto-synced)
 
 `Project Wiki/` is an Obsidian vault documenting the whole system; `Home.md` is the entry point.
 
-- A `Stop` hook runs `scripts/sync_wiki.py` after every work turn. It is deterministic (stdlib only, no LLM), idempotent, and always exits 0.
+- `SessionStart`, `PreCompact`, `SubagentStart`, `SubagentStop`, `Stop`, and `SessionEnd` hooks run `scripts/harness_runtime.py` to manage local state, context injection, and handoffs.
+- `Stop` runs `scripts/sync_wiki.py` through the lifecycle runtime after every work turn. It is deterministic (stdlib only, no LLM), idempotent, and always exits 0.
 - It regenerates the machine-owned pages in `Project Wiki/_generated/` (Module Inventory, Test Inventory, Harness Index, Changelog, Drift Report), the `AUTO:DEPGRAPH` block in `Project Wiki/02 Architecture/Module Dependency Graph.md`, the `AUTO:STRUCTURE` block in this file, and the root `MEMORY.md` registers, then runs `scripts/sync_harness.py` to mirror `CLAUDE.md` to `AGENTS.md`.
 - Never hand-edit `_generated/` pages or content inside `AUTO:*` markers; edit the hand-written wiki notes instead. Check `_generated/Drift Report.md` for modules the wiki does not cover yet.

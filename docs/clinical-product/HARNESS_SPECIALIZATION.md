@@ -138,6 +138,8 @@ analytics, storage panels, and audit views.
 
 - Use ADK memory for workflow continuity and preferences.
 - Keep patients, sessions, evidence, and clinical findings in repositories.
+- Persist completed workflow runs in tenant storage and rehydrate them before
+  merging browser-cached turns; seed curated prior conversations per demo tenant.
 - Store minimum redacted summaries only.
 - Do not treat cross-session conversation memory as clinical truth.
 
@@ -181,9 +183,9 @@ review thresholds, payload logging, and feature flags.
 |---|---|
 | S0 Specification | Versioned product, route, data, event, and permission contracts; repaired environment; baseline tests recorded. |
 | S1 Product spine | UI and API use one repository; role and patient/session views survive reload; no embedded product fixture store. |
-| S2 Extraction | Approve/edit/reject/re-run persist; retries cannot double-write; storage receipts reconcile. |
-| S3 Q&A | Every material claim links to authorized reopenable evidence; unsupported claims are identified. |
-| S4 Database | Unsafe/cross-scope SQL is blocked; chart and CSV derive from the executed result. |
+| S2 Extraction | Approve/edit/reject/re-run persist; retries cannot double-write; packet/patient lineage remains visible; storage receipts reconcile. |
+| S3 Q&A | Every material claim links to authorized reopenable evidence; patient images render in the answer when available; unsupported claims are identified; prior turns rehydrate. |
+| S4 Database | Unsafe/cross-scope SQL is blocked; chart and CSV derive from the executed result; rate/threshold questions expose numerator, authorized denominator, and prevalence. |
 | S5 Admin | Permissions apply at API and tool boundaries; configuration and retries are versioned and audited. |
 | S6 Release | Deterministic tests, ADK eval, browser workflows, accessibility, container smoke, docs, and public demo all pass. |
 
@@ -197,4 +199,3 @@ review thresholds, payload logging, and feature flags.
 - Ephemeral Cloud Run state breaking demo continuity
 - Contract drift between frontend, API, MCP, and tools
 - Public synthetic demo being mistaken for a PHI-ready clinical system
-

@@ -78,15 +78,28 @@ def _wrap(text: str, width: int) -> list[str]:
     return lines
 
 
-def _draw_chart(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], values: list[float]) -> None:
+def _draw_chart(
+    draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], values: list[float]
+) -> None:
     """Draw a compact trend visualization inside the source page."""
 
     left, top, right, bottom = box
     draw.rectangle(box, outline="#90a4b8", width=2, fill="#f7fafc")
-    draw.text((left + 12, top + 8), "Longitudinal signal", fill="#0f172a", font=_font(18))
-    chart_left, chart_top, chart_right, chart_bottom = left + 40, top + 48, right - 24, bottom - 26
-    draw.line((chart_left, chart_bottom, chart_right, chart_bottom), fill="#64748b", width=2)
-    draw.line((chart_left, chart_top, chart_left, chart_bottom), fill="#64748b", width=2)
+    draw.text(
+        (left + 12, top + 8), "Longitudinal signal", fill="#0f172a", font=_font(18)
+    )
+    chart_left, chart_top, chart_right, chart_bottom = (
+        left + 40,
+        top + 48,
+        right - 24,
+        bottom - 26,
+    )
+    draw.line(
+        (chart_left, chart_bottom, chart_right, chart_bottom), fill="#64748b", width=2
+    )
+    draw.line(
+        (chart_left, chart_top, chart_left, chart_bottom), fill="#64748b", width=2
+    )
     high = max(values)
     low = min(values)
     span = max(0.1, high - low)
@@ -98,8 +111,15 @@ def _draw_chart(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], value
     draw.line(points, fill="#2563eb", width=4)
     for x, y in points:
         draw.ellipse((x - 4, y - 4, x + 4, y + 4), fill="#dc2626")
-    draw.text((chart_left, chart_bottom + 4), f"low {low}", fill="#475569", font=_font(13))
-    draw.text((chart_right - 72, chart_bottom + 4), f"high {high}", fill="#475569", font=_font(13))
+    draw.text(
+        (chart_left, chart_bottom + 4), f"low {low}", fill="#475569", font=_font(13)
+    )
+    draw.text(
+        (chart_right - 72, chart_bottom + 4),
+        f"high {high}",
+        fill="#475569",
+        font=_font(13),
+    )
 
 
 def build_sample(
@@ -114,10 +134,18 @@ def build_sample(
     """Create one extraction target with expected structured output."""
 
     provider_rows = providers or core.build_providers(seed, demo_platform)
-    profile = core.build_patient(index, seed, patient_prefix, anchor_date, 4, provider_rows, demo_platform)
+    profile = core.build_patient(
+        index, seed, patient_prefix, anchor_date, 4, provider_rows, demo_platform
+    )
     encounter = anchor_date - timedelta(days=7 + index)
-    lab_results = [result for panel in profile.get("panels", []) for result in panel.get("results", [])]
-    lab_components = rng.sample(lab_results, min(6, len(lab_results))) if lab_results else []
+    lab_results = [
+        result
+        for panel in profile.get("panels", [])
+        for result in panel.get("results", [])
+    ]
+    lab_components = (
+        rng.sample(lab_results, min(6, len(lab_results))) if lab_results else []
+    )
     fields = []
     for result in lab_components:
         value = result.get("value", "")
@@ -142,7 +170,19 @@ def build_sample(
         )
     if not fields:
         for metric, value in list(profile.get("key_metrics", {}).items())[:4]:
-            fields.append({"field_name": metric, "label": metric.replace("_", " ").title(), "panel": "Key metrics", "value": value, "unit": "", "referenceRange": "", "flag": "normal", "confidence": 0.9, "needs_review": False})
+            fields.append(
+                {
+                    "field_name": metric,
+                    "label": metric.replace("_", " ").title(),
+                    "panel": "Key metrics",
+                    "value": value,
+                    "unit": "",
+                    "referenceRange": "",
+                    "flag": "normal",
+                    "confidence": 0.9,
+                    "needs_review": False,
+                }
+            )
 
     first_numeric = _numeric_value(fields[0]["value"])
     trend_values = _series(first_numeric, 8, rng)
@@ -206,9 +246,19 @@ def _draw_patient_page(
     mono_font = _font(18)
 
     draw.rectangle((0, 0, 1500, 104), fill="#0f172a")
-    draw.text((36, 22), f"{tenant['org']} Enterprise Extraction Packet", fill="white", font=title_font)
+    draw.text(
+        (36, 22),
+        f"{tenant['org']} Enterprise Extraction Packet",
+        fill="white",
+        font=title_font,
+    )
     draw.text((1030, 28), "SYNTHETIC DEMO DATA", fill="#bfdbfe", font=body_font)
-    draw.text((1030, 62), f"{packet_id} | Page {page_number} of {packet_total}", fill="#cbd5e1", font=small_font)
+    draw.text(
+        (1030, 62),
+        f"{packet_id} | Page {page_number} of {packet_total}",
+        fill="#cbd5e1",
+        font=small_font,
+    )
 
     patient = sample["patient"]
     y = 132
@@ -222,27 +272,49 @@ def _draw_patient_page(
         draw.text((48, y), line, fill="#0f172a", font=body_font)
         y += 36
 
-    draw.rounded_rectangle((42, 292, 865, 746), radius=12, outline="#cbd5e1", width=2, fill="#ffffff")
-    draw.text((70, 318), "Clinician narrative / OCR target", fill="#1e3a8a", font=body_font)
+    draw.rounded_rectangle(
+        (42, 292, 865, 746), radius=12, outline="#cbd5e1", width=2, fill="#ffffff"
+    )
+    draw.text(
+        (70, 318), "Clinician narrative / OCR target", fill="#1e3a8a", font=body_font
+    )
     note_lines: list[str] = []
     for source_line in sample["note"].splitlines():
         note_lines.extend(_wrap(source_line, 76))
     for index, line in enumerate(note_lines[:12]):
         draw.text((75, 363 + index * 29), line, fill="#1f2937", font=small_font)
 
-    draw.rounded_rectangle((910, 292, 1450, 746), radius=12, outline="#cbd5e1", width=2, fill="#ffffff")
-    draw.text((940, 318), "Structured extraction target", fill="#1e3a8a", font=body_font)
+    draw.rounded_rectangle(
+        (910, 292, 1450, 746), radius=12, outline="#cbd5e1", width=2, fill="#ffffff"
+    )
+    draw.text(
+        (940, 318), "Structured extraction target", fill="#1e3a8a", font=body_font
+    )
     draw.line((930, 356, 1425, 356), fill="#94a3b8", width=2)
     draw.text((940, 370), "field", fill="#475569", font=mono_font)
     draw.text((1168, 370), "value", fill="#475569", font=mono_font)
     draw.text((1322, 370), "flag", fill="#475569", font=mono_font)
     for index, field in enumerate(sample["fields"][:6]):
         row_y = 411 + index * 49
-        draw.text((940, row_y), str(field["label"])[:20], fill="#0f172a", font=mono_font)
-        draw.text((1168, row_y), f"{field['value']} {field['unit']}", fill="#0f172a", font=mono_font)
-        draw.text((1322, row_y), str(field["flag"])[:10], fill="#b45309" if field["flag"] != "normal" else "#166534", font=mono_font)
+        draw.text(
+            (940, row_y), str(field["label"])[:20], fill="#0f172a", font=mono_font
+        )
+        draw.text(
+            (1168, row_y),
+            f"{field['value']} {field['unit']}",
+            fill="#0f172a",
+            font=mono_font,
+        )
+        draw.text(
+            (1322, row_y),
+            str(field["flag"])[:10],
+            fill="#b45309" if field["flag"] != "normal" else "#166534",
+            font=mono_font,
+        )
 
-    draw.rounded_rectangle((42, 770, 700, 1042), radius=12, outline="#cbd5e1", width=2, fill="#ffffff")
+    draw.rounded_rectangle(
+        (42, 770, 700, 1042), radius=12, outline="#cbd5e1", width=2, fill="#ffffff"
+    )
     draw.text((70, 797), "Cross-system context", fill="#1e3a8a", font=body_font)
     context_lines = [
         f"Care archetype: {patient['archetype']}",
@@ -257,14 +329,18 @@ def _draw_patient_page(
     return image
 
 
-def _write_packet(samples: list[dict[str, Any]], packet_path: Path, demo_platform: str, packet_id: str) -> None:
+def _write_packet(
+    samples: list[dict[str, Any]], packet_path: Path, demo_platform: str, packet_id: str
+) -> None:
     """Write a multi-page PDF packet with one patient page per sample."""
 
     pages = [
         _draw_patient_page(sample, demo_platform, packet_id, index, len(samples))
         for index, sample in enumerate(samples, 1)
     ]
-    pages[0].save(packet_path, "PDF", resolution=150.0, save_all=True, append_images=pages[1:])
+    pages[0].save(
+        packet_path, "PDF", resolution=150.0, save_all=True, append_images=pages[1:]
+    )
 
 
 def _attach_packet_artifacts(
@@ -282,7 +358,7 @@ def _attach_packet_artifacts(
     packets: list[dict[str, Any]] = []
 
     for packet_index, start in enumerate(range(0, len(samples), patients_per_file), 1):
-        packet_samples = samples[start:start + patients_per_file]
+        packet_samples = samples[start : start + patients_per_file]
         packet_id = f"PKT-EXT-{packet_index:04d}"
         packet_path = packet_dir / f"{packet_id}.pdf"
         _write_packet(packet_samples, packet_path, demo_platform, packet_id)
@@ -298,7 +374,9 @@ def _attach_packet_artifacts(
         )
         for page_number, sample in enumerate(packet_samples, 1):
             preview_path = image_dir / f"{sample['sample_id']}.png"
-            page = _draw_patient_page(sample, demo_platform, packet_id, page_number, len(packet_samples))
+            page = _draw_patient_page(
+                sample, demo_platform, packet_id, page_number, len(packet_samples)
+            )
             page.save(preview_path)
             sample["asset_path"] = str(packet_path)
             sample["preview_path"] = str(preview_path)
@@ -369,7 +447,9 @@ def _write_frontend_catalog(
         target_dir.mkdir(parents=True, exist_ok=True)
     for index, sample in enumerate(samples[:10], 1):
         preview_source = Path(sample["preview_path"])
-        public_path = f"/demo-data/extraction/{demo_platform}/images/{preview_source.name}"
+        public_path = (
+            f"/demo-data/extraction/{demo_platform}/images/{preview_source.name}"
+        )
         if target_dir:
             shutil.copy2(preview_source, target_dir / preview_source.name)
         packet_source = Path(sample["asset_path"])
@@ -394,10 +474,17 @@ def _write_frontend_catalog(
         )
 
     unique_patients = {sample["patient"]["patient_id"] for sample in samples}
-    review_count = sum(1 for sample in samples if sample["expected_agent_output"]["reviewRequired"])
+    review_count = sum(
+        1 for sample in samples if sample["expected_agent_output"]["reviewRequired"]
+    )
     field_total = max(1, sum(len(sample["fields"]) for sample in samples))
     avg_confidence = round(
-        sum(float(field["confidence"]) for sample in samples for field in sample["fields"]) / field_total,
+        sum(
+            float(field["confidence"])
+            for sample in samples
+            for field in sample["fields"]
+        )
+        / field_total,
         2,
     )
     packet_count = len(packets)
@@ -441,10 +528,42 @@ def _write_frontend_catalog(
             "failedRecords": 0,
         },
         "agentMonitoringSeed": [
-            {"pipeline": "extraction", "agent": "quality_assessor_agent", "runs": len(samples), "avgConfidence": min(0.99, avg_confidence + 0.02), "failureRate": 0.0, "reviewRate": round(review_count / max(1, len(samples)), 2), "avgDurationMs": 760},
-            {"pipeline": "extraction", "agent": "pdf_packet_parser_agent", "runs": packet_count, "avgConfidence": avg_confidence, "failureRate": 0.0, "reviewRate": round(review_count / max(1, len(samples)), 2), "avgDurationMs": 1360},
-            {"pipeline": "extraction", "agent": "vision_analyzer_agent", "runs": len(samples), "avgConfidence": max(0.72, avg_confidence - 0.03), "failureRate": 0.0, "reviewRate": round(review_count / max(1, len(samples)), 2), "avgDurationMs": 1610},
-            {"pipeline": "extraction", "agent": "clinical_review_gate_agent", "runs": review_count, "avgConfidence": 0.9, "failureRate": 0.0, "reviewRate": 1.0 if review_count else 0.0, "avgDurationMs": 460},
+            {
+                "pipeline": "extraction",
+                "agent": "quality_assessor_agent",
+                "runs": len(samples),
+                "avgConfidence": min(0.99, avg_confidence + 0.02),
+                "failureRate": 0.0,
+                "reviewRate": round(review_count / max(1, len(samples)), 2),
+                "avgDurationMs": 760,
+            },
+            {
+                "pipeline": "extraction",
+                "agent": "pdf_packet_parser_agent",
+                "runs": packet_count,
+                "avgConfidence": avg_confidence,
+                "failureRate": 0.0,
+                "reviewRate": round(review_count / max(1, len(samples)), 2),
+                "avgDurationMs": 1360,
+            },
+            {
+                "pipeline": "extraction",
+                "agent": "vision_analyzer_agent",
+                "runs": len(samples),
+                "avgConfidence": max(0.72, avg_confidence - 0.03),
+                "failureRate": 0.0,
+                "reviewRate": round(review_count / max(1, len(samples)), 2),
+                "avgDurationMs": 1610,
+            },
+            {
+                "pipeline": "extraction",
+                "agent": "clinical_review_gate_agent",
+                "runs": review_count,
+                "avgConfidence": 0.9,
+                "failureRate": 0.0,
+                "reviewRate": 1.0 if review_count else 0.0,
+                "avgDurationMs": 460,
+            },
         ],
     }
 
@@ -475,14 +594,32 @@ def generate(
         if not isinstance(template_data, list):
             template_data = [template_data]
         for index, item in enumerate(template_data, 1):
-            if isinstance(item, dict) and "patient" in item and item["patient"].get("patient_id"):
+            if (
+                isinstance(item, dict)
+                and "patient" in item
+                and item["patient"].get("patient_id")
+            ):
                 samples.append(_sample_from_template(item, index))
     else:
         for index in range(1, count + 1):
-            samples.append(build_sample(index, rng, demo_platform, patient_prefix, DEFAULT_ANCHOR_DATE, seed, providers))
+            samples.append(
+                build_sample(
+                    index,
+                    rng,
+                    demo_platform,
+                    patient_prefix,
+                    DEFAULT_ANCHOR_DATE,
+                    seed,
+                    providers,
+                )
+            )
 
-    packets = _attach_packet_artifacts(output, samples, demo_platform, patients_per_file)
-    frontend_contract = _write_frontend_catalog(samples, packets, demo_platform, frontend_public, patients_per_file)
+    packets = _attach_packet_artifacts(
+        output, samples, demo_platform, patients_per_file
+    )
+    frontend_contract = _write_frontend_catalog(
+        samples, packets, demo_platform, frontend_public, patients_per_file
+    )
     manifest = {
         "module": "image_extraction",
         "demo_platform": demo_platform,
@@ -500,22 +637,30 @@ def generate(
         "packets": packets,
         "samples": samples,
     }
-    (output / "app_manifest.json").write_text(json.dumps(frontend_contract, indent=2), encoding="utf-8")
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (output / "app_manifest.json").write_text(
+        json.dumps(frontend_contract, indent=2), encoding="utf-8"
+    )
+    (output / "manifest.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8"
+    )
     return manifest
 
 
 def main() -> None:
     """CLI entrypoint."""
 
-    parser = argparse.ArgumentParser(description="Generate enterprise extraction showcase packets.")
+    parser = argparse.ArgumentParser(
+        description="Generate enterprise extraction showcase packets."
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--count", type=int, default=48)
     parser.add_argument("--seed", type=int, default=240624)
     parser.add_argument("--template", type=Path, default=None)
     parser.add_argument("--demo-platform", default="primary")
     parser.add_argument("--frontend-public", type=Path, default=DEFAULT_FRONTEND_PUBLIC)
-    parser.add_argument("--patients-per-file", type=int, default=DEFAULT_PATIENTS_PER_FILE)
+    parser.add_argument(
+        "--patients-per-file", type=int, default=DEFAULT_PATIENTS_PER_FILE
+    )
     parser.add_argument("--patient-prefix", default="PT-D")
     args = parser.parse_args()
     manifest = generate(

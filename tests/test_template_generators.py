@@ -11,7 +11,7 @@ import pytest
 def test_database_generator_with_template(tmp_path: Path) -> None:
     """Database generator correctly parses template JSON and seeds SQLite tables."""
     from scripts.generate_database_showcase import generate
-    
+
     # Create a small template
     template_data = {
         "patients_core": [
@@ -27,7 +27,7 @@ def test_database_generator_with_template(tmp_path: Path) -> None:
                 "data_completeness_score": 0.90,
                 "open_tasks": 0,
                 "ai_review_status": "verified",
-                "extended_data": {"synthetic": True, "insurance": "Medicare"}
+                "extended_data": {"synthetic": True, "insurance": "Medicare"},
             }
         ],
         "sessions": [
@@ -41,32 +41,42 @@ def test_database_generator_with_template(tmp_path: Path) -> None:
                 "json_sync_status": "synced",
                 "relational_sync_status": "synced",
                 "vector_sync_status": "synced",
-                "audit_status": "recorded"
+                "audit_status": "recorded",
             }
-        ]
+        ],
     }
-    
+
     template_file = tmp_path / "db_template.json"
     template_file.write_text(json.dumps(template_data), encoding="utf-8")
-    
+
     output = tmp_path / "database"
     db_path = output / "clinical_showcase.db"
-    
+
     manifest = generate(
-        db_path, output, patient_count=1, seed=42, replace=True,
-        years=1, anchor_date=date(2026, 7, 5), template_path=template_file
+        db_path,
+        output,
+        patient_count=1,
+        seed=42,
+        replace=True,
+        years=1,
+        anchor_date=date(2026, 7, 5),
+        template_path=template_file,
     )
-    
+
     assert manifest["row_counts"]["patients_core"] == 1
     assert manifest["row_counts"]["sessions"] == 1
     assert manifest["frontend_contract"]["dashboardSeed"]["databaseRows"] >= 2
     assert manifest["frontend_contract"]["storageSeed"]["relationalRows"] >= 1
     assert (output / "app_manifest.json").is_file()
-    
+
     with sqlite3.connect(db_path) as conn:
-        patient_row = conn.execute("SELECT name, risk_level, extended_data FROM patients_core WHERE patient_id = 'PT-TEST1'").fetchone()
-        session_row = conn.execute("SELECT session_date, extraction_confidence FROM sessions WHERE session_id = 'SES-TEST1'").fetchone()
-        
+        patient_row = conn.execute(
+            "SELECT name, risk_level, extended_data FROM patients_core WHERE patient_id = 'PT-TEST1'"
+        ).fetchone()
+        session_row = conn.execute(
+            "SELECT session_date, extraction_confidence FROM sessions WHERE session_id = 'SES-TEST1'"
+        ).fetchone()
+
     assert patient_row[0] == "Test Patient"
     assert patient_row[1] == "stable"
     assert json.loads(patient_row[2])["insurance"] == "Medicare"
@@ -78,7 +88,7 @@ def test_extraction_generator_with_template(tmp_path: Path) -> None:
     """Extraction generator renders custom intake sheets and outputs ground truth from template."""
     pytest.importorskip("PIL")
     from scripts.generate_extraction_showcase import generate
-    
+
     template_data = [
         {
             "patient": {
@@ -88,7 +98,7 @@ def test_extraction_generator_with_template(tmp_path: Path) -> None:
                 "age": 45,
                 "sex": "Female",
                 "diagnosis": "Aortic stenosis",
-                "clinician": "Dr. Elena Park"
+                "clinician": "Dr. Elena Park",
             },
             "encounter_date": "2026-07-05",
             "note": "Aortic valve assessment.",
@@ -98,18 +108,20 @@ def test_extraction_generator_with_template(tmp_path: Path) -> None:
                     "value": 2.5,
                     "unit": "cm",
                     "confidence": 0.98,
-                    "needs_review": False
+                    "needs_review": False,
                 }
             ],
-            "trend_values": [2.1, 2.3, 2.5]
+            "trend_values": [2.1, 2.3, 2.5],
         }
     ]
-    
+
     template_file = tmp_path / "extraction_template.json"
     template_file.write_text(json.dumps(template_data), encoding="utf-8")
-    
-    manifest = generate(tmp_path / "extraction", count=1, seed=42, template_path=template_file)
-    
+
+    manifest = generate(
+        tmp_path / "extraction", count=1, seed=42, template_path=template_file
+    )
+
     assert manifest["sample_count"] == 1
     assert manifest["packet_count"] == 1
     assert manifest["patients_per_file"] == 5
@@ -131,7 +143,7 @@ def test_multimodal_generator_with_template(tmp_path: Path) -> None:
     """Multimodal generator builds bundles, custom PDFs, and knowledge-base documents from template."""
     pytest.importorskip("matplotlib")
     from scripts.generate_multimodal_patient_showcase import generate
-    
+
     template_data = [
         {
             "patient": {
@@ -141,7 +153,7 @@ def test_multimodal_generator_with_template(tmp_path: Path) -> None:
                 "sex": "Male",
                 "risk_level": "high",
                 "primary_diagnosis": "Retinopathy",
-                "assigned_clinician": "Dr. Elena Park"
+                "assigned_clinician": "Dr. Elena Park",
             },
             "labs": [
                 {
@@ -151,7 +163,7 @@ def test_multimodal_generator_with_template(tmp_path: Path) -> None:
                     "value": "8.4",
                     "unit": "%",
                     "reference_range": "<5.7",
-                    "flag": "high"
+                    "flag": "high",
                 }
             ],
             "notes": [
@@ -160,24 +172,31 @@ def test_multimodal_generator_with_template(tmp_path: Path) -> None:
                     "date": "2026-07-01",
                     "author": "Dr. Elena Park",
                     "type": "Consult",
-                    "text": "Glycemic control progress."
+                    "text": "Glycemic control progress.",
                 }
             ],
             "qa_prompts": [
                 {
                     "question": "What is the status of David?",
                     "expected_sources": ["clinical_notes"],
-                    "expected_output": "The patient is David Okafor."
+                    "expected_output": "The patient is David Okafor.",
                 }
-            ]
+            ],
         }
     ]
-    
+
     template_file = tmp_path / "multimodal_template.json"
     template_file.write_text(json.dumps(template_data), encoding="utf-8")
-    
-    manifest = generate(tmp_path / "multimodal", bundle_count=1, days=10, comparators=2, seed=42, template_path=template_file)
-    
+
+    manifest = generate(
+        tmp_path / "multimodal",
+        bundle_count=1,
+        days=10,
+        comparators=2,
+        seed=42,
+        template_path=template_file,
+    )
+
     assert manifest["bundle_count"] == 1
     assert manifest["frontend_contract"]["dashboardSeed"]["patients"] == 1
     assert manifest["frontend_contract"]["dashboardSeed"]["storedFiles"] >= 2
@@ -185,7 +204,7 @@ def test_multimodal_generator_with_template(tmp_path: Path) -> None:
     assert (tmp_path / "multimodal" / "app_manifest.json").is_file()
     bundle_path = Path(manifest["bundles"][0]["path"])
     bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
-    
+
     assert bundle["patient"]["name"] == "David Okafor"
     assert bundle["labs"][0]["metric"] == "HbA1c"
     assert bundle["labs"][0]["value"] == "8.4"

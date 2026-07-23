@@ -40,7 +40,9 @@ def build_app() -> App:
             overlap_size=5,
         ),
         # Day 2b: required for the human-in-the-loop approval pause/resume.
-        resumability_config=ResumabilityConfig(is_resumable=config["enable_resumability"]),
+        resumability_config=ResumabilityConfig(
+            is_resumable=config["enable_resumability"]
+        ),
     )
 
 
