@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import shutil
 import sys
 from datetime import date
@@ -20,7 +19,9 @@ from scripts import generate_extraction_showcase
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate a small cohort and documents for live mode testing.")
+    parser = argparse.ArgumentParser(
+        description="Generate a small cohort and documents for live mode testing."
+    )
     parser.add_argument("--db-path", type=Path, default=PROJECT_ROOT / "clinical.db")
     parser.add_argument("--uploads-dir", type=Path, default=PROJECT_ROOT / "uploads")
     parser.add_argument("--patient-count", type=int, default=5)
@@ -33,7 +34,9 @@ def main() -> None:
         capstone_db.init_db(seed=False)
 
         # 1. Seed database relational tables with a small cohort of 5 patients
-        print(f"Seeding relational cohort of {args.patient_count} patients into database...")
+        print(
+            f"Seeding relational cohort of {args.patient_count} patients into database..."
+        )
         db_output = PROJECT_ROOT / "showcase_data" / "live_test" / "database"
         db_manifest = generate_database_showcase.generate(
             db_path=args.db_path,
@@ -43,9 +46,11 @@ def main() -> None:
             replace=True,
             years=4,
             anchor_date=date(2026, 7, 5),
-            patient_prefix="PT-L"  # PT-L for Live
+            patient_prefix="PT-L",  # PT-L for Live
         )
-        print(f"Database seeded successfully. Total rows inserted: {db_manifest['total_rows']}")
+        print(
+            f"Database seeded successfully. Total rows inserted: {db_manifest['total_rows']}"
+        )
 
         # 2. Generate small extraction PDF packets and PNG preview screenshots
         print("Generating small PDF packets and PNG previews...")
@@ -56,16 +61,20 @@ def main() -> None:
             seed=args.seed,
             demo_platform="primary",
             patients_per_file=3,
-            patient_prefix="PT-L"
+            patient_prefix="PT-L",
         )
-        print(f"Generated {ext_manifest['packet_count']} PDF packets and {ext_manifest['sample_count']} patient preview PNGs.")
+        print(
+            f"Generated {ext_manifest['packet_count']} PDF packets and {ext_manifest['sample_count']} patient preview PNGs."
+        )
 
         # Ensure the uploads directory exists
         args.uploads_dir.mkdir(parents=True, exist_ok=True)
 
         # 3. Copy files to uploads directory and run ETL document_processor
-        print("Ingesting PDF packets and PNG preview screenshots into document store (ETL)...")
-        
+        print(
+            "Ingesting PDF packets and PNG preview screenshots into document store (ETL)..."
+        )
+
         # Keep track of ingested documents
         ingested = []
 
@@ -74,10 +83,12 @@ def main() -> None:
             packet_path = Path(pkt["packet_path"])
             dest_packet_path = args.uploads_dir / packet_path.name
             shutil.copy2(packet_path, dest_packet_path)
-            
+
             # Run ETL process_document using the first patient ID in the packet
             patient_id = pkt["patient_ids"][0] if pkt["patient_ids"] else "PT-L0001"
-            print(f"Running ETL on PDF packet: {dest_packet_path.name} for patient {patient_id}...")
+            print(
+                f"Running ETL on PDF packet: {dest_packet_path.name} for patient {patient_id}..."
+            )
             try:
                 res = process_document(str(dest_packet_path), patient_id)
                 if "error" not in res:
@@ -86,16 +97,19 @@ def main() -> None:
                 else:
                     print(f"  -> Error: {res['error']}")
             except Exception as e:
-                print(f"  -> Warning: process_document failed ({e}). Falling back to manual registration.")
+                print(
+                    f"  -> Warning: process_document failed ({e}). Falling back to manual registration."
+                )
                 from capstone_agent.document_processor import detect_content_type
                 import uuid
+
                 doc_id = f"doc_{uuid.uuid4().hex[:12]}"
                 filename = dest_packet_path.name
                 ct = detect_content_type(str(dest_packet_path))
-                
+
                 # Fetch note from manifest/sample to make it realistic
                 mock_text = f"Mock clinical report for patient {patient_id}."
-                
+
                 capstone_db.store_document(
                     document_id=doc_id,
                     filename=filename,
@@ -104,7 +118,7 @@ def main() -> None:
                     raw_text=mock_text,
                     page_count=3,
                     patient_id=patient_id,
-                    gemini_analysis="Mock clinical analysis preview."
+                    gemini_analysis="Mock clinical analysis preview.",
                 )
                 chunks = [{"index": 0, "text": mock_text, "page": 1}]
                 capstone_db.store_document_chunks(doc_id, chunks, patient_id)
@@ -116,9 +130,11 @@ def main() -> None:
             preview_path = Path(sample["preview_path"])
             dest_preview_path = args.uploads_dir / preview_path.name
             shutil.copy2(preview_path, dest_preview_path)
-            
+
             patient_id = sample["patient"]["patient_id"]
-            print(f"Running ETL on PNG preview screenshot: {dest_preview_path.name} for patient {patient_id}...")
+            print(
+                f"Running ETL on PNG preview screenshot: {dest_preview_path.name} for patient {patient_id}..."
+            )
             try:
                 res = process_document(str(dest_preview_path), patient_id)
                 if "error" not in res:
@@ -127,15 +143,18 @@ def main() -> None:
                 else:
                     print(f"  -> Error: {res['error']}")
             except Exception as e:
-                print(f"  -> Warning: process_document failed ({e}). Falling back to manual registration.")
+                print(
+                    f"  -> Warning: process_document failed ({e}). Falling back to manual registration."
+                )
                 from capstone_agent.document_processor import detect_content_type
                 import uuid
+
                 doc_id = f"doc_{uuid.uuid4().hex[:12]}"
                 filename = dest_preview_path.name
                 ct = detect_content_type(str(dest_preview_path))
-                
+
                 mock_text = f"Mock OCR and clinical text preview for patient {patient_id} screenshot {filename}."
-                
+
                 capstone_db.store_document(
                     document_id=doc_id,
                     filename=filename,
@@ -144,7 +163,7 @@ def main() -> None:
                     raw_text=mock_text,
                     page_count=1,
                     patient_id=patient_id,
-                    gemini_analysis="Mock clinical analysis preview."
+                    gemini_analysis="Mock clinical analysis preview.",
                 )
                 chunks = [{"index": 0, "text": mock_text, "page": 1}]
                 capstone_db.store_document_chunks(doc_id, chunks, patient_id)

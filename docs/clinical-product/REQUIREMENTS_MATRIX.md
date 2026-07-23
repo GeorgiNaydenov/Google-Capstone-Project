@@ -46,9 +46,9 @@
 | 6 | Patient Queue | Partial | P0 | Filters do not filter rows; assignment/action flow is absent. | Filter, sort, assign, act, and exact-patient navigation work. |
 | 7 | Patient Profile | Partial | P0 | Tabs change labels only; several patient panels and copilot behavior are missing. | Every tab renders patient-scoped content; copilot returns cited evidence. |
 | 8 | Session Detail | Partial | P0 | JSON, relational, vector previews and review persistence are missing. | Artifacts are session-scoped; edit/approve updates receipts, timeline, and audit. |
-| 9 | Image Extraction Agent | Partial | P0 | Upload is decorative; run is timer-driven; review and storage actions are inert. | Upload, visible steps, editable extraction, review decisions, receipts, audit, and timeline persist. |
-| 10 | Multimodal Patient Q&A | Partial | P0 | Question/filters are static; citations cannot open sources; result is timer-driven. | Scoped question returns cited structured/image evidence and opens the correct source. |
-| 11 | Database Intelligence | Partial | P0 | No editable question, SQL preview boundary, safety explanation, real execution, or export. | Generate -> preview/safety -> explicit execute -> table/chart/CSV/history/audit succeeds. |
+| 9 | Image Extraction Agent | Implemented | P0 | Packet and selected-patient lineage are explicit; review and storage transitions persist. | Upload, visible steps, editable extraction, review decisions, receipts, audit, and timeline persist. |
+| 10 | Multimodal Patient Q&A | Implemented | P0 | Backend-ranked text and renderable image evidence return with clinician-oriented answer sections and restorable history. | Scoped question returns cited structured/image evidence and opens the correct source. |
+| 11 | Database Intelligence | Implemented | P0 | Read-only SQL preview, explicit execution, rows, chart, prevalence, export, history, and audit share one result package. | Generate -> preview/safety -> explicit execute -> table/chart/CSV/history/audit succeeds. |
 | 12 | Clinical Inbox | Partial | P0 | Selected context is not linked; verify/reject is inert. | Selection scopes context; decision updates review queues and audit. |
 | 13 | Admin Dashboard | Partial | P1 | Required KPIs, user activity, compliance, and drill-down are incomplete. | All requested panels reconcile with runtime records and drill down. |
 | 14 | Users and Roles | Partial | P1 | Roles, assignments, access scope, audit history, and enforcement are incomplete. | All five roles exist; multi-role changes persist and API permissions enforce them. |
@@ -60,9 +60,9 @@
 | ID | Workflow | Status | Required end-to-end proof |
 |---|---|---|---|
 | W01 | Natural and manual orchestration | Partial | Persisted plan shows intent, workflow, agents, sources, permissions, expected output, and confirmation. Both routing modes create the same run model. |
-| W02 | Session image extraction | Missing | Upload -> quality/vision/OCR/structuring/validation -> review -> JSON/relational/vector writes -> audit -> timeline. |
-| W03 | Multimodal patient Q&A | Missing | Question -> scoped retrieval -> cited answer -> supporting image/chunk -> source navigation -> audit. |
-| W04 | Database intelligence | Missing | Question -> generated SQL -> safety result and preview -> explicit execution -> table/chart/CSV -> history/audit. |
+| W02 | Session image extraction | Implemented | Upload -> quality/vision/OCR/structuring/validation -> review -> JSON/relational/vector writes -> audit -> timeline. |
+| W03 | Multimodal patient Q&A | Implemented | Question -> scoped retrieval -> cited answer -> supporting image/chunk -> source navigation -> audit. |
+| W04 | Database intelligence | Implemented | Question -> generated SQL -> safety result and preview -> explicit execution -> table/chart/CSV -> history/audit. |
 
 ## Demo Data Contract
 
@@ -105,4 +105,3 @@ The production frontend must include the brief's component inventory:
 5. D6: role scope and context continuity.
 6. Complete remaining screen breadth and admin operations.
 7. D8: API, browser, accessibility, visual, and deployment verification.
-

@@ -21,7 +21,6 @@ Tool groups:
 import json
 import hashlib
 import time
-from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import ValidationError
@@ -96,10 +95,19 @@ def _persist_extraction(
                 message="Approved clinician review receipt required before persistence",
             ).to_dict()
         else:
-            receipt = _receipt(target, validated.patient_id, validated.session_id, validated.structured_data)
+            receipt = _receipt(
+                target,
+                validated.patient_id,
+                validated.session_id,
+                validated.structured_data,
+            )
             if target == "relational":
                 try:
-                    fields = json.loads(validated.structured_data) if isinstance(validated.structured_data, str) else validated.structured_data
+                    fields = (
+                        json.loads(validated.structured_data)
+                        if isinstance(validated.structured_data, str)
+                        else validated.structured_data
+                    )
                     if isinstance(fields, dict):
                         fields = fields.get("fields", fields)
                     if isinstance(fields, dict):
@@ -109,21 +117,34 @@ def _persist_extraction(
                         fields = [
                             {
                                 "field_name": key,
-                                "value": value if isinstance(value, str) else json.dumps(value),
+                                "value": value
+                                if isinstance(value, str)
+                                else json.dumps(value),
                                 "confidence": 1.0,
                             }
                             for key, value in fields.items()
                         ]
                     if not isinstance(fields, list):
                         fields = [fields]
-                    db_result = database.store_extraction_fields(validated.session_id, validated.patient_id, fields)
+                    db_result = database.store_extraction_fields(
+                        validated.session_id, validated.patient_id, fields
+                    )
                 except (json.JSONDecodeError, TypeError):
                     db_result = {"rows_inserted": 0}
             elif target == "vector":
                 from .document_processor import chunk_text
+
                 try:
-                    data = json.loads(validated.structured_data) if isinstance(validated.structured_data, str) else validated.structured_data
-                    text_content = json.dumps(data) if isinstance(data, (dict, list)) else str(data)
+                    data = (
+                        json.loads(validated.structured_data)
+                        if isinstance(validated.structured_data, str)
+                        else validated.structured_data
+                    )
+                    text_content = (
+                        json.dumps(data)
+                        if isinstance(data, (dict, list))
+                        else str(data)
+                    )
                 except (json.JSONDecodeError, TypeError):
                     text_content = str(validated.structured_data)
                 chunks = chunk_text(text_content)
@@ -137,23 +158,30 @@ def _persist_extraction(
                     page_count=1,
                     patient_id=validated.patient_id,
                 )
-                chunk_dicts = [{"index": c["index"], "text": c["text"], "page": None} for c in chunks]
-                chunk_count = database.store_document_chunks(doc_id, chunk_dicts, validated.patient_id)
+                chunk_dicts = [
+                    {"index": c["index"], "text": c["text"], "page": None}
+                    for c in chunks
+                ]
+                chunk_count = database.store_document_chunks(
+                    doc_id, chunk_dicts, validated.patient_id
+                )
                 # Semantic index: embed the approved extraction so Q&A finds it
                 # by meaning, not just keywords. Best-effort — without Vertex
                 # credentials the keyword chunks above still serve retrieval.
                 embedded = 0
                 try:
-                    embedded = vector_store.index_chunks([
-                        {
-                            "chunk_id": f"doc-{doc_id}-{c['index']}",
-                            "patient_id": validated.patient_id,
-                            "source_type": "document",
-                            "source_id": doc_id,
-                            "text": c["text"],
-                        }
-                        for c in chunks
-                    ])
+                    embedded = vector_store.index_chunks(
+                        [
+                            {
+                                "chunk_id": f"doc-{doc_id}-{c['index']}",
+                                "patient_id": validated.patient_id,
+                                "source_type": "document",
+                                "source_id": doc_id,
+                                "text": c["text"],
+                            }
+                            for c in chunks
+                        ]
+                    )
                 except Exception:
                     embedded = 0
                 db_result = {"chunks_stored": chunk_count, "chunks_embedded": embedded}
@@ -172,16 +200,24 @@ def _persist_extraction(
                 },
             ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="PERSISTENCE_ERROR", message=str(e)).to_dict()
-    log_tool_call(tool_name, {"patient_id": patient_id, "session_id": session_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        tool_name,
+        {"patient_id": patient_id, "session_id": session_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
 # ============================================================================
 # 0. DOCUMENT UPLOAD & SEARCH TOOLS
 # ============================================================================
+
 
 def upload_document(file_path: str, patient_id: str = "") -> dict[str, Any]:
     """Upload and process a document (PDF, image, or text file).
@@ -201,6 +237,7 @@ def upload_document(file_path: str, patient_id: str = "") -> dict[str, Any]:
     try:
         validated = DocumentUploadInput(file_path=file_path, patient_id=patient_id)
         from .document_processor import process_document
+
         result_data = process_document(validated.file_path, validated.patient_id)
 
         if result_data.get("error"):
@@ -210,18 +247,29 @@ def upload_document(file_path: str, patient_id: str = "") -> dict[str, Any]:
             ).to_dict()
         else:
             result = ToolResponse(
-                message=result_data.get("message", f"Document processed: {result_data.get('filename', '')}"),
+                message=result_data.get(
+                    "message", f"Document processed: {result_data.get('filename', '')}"
+                ),
                 data=result_data,
             ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="UPLOAD_ERROR", message=str(e)).to_dict()
-    log_tool_call("upload_document", {"file_path": file_path, "patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "upload_document",
+        {"file_path": file_path, "patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
-def search_documents(query: str, patient_id: str = "", limit: int = 20) -> dict[str, Any]:
+def search_documents(
+    query: str, patient_id: str = "", limit: int = 20
+) -> dict[str, Any]:
     """Search across all uploaded documents and clinical notes.
 
     Performs full-text search across document chunks and clinical notes
@@ -239,7 +287,9 @@ def search_documents(query: str, patient_id: str = "", limit: int = 20) -> dict[
     start = time.perf_counter()
     try:
         validated = DocumentSearchInput(query=query, patient_id=patient_id, limit=limit)
-        results = database.search_documents(validated.query, validated.patient_id, validated.limit)
+        results = database.search_documents(
+            validated.query, validated.patient_id, validated.limit
+        )
 
         result = ToolResponse(
             message=f"Found {len(results)} results for '{validated.query}'",
@@ -251,10 +301,17 @@ def search_documents(query: str, patient_id: str = "", limit: int = 20) -> dict[
             },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="SEARCH_ERROR", message=str(e)).to_dict()
-    log_tool_call("search_documents", {"query": query, "patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "search_documents",
+        {"query": query, "patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -282,10 +339,17 @@ def list_uploaded_documents(patient_id: str = "", limit: int = 50) -> dict[str, 
             data={"documents": docs, "total": len(docs)},
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="LIST_ERROR", message=str(e)).to_dict()
-    log_tool_call("list_uploaded_documents", {"patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "list_uploaded_documents",
+        {"patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -293,7 +357,10 @@ def list_uploaded_documents(patient_id: str = "", limit: int = 50) -> dict[str, 
 # 1. IMAGE EXTRACTION PIPELINE TOOLS
 # ============================================================================
 
-def extract_clinical_text(image_uri: str, patient_id: str, session_id: str) -> dict[str, Any]:
+
+def extract_clinical_text(
+    image_uri: str, patient_id: str, session_id: str
+) -> dict[str, Any]:
     """Extract text from a clinical document or image using real processing.
 
     For local file paths: uses PyMuPDF (PDF) or Gemini Vision (images).
@@ -310,17 +377,25 @@ def extract_clinical_text(image_uri: str, patient_id: str, session_id: str) -> d
     """
     start = time.perf_counter()
     try:
-        validated = OcrInput(image_uri=image_uri, patient_id=patient_id, session_id=session_id)
-        receipt = _receipt("ocr", validated.patient_id, validated.session_id, validated.image_uri)
+        validated = OcrInput(
+            image_uri=image_uri, patient_id=patient_id, session_id=session_id
+        )
+        receipt = _receipt(
+            "ocr", validated.patient_id, validated.session_id, validated.image_uri
+        )
 
         from pathlib import Path
+
         local_path = Path(validated.image_uri)
 
         if local_path.exists():
             from .document_processor import process_document
+
             proc_result = process_document(str(local_path), validated.patient_id)
             if proc_result.get("error"):
-                result = ToolError(error_code="OCR_ERROR", message=proc_result["error"]).to_dict()
+                result = ToolError(
+                    error_code="OCR_ERROR", message=proc_result["error"]
+                ).to_dict()
             else:
                 result = ToolResponse(
                     message=f"Extracted text from {proc_result.get('filename', '')}",
@@ -370,10 +445,17 @@ def extract_clinical_text(image_uri: str, patient_id: str, session_id: str) -> d
                     },
                 ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="OCR_ERROR", message=str(e)).to_dict()
-    log_tool_call("extract_clinical_text", {"patient_id": patient_id, "session_id": session_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "extract_clinical_text",
+        {"patient_id": patient_id, "session_id": session_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -403,7 +485,13 @@ def transition_extraction_review(
             ).to_dict()
         else:
             new_status = "approved" if validated.action == "approve" else "rejected"
-            receipt = _receipt(f"review-{new_status}", validated.patient_id, validated.session_id, new_status, validated.reviewer_id)
+            receipt = _receipt(
+                f"review-{new_status}",
+                validated.patient_id,
+                validated.session_id,
+                new_status,
+                validated.reviewer_id,
+            )
             result = ToolResponse(
                 message=f"Extraction review {new_status}",
                 data={
@@ -417,10 +505,19 @@ def transition_extraction_review(
                 },
             ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
-        result = ToolError(error_code="REVIEW_TRANSITION_ERROR", message=str(e)).to_dict()
-    log_tool_call("transition_extraction_review", {"patient_id": patient_id, "session_id": session_id, "action": action}, result, (time.perf_counter() - start) * 1000)
+        result = ToolError(
+            error_code="REVIEW_TRANSITION_ERROR", message=str(e)
+        ).to_dict()
+    log_tool_call(
+        "transition_extraction_review",
+        {"patient_id": patient_id, "session_id": session_id, "action": action},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -428,14 +525,19 @@ def persist_extraction_relational(
     patient_id: str, session_id: str, structured_data: str, review_receipt: str
 ) -> dict[str, Any]:
     """Persist an approved extraction to the relational clinical store."""
-    return _persist_extraction("relational", patient_id, session_id, structured_data, review_receipt)
+    return _persist_extraction(
+        "relational", patient_id, session_id, structured_data, review_receipt
+    )
 
 
 def persist_extraction_vector(
     patient_id: str, session_id: str, structured_data: str, review_receipt: str
 ) -> dict[str, Any]:
     """Persist an approved extraction to the clinical vector index."""
-    return _persist_extraction("vector", patient_id, session_id, structured_data, review_receipt)
+    return _persist_extraction(
+        "vector", patient_id, session_id, structured_data, review_receipt
+    )
+
 
 def assess_image_quality(image_uri: str, patient_id: str) -> dict[str, Any]:
     """Assess clinical image quality before analysis.
@@ -457,6 +559,7 @@ def assess_image_quality(image_uri: str, patient_id: str) -> dict[str, Any]:
         validated = ImageQualityInput(image_uri=image_uri, patient_id=patient_id)
 
         from pathlib import Path
+
         local_path = Path(validated.image_uri)
 
         if local_path.exists() and local_path.suffix.lower() == ".pdf":
@@ -465,9 +568,15 @@ def assess_image_quality(image_uri: str, patient_id: str) -> dict[str, Any]:
             result = ToolResponse(
                 message="Quality PASS: text-based document, resolution checks do not apply",
                 data={
-                    "passed": True, "quality_score": 1.0, "resolution": "n/a (document)",
-                    "modality": "document", "contrast": "n/a", "artifacts": "n/a",
-                    "dicom_compliant": False, "patient_id": validated.patient_id, "image_uri": validated.image_uri,
+                    "passed": True,
+                    "quality_score": 1.0,
+                    "resolution": "n/a (document)",
+                    "modality": "document",
+                    "contrast": "n/a",
+                    "artifacts": "n/a",
+                    "dicom_compliant": False,
+                    "patient_id": validated.patient_id,
+                    "image_uri": validated.image_uri,
                 },
             ).to_dict()
         elif local_path.exists():
@@ -514,10 +623,17 @@ def assess_image_quality(image_uri: str, patient_id: str) -> dict[str, Any]:
                     },
                 ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="QUALITY_CHECK_ERROR", message=str(e)).to_dict()
-    log_tool_call("assess_image_quality", {"image_uri": image_uri, "patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "assess_image_quality",
+        {"image_uri": image_uri, "patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -537,13 +653,25 @@ def analyze_clinical_image(image_uri: str, quality_report: str) -> dict[str, Any
     """
     start = time.perf_counter()
     try:
-        validated = ClinicalImageInput(image_uri=image_uri, quality_report=quality_report)
+        validated = ClinicalImageInput(
+            image_uri=image_uri, quality_report=quality_report
+        )
 
         from pathlib import Path
+
         local_path = Path(validated.image_uri)
 
-        if local_path.exists() and local_path.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".tiff", ".bmp"):
+        if local_path.exists() and local_path.suffix.lower() in (
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".webp",
+            ".tiff",
+            ".bmp",
+        ):
             from .document_processor import extract_text_from_image
+
             vision_result = extract_text_from_image(str(local_path))
             result = ToolResponse(
                 message=f"Gemini Vision analysis complete for {local_path.name}",
@@ -563,7 +691,7 @@ def analyze_clinical_image(image_uri: str, quality_report: str) -> dict[str, Any
             doc = database.get_document(validated.image_uri)
             if doc and doc.get("gemini_analysis"):
                 result = ToolResponse(
-                    message=f"Retrieved stored Gemini analysis",
+                    message="Retrieved stored Gemini analysis",
                     data={
                         "image_uri": validated.image_uri,
                         "modality": "From stored analysis",
@@ -589,14 +717,23 @@ def analyze_clinical_image(image_uri: str, quality_report: str) -> dict[str, Any
                     },
                 ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="VISION_ERROR", message=str(e)).to_dict()
-    log_tool_call("analyze_clinical_image", {"image_uri": image_uri}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "analyze_clinical_image",
+        {"image_uri": image_uri},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
-def structure_clinical_findings(vision_findings: str, patient_id: str) -> dict[str, Any]:
+def structure_clinical_findings(
+    vision_findings: str, patient_id: str
+) -> dict[str, Any]:
     """Structure clinical findings using Gemini for ontology mapping.
 
     Sends vision/extraction findings to Gemini to produce structured
@@ -612,13 +749,17 @@ def structure_clinical_findings(vision_findings: str, patient_id: str) -> dict[s
     """
     start = time.perf_counter()
     try:
-        validated = StructuringInput(vision_findings=vision_findings, patient_id=patient_id)
+        validated = StructuringInput(
+            vision_findings=vision_findings, patient_id=patient_id
+        )
 
         from .config import get_config
+
         config = get_config()
 
         if config["gemini_enabled"] and validated.vision_findings.strip():
             from .document_processor import analyze_with_gemini
+
             structuring_prompt = (
                 f"Structure these clinical findings into discrete fields. "
                 f"For each field provide: field_name, value, confidence (0.0-1.0), "
@@ -643,7 +784,11 @@ def structure_clinical_findings(vision_findings: str, patient_id: str) -> dict[s
             if sessions:
                 latest = sessions[0]
                 fields = latest.get("extracted_fields", [])
-                review_items = [f["field_name"] for f in fields if isinstance(f, dict) and f.get("confidence", 1.0) < 0.80]
+                review_items = [
+                    f["field_name"]
+                    for f in fields
+                    if isinstance(f, dict) and f.get("confidence", 1.0) < 0.80
+                ]
                 result = ToolResponse(
                     message=f"Structured {len(fields)} clinical fields for {validated.patient_id}",
                     data={
@@ -651,20 +796,34 @@ def structure_clinical_findings(vision_findings: str, patient_id: str) -> dict[s
                         "session_id": latest.get("session_id", ""),
                         "fields": fields,
                         "review_items": review_items,
-                        "pipeline_status": "needs_review" if review_items else "complete",
+                        "pipeline_status": "needs_review"
+                        if review_items
+                        else "complete",
                     },
                 ).to_dict()
             else:
-                result = ToolError(error_code="NO_DATA", message=f"No data to structure for {validated.patient_id}").to_dict()
+                result = ToolError(
+                    error_code="NO_DATA",
+                    message=f"No data to structure for {validated.patient_id}",
+                ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="STRUCTURING_ERROR", message=str(e)).to_dict()
-    log_tool_call("structure_clinical_findings", {"patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "structure_clinical_findings",
+        {"patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
-def store_to_gcs(patient_id: str, session_id: str, data: str, content_type: str = "application/json") -> dict[str, Any]:
+def store_to_gcs(
+    patient_id: str, session_id: str, data: str, content_type: str = "application/json"
+) -> dict[str, Any]:
     """Store processed data to Google Cloud Storage.
 
     Persists extracted JSON, processed images, or structured results
@@ -681,9 +840,17 @@ def store_to_gcs(patient_id: str, session_id: str, data: str, content_type: str 
     """
     start = time.perf_counter()
     try:
-        validated = GcsStoreInput(patient_id=patient_id, session_id=session_id, data=data, content_type=content_type)
+        validated = GcsStoreInput(
+            patient_id=patient_id,
+            session_id=session_id,
+            data=data,
+            content_type=content_type,
+        )
         storage_result = database.store_document_to_local(
-            validated.patient_id, validated.session_id, validated.data, validated.content_type,
+            validated.patient_id,
+            validated.session_id,
+            validated.data,
+            validated.content_type,
         )
         result = ToolResponse(
             message=f"Stored to {storage_result['file_path']}",
@@ -695,10 +862,17 @@ def store_to_gcs(patient_id: str, session_id: str, data: str, content_type: str 
             },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="GCS_STORE_ERROR", message=str(e)).to_dict()
-    log_tool_call("store_to_gcs", {"patient_id": patient_id, "session_id": session_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "store_to_gcs",
+        {"patient_id": patient_id, "session_id": session_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -718,22 +892,37 @@ def flag_for_review(field_name: str, value: str, confidence: float) -> dict[str,
     """
     start = time.perf_counter()
     try:
-        validated = ReviewFlagInput(field_name=field_name, value=value, confidence=confidence)
+        validated = ReviewFlagInput(
+            field_name=field_name, value=value, confidence=confidence
+        )
         result = ToolResponse(
             message=f"Flagged '{validated.field_name}' for review (confidence: {validated.confidence:.0%})",
-            data={"field_name": validated.field_name, "value": validated.value, "confidence": validated.confidence, "status": "flagged_for_review"},
+            data={
+                "field_name": validated.field_name,
+                "value": validated.value,
+                "confidence": validated.confidence,
+                "status": "flagged_for_review",
+            },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="FLAG_ERROR", message=str(e)).to_dict()
-    log_tool_call("flag_for_review", {"field_name": field_name, "confidence": confidence}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "flag_for_review",
+        {"field_name": field_name, "confidence": confidence},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
 # ============================================================================
 # 2. PATIENT Q&A PIPELINE TOOLS
 # ============================================================================
+
 
 def validate_qa_request(
     patient_id: str,
@@ -751,9 +940,15 @@ def validate_qa_request(
             date_range_days=date_range_days,
         )
         allowed = {"text", "image", "structured"}
-        requested = allowed if validated.source_types == "all" else {
-            value.strip() for value in validated.source_types.split(",") if value.strip()
-        }
+        requested = (
+            allowed
+            if validated.source_types == "all"
+            else {
+                value.strip()
+                for value in validated.source_types.split(",")
+                if value.strip()
+            }
+        )
         invalid = sorted(requested - allowed)
         if invalid:
             result = ToolError(
@@ -773,15 +968,25 @@ def validate_qa_request(
                     "question": validated.question,
                     "source_types": sorted(requested),
                     "date_range_days": validated.date_range_days,
-                    "request_receipt": _receipt("qa", validated.patient_id, validated.question),
+                    "request_receipt": _receipt(
+                        "qa", validated.patient_id, validated.question
+                    ),
                 },
             ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="QA_VALIDATION_ERROR", message=str(e)).to_dict()
-    log_tool_call("validate_qa_request", {"patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "validate_qa_request",
+        {"patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
+
 
 def lookup_patient_record(patient_id: str) -> dict[str, Any]:
     """Retrieve a structured patient record from Firestore.
@@ -805,17 +1010,33 @@ def lookup_patient_record(patient_id: str) -> dict[str, Any]:
                 data=patient,
             ).to_dict()
         else:
-            result = ToolError(error_code="PATIENT_NOT_FOUND", message=f"No patient found: {validated.patient_id}").to_dict()
+            result = ToolError(
+                error_code="PATIENT_NOT_FOUND",
+                message=f"No patient found: {validated.patient_id}",
+            ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="LOOKUP_ERROR", message=str(e)).to_dict()
-    log_tool_call("lookup_patient_record", {"patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
-    log_clinical_event("patient_record_accessed", {"tool": "lookup_patient_record"}, patient_id=patient_id)
+    log_tool_call(
+        "lookup_patient_record",
+        {"patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
+    log_clinical_event(
+        "patient_record_accessed",
+        {"tool": "lookup_patient_record"},
+        patient_id=patient_id,
+    )
     return result
 
 
-def search_clinical_notes(patient_id: str, query: str, date_range_days: int = 180) -> dict[str, Any]:
+def search_clinical_notes(
+    patient_id: str, query: str, date_range_days: int = 180
+) -> dict[str, Any]:
     """Search clinical notes and uploaded documents in the real database.
 
     Performs full-text search over clinical notes and document chunks
@@ -832,40 +1053,65 @@ def search_clinical_notes(patient_id: str, query: str, date_range_days: int = 18
     """
     start = time.perf_counter()
     try:
-        validated = ClinicalNotesSearchInput(patient_id=patient_id, query=query, date_range_days=date_range_days)
+        validated = ClinicalNotesSearchInput(
+            patient_id=patient_id, query=query, date_range_days=date_range_days
+        )
 
         # Search real database (documents + clinical notes)
-        db_results = database.search_documents(validated.query, validated.patient_id, limit=20)
+        db_results = database.search_documents(
+            validated.query, validated.patient_id, limit=20
+        )
 
         results = []
         for item in db_results:
-            results.append({
-                "note_id": item.get("document_id", item.get("chunk_id", "")),
-                "date": item.get("uploaded_at", ""),
-                "author": item.get("filename", "System"),
-                "type": item.get("content_type", item.get("source_type", "document")),
-                "text_snippet": item.get("chunk_text", "")[:300],
-                "relevance_score": item.get("relevance_score", 0.5),
-                "source_type": item.get("source_type", "document"),
-                "document_id": item.get("document_id", ""),
-                "filename": item.get("filename", ""),
-            })
+            results.append(
+                {
+                    "note_id": item.get("document_id", item.get("chunk_id", "")),
+                    "date": item.get("uploaded_at", ""),
+                    "author": item.get("filename", "System"),
+                    "type": item.get(
+                        "content_type", item.get("source_type", "document")
+                    ),
+                    "text_snippet": item.get("chunk_text", "")[:300],
+                    "relevance_score": item.get("relevance_score", 0.5),
+                    "source_type": item.get("source_type", "document"),
+                    "document_id": item.get("document_id", ""),
+                    "filename": item.get("filename", ""),
+                }
+            )
 
         results.sort(key=lambda x: x["relevance_score"], reverse=True)
         result = ToolResponse(
             message=f"Found {len(results)} relevant results for {validated.patient_id}",
-            data={"patient_id": validated.patient_id, "query": validated.query, "results": results},
+            data={
+                "patient_id": validated.patient_id,
+                "query": validated.query,
+                "results": results,
+            },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="NOTES_SEARCH_ERROR", message=str(e)).to_dict()
-    log_tool_call("search_clinical_notes", {"patient_id": patient_id, "query": query}, result, (time.perf_counter() - start) * 1000)
-    log_clinical_event("evidence_retrieved", {"tool": "search_clinical_notes", "query": query[:80]}, patient_id=patient_id)
+    log_tool_call(
+        "search_clinical_notes",
+        {"patient_id": patient_id, "query": query},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
+    log_clinical_event(
+        "evidence_retrieved",
+        {"tool": "search_clinical_notes", "query": query[:80]},
+        patient_id=patient_id,
+    )
     return result
 
 
-def search_vector_store(query: str, patient_id: str, source_types: str = "all") -> dict[str, Any]:
+def search_vector_store(
+    query: str, patient_id: str, source_types: str = "all"
+) -> dict[str, Any]:
     """Search across all stored documents, notes, and seed data vectors.
 
     Combines real SQLite full-text search over uploaded documents and
@@ -882,10 +1128,16 @@ def search_vector_store(query: str, patient_id: str, source_types: str = "all") 
     """
     start = time.perf_counter()
     try:
-        validated = VectorSearchInput(query=query, patient_id=patient_id, source_types=source_types)
+        validated = VectorSearchInput(
+            query=query, patient_id=patient_id, source_types=source_types
+        )
 
         results = []
-        type_filter = None if validated.source_types == "all" else {t.strip() for t in validated.source_types.split(",")}
+        type_filter = (
+            None
+            if validated.source_types == "all"
+            else {t.strip() for t in validated.source_types.split(",")}
+        )
         keywords = validated.query.lower().split()
         retrieval_mode = "keyword"
 
@@ -894,58 +1146,84 @@ def search_vector_store(query: str, patient_id: str, source_types: str = "all") 
             # and an index are available; deterministic keyword search otherwise.
             semantic_results: list[dict[str, Any]] = []
             try:
-                semantic_results = vector_store.semantic_search(validated.query, validated.patient_id, limit=10)
+                semantic_results = vector_store.semantic_search(
+                    validated.query, validated.patient_id, limit=10
+                )
             except Exception:
                 semantic_results = []
             if semantic_results:
                 retrieval_mode = semantic_results[0].get("retrieval", "vector")
                 for item in semantic_results:
-                    results.append({
-                        "chunk_id": str(item.get("chunk_id", "")),
-                        "source_type": item.get("source_type", "document"),
-                        "source_id": item.get("source_id", ""),
-                        "date": "",
-                        "text": (item.get("text") or "")[:400],
-                        "relevance_score": item.get("rerank_score", item.get("relevance_score", 0.5)),
-                        "retrieval": item.get("retrieval", "vector"),
-                    })
+                    results.append(
+                        {
+                            "chunk_id": str(item.get("chunk_id", "")),
+                            "source_type": item.get("source_type", "document"),
+                            "source_id": item.get("source_id", ""),
+                            "date": "",
+                            "text": (item.get("text") or "")[:400],
+                            "relevance_score": item.get(
+                                "rerank_score", item.get("relevance_score", 0.5)
+                            ),
+                            "retrieval": item.get("retrieval", "vector"),
+                        }
+                    )
             else:
-                db_results = database.search_documents(validated.query, validated.patient_id, limit=15)
+                db_results = database.search_documents(
+                    validated.query, validated.patient_id, limit=15
+                )
                 for item in db_results:
-                    results.append({
-                        "chunk_id": str(item.get("chunk_id", "")),
-                        "source_type": item.get("source_type", "document"),
-                        "source_id": item.get("document_id", ""),
-                        "date": item.get("uploaded_at", ""),
-                        "text": item.get("chunk_text", "")[:400],
-                        "relevance_score": item.get("relevance_score", 0.5),
-                        "filename": item.get("filename", ""),
-                    })
+                    results.append(
+                        {
+                            "chunk_id": str(item.get("chunk_id", "")),
+                            "source_type": item.get("source_type", "document"),
+                            "source_id": item.get("document_id", ""),
+                            "date": item.get("uploaded_at", ""),
+                            "text": item.get("chunk_text", "")[:400],
+                            "relevance_score": item.get("relevance_score", 0.5),
+                            "filename": item.get("filename", ""),
+                        }
+                    )
 
         if type_filter is None or "image" in type_filter:
-            imaging_results = database.search_imaging_studies(validated.patient_id, keywords)
+            imaging_results = database.search_imaging_studies(
+                validated.patient_id, keywords
+            )
             for img in imaging_results:
-                results.append({
-                    "chunk_id": f"IMG-{img.get('study_id', '')}",
-                    "source_type": "image",
-                    "source_id": img.get("session_id", ""),
-                    "date": "",
-                    "text": img.get("description", ""),
-                    "relevance_score": img.get("relevance_score", 0.5),
-                    "gcs_uri": img.get("gcs_uri", ""),
-                })
+                results.append(
+                    {
+                        "chunk_id": f"IMG-{img.get('study_id', '')}",
+                        "source_type": "image",
+                        "source_id": img.get("session_id", ""),
+                        "date": "",
+                        "text": img.get("description", ""),
+                        "relevance_score": img.get("relevance_score", 0.5),
+                        "gcs_uri": img.get("gcs_uri", ""),
+                    }
+                )
 
         results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
 
         result = ToolResponse(
             message=f"Search returned {len(results)} results for {validated.patient_id} via {retrieval_mode} retrieval",
-            data={"patient_id": validated.patient_id, "query": validated.query, "retrieval_mode": retrieval_mode, "results": results},
+            data={
+                "patient_id": validated.patient_id,
+                "query": validated.query,
+                "retrieval_mode": retrieval_mode,
+                "results": results,
+            },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="VECTOR_SEARCH_ERROR", message=str(e)).to_dict()
-    log_tool_call("search_vector_store", {"query": query, "patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "search_vector_store",
+        {"query": query, "patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -969,22 +1247,35 @@ def retrieve_imaging_evidence(patient_id: str, query: str) -> dict[str, Any]:
         imaging_rows = database.search_imaging_studies(validated.patient_id, keywords)
         images = []
         for img in imaging_rows:
-            images.append({
-                "gcs_uri": img["gcs_uri"],
-                "date": "",
-                "description": img.get("description", ""),
-                "relevance_score": img.get("relevance_score", 0.5),
-                "source_id": img.get("session_id", ""),
-            })
+            images.append(
+                {
+                    "gcs_uri": img["gcs_uri"],
+                    "date": "",
+                    "description": img.get("description", ""),
+                    "relevance_score": img.get("relevance_score", 0.5),
+                    "source_id": img.get("session_id", ""),
+                }
+            )
         result = ToolResponse(
             message=f"Found {len(images)} relevant images for {validated.patient_id}",
-            data={"patient_id": validated.patient_id, "query": validated.query, "images": images},
+            data={
+                "patient_id": validated.patient_id,
+                "query": validated.query,
+                "images": images,
+            },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="IMAGING_SEARCH_ERROR", message=str(e)).to_dict()
-    log_tool_call("retrieve_imaging_evidence", {"patient_id": patient_id, "query": query}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "retrieve_imaging_evidence",
+        {"patient_id": patient_id, "query": query},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1016,10 +1307,17 @@ def fetch_image_from_gcs(gcs_uri: str) -> dict[str, Any]:
                 data={"gcs_uri": validated.gcs_uri, "accessible": False},
             ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="GCS_FETCH_ERROR", message=str(e)).to_dict()
-    log_tool_call("fetch_image_from_gcs", {"gcs_uri": gcs_uri}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "fetch_image_from_gcs",
+        {"gcs_uri": gcs_uri},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1039,22 +1337,28 @@ def analyze_evidence_images(image_uris: str, clinical_question: str) -> dict[str
     """
     start = time.perf_counter()
     try:
-        validated = MultiImageAnalysisInput(image_uris=image_uris, clinical_question=clinical_question)
+        validated = MultiImageAnalysisInput(
+            image_uris=image_uris, clinical_question=clinical_question
+        )
         uris = [u.strip() for u in validated.image_uris.split(",")]
         per_image = []
         for uri in uris:
             ctx = database.get_image_context(uri)
-            per_image.append({
-                "gcs_uri": uri,
-                "modality": ctx.get("modality", "Unknown"),
-                "body_region": ctx.get("body_region", "Unknown"),
-                "description": ctx.get("description", ""),
-                "findings": ctx.get("extracted_fields", []),
-            })
+            per_image.append(
+                {
+                    "gcs_uri": uri,
+                    "modality": ctx.get("modality", "Unknown"),
+                    "body_region": ctx.get("body_region", "Unknown"),
+                    "description": ctx.get("description", ""),
+                    "findings": ctx.get("extracted_fields", []),
+                }
+            )
 
         comparison_notes = ""
         if len(per_image) > 1:
-            comparison_notes = _generate_comparison(per_image, validated.clinical_question)
+            comparison_notes = _generate_comparison(
+                per_image, validated.clinical_question
+            )
 
         result = ToolResponse(
             message=f"Analyzed {len(per_image)} images for: {validated.clinical_question[:80]}",
@@ -1066,10 +1370,17 @@ def analyze_evidence_images(image_uris: str, clinical_question: str) -> dict[str
             },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="IMAGE_ANALYSIS_ERROR", message=str(e)).to_dict()
-    log_tool_call("analyze_evidence_images", {"image_count": len(image_uris.split(","))}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "analyze_evidence_images",
+        {"image_count": len(image_uris.split(","))},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1088,7 +1399,11 @@ def build_citations(evidence_items: str) -> dict[str, Any]:
     start = time.perf_counter()
     try:
         validated = CitationBuildInput(evidence_items=evidence_items)
-        items = json.loads(validated.evidence_items) if isinstance(validated.evidence_items, str) else validated.evidence_items
+        items = (
+            json.loads(validated.evidence_items)
+            if isinstance(validated.evidence_items, str)
+            else validated.evidence_items
+        )
         if not isinstance(items, list):
             items = items.get("results", []) if isinstance(items, dict) else []
 
@@ -1097,7 +1412,9 @@ def build_citations(evidence_items: str) -> dict[str, Any]:
             citation = {
                 "ref": i,
                 "source_type": item.get("source_type", "text"),
-                "document_name": item.get("source_id", item.get("note_id", f"Source-{i}")),
+                "document_name": item.get(
+                    "source_id", item.get("note_id", f"Source-{i}")
+                ),
                 "date": item.get("date", "Unknown"),
                 "relevance_score": item.get("relevance_score", 0.0),
                 "snippet": (item.get("text", item.get("text_snippet", "")))[:200],
@@ -1108,17 +1425,28 @@ def build_citations(evidence_items: str) -> dict[str, Any]:
 
         result = ToolResponse(
             message=f"Built {len(citations)} citations",
-            data={"citations": citations, "image_citations": [c for c in citations if c.get("gcs_uri")]},
+            data={
+                "citations": citations,
+                "image_citations": [c for c in citations if c.get("gcs_uri")],
+            },
         ).to_dict()
     except (json.JSONDecodeError, ValidationError) as e:
-        result = ToolError(error_code="CITATION_BUILD_ERROR", message=f"Failed to parse evidence: {e}").to_dict()
+        result = ToolError(
+            error_code="CITATION_BUILD_ERROR", message=f"Failed to parse evidence: {e}"
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="CITATION_ERROR", message=str(e)).to_dict()
     log_tool_call("build_citations", {}, result, (time.perf_counter() - start) * 1000)
     return result
 
 
-def compose_clinical_answer(question: str, patient_context: str, evidence: str, image_analysis: str, citations: str) -> dict[str, Any]:
+def compose_clinical_answer(
+    question: str,
+    patient_context: str,
+    evidence: str,
+    image_analysis: str,
+    citations: str,
+) -> dict[str, Any]:
     """Synthesize a cited clinical answer from all evidence.
 
     Combines patient context, retrieved evidence, image analysis,
@@ -1138,26 +1466,59 @@ def compose_clinical_answer(question: str, patient_context: str, evidence: str, 
     start = time.perf_counter()
     try:
         validated = ClinicalAnswerInput(
-            question=question, patient_context=patient_context,
-            evidence=evidence, image_analysis=image_analysis, citations=citations,
+            question=question,
+            patient_context=patient_context,
+            evidence=evidence,
+            image_analysis=image_analysis,
+            citations=citations,
         )
         try:
-            cit_data = json.loads(validated.citations) if isinstance(validated.citations, str) else validated.citations
-            citation_list = cit_data.get("citations", cit_data) if isinstance(cit_data, dict) else cit_data
+            cit_data = (
+                json.loads(validated.citations)
+                if isinstance(validated.citations, str)
+                else validated.citations
+            )
+            citation_list = (
+                cit_data.get("citations", cit_data)
+                if isinstance(cit_data, dict)
+                else cit_data
+            )
         except (json.JSONDecodeError, TypeError):
             citation_list = []
 
-        image_refs = [c["gcs_uri"] for c in citation_list if isinstance(c, dict) and c.get("gcs_uri")]
+        image_refs = [
+            c["gcs_uri"]
+            for c in citation_list
+            if isinstance(c, dict) and c.get("gcs_uri")
+        ]
 
         # Deterministic synthesis: weave the strongest evidence excerpts with
         # numbered [ref#] markers into a grounded answer scaffold. In live
         # pipelines the answer_synthesis_agent enriches this narrative, but
         # the tool output is a real cited answer on its own.
-        excerpts = [line.strip() for line in str(validated.evidence).splitlines() if line.strip()][:3]
-        cited_lines = [f"{excerpt} [ref{index}]" for index, excerpt in enumerate(excerpts, 1)]
-        image_note = " Imaging analysis corroborates the documented findings." if str(validated.image_analysis).strip() else ""
-        answer_body = " ".join(cited_lines) if cited_lines else "No matching evidence was retrieved for this question."
-        confidence = round(min(0.95, 0.55 + 0.1 * len(excerpts) + 0.05 * len(image_refs)), 2) if cited_lines else 0.2
+        excerpts = [
+            line.strip()
+            for line in str(validated.evidence).splitlines()
+            if line.strip()
+        ][:3]
+        cited_lines = [
+            f"{excerpt} [ref{index}]" for index, excerpt in enumerate(excerpts, 1)
+        ]
+        image_note = (
+            " Imaging analysis corroborates the documented findings."
+            if str(validated.image_analysis).strip()
+            else ""
+        )
+        answer_body = (
+            " ".join(cited_lines)
+            if cited_lines
+            else "No matching evidence was retrieved for this question."
+        )
+        confidence = (
+            round(min(0.95, 0.55 + 0.1 * len(excerpts) + 0.05 * len(image_refs)), 2)
+            if cited_lines
+            else 0.2
+        )
 
         result = ToolResponse(
             message="Clinical answer composed with citations",
@@ -1167,22 +1528,33 @@ def compose_clinical_answer(question: str, patient_context: str, evidence: str, 
                 "confidence": confidence,
                 "image_references": image_refs,
                 "agents_used": [
-                    "context_assembly_agent", "evidence_retrieval_agent",
-                    "image_evidence_agent", "citation_builder_agent",
+                    "context_assembly_agent",
+                    "evidence_retrieval_agent",
+                    "image_evidence_agent",
+                    "citation_builder_agent",
                     "answer_synthesis_agent",
                 ],
                 "recommended_action": "Review cited evidence and confirm clinical relevance.",
             },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="ANSWER_ERROR", message=str(e)).to_dict()
-    log_tool_call("compose_clinical_answer", {"question": question[:80]}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "compose_clinical_answer",
+        {"question": question[:80]},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
-def save_qa_to_memory(patient_id: str, question: str, answer_summary: str) -> dict[str, Any]:
+def save_qa_to_memory(
+    patient_id: str, question: str, answer_summary: str
+) -> dict[str, Any]:
     """Save Q&A findings to long-term memory for future sessions.
 
     Persists the question-answer pair so future sessions can recall
@@ -1198,9 +1570,14 @@ def save_qa_to_memory(patient_id: str, question: str, answer_summary: str) -> di
     """
     start = time.perf_counter()
     try:
-        validated = MemorySaveInput(patient_id=patient_id, question=question, answer_summary=answer_summary)
+        validated = MemorySaveInput(
+            patient_id=patient_id, question=question, answer_summary=answer_summary
+        )
         db_result = database.save_qa_memory(
-            validated.patient_id, validated.question, validated.answer_summary, memory_type="qa",
+            validated.patient_id,
+            validated.question,
+            validated.answer_summary,
+            memory_type="qa",
         )
         result = ToolResponse(
             message=f"Saved Q&A to long-term memory for {validated.patient_id or 'general'}",
@@ -1212,16 +1589,24 @@ def save_qa_to_memory(patient_id: str, question: str, answer_summary: str) -> di
             },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="MEMORY_SAVE_ERROR", message=str(e)).to_dict()
-    log_tool_call("save_qa_to_memory", {"patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "save_qa_to_memory",
+        {"patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
 # ============================================================================
 # 3. DB INTELLIGENCE PIPELINE TOOLS
 # ============================================================================
+
 
 def get_database_schema(tables: str = "all") -> dict[str, Any]:
     """Retrieve clinical database schema definitions.
@@ -1245,10 +1630,17 @@ def get_database_schema(tables: str = "all") -> dict[str, Any]:
             data={"schema_ddl": schema_ddl, "tables": validated.tables},
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="SCHEMA_ERROR", message=str(e)).to_dict()
-    log_tool_call("get_database_schema", {"tables": tables}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "get_database_schema",
+        {"tables": tables},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1273,13 +1665,24 @@ def generate_sql(question: str, schema_context: str) -> dict[str, Any]:
         # This tool acknowledges the request and provides generation guidance.
         result = ToolResponse(
             message="SQL generation context loaded. The agent should now produce the SELECT query.",
-            data={"question": validated.question, "schema_loaded": True, "guidance": "Generate SELECT only. No mutations."},
+            data={
+                "question": validated.question,
+                "schema_loaded": True,
+                "guidance": "Generate SELECT only. No mutations.",
+            },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="SQL_GEN_ERROR", message=str(e)).to_dict()
-    log_tool_call("generate_sql", {"question": question[:80]}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "generate_sql",
+        {"question": question[:80]},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1310,10 +1713,17 @@ def validate_sql_safety(sql: str) -> dict[str, Any]:
             },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="SQL_VALIDATION_ERROR", message=str(e)).to_dict()
-    log_tool_call("validate_sql_safety", {"sql_length": len(sql)}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "validate_sql_safety",
+        {"sql_length": len(sql)},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1345,11 +1755,20 @@ def execute_clinical_query(sql: str) -> dict[str, Any]:
                 data=query_result,
             ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="QUERY_ERROR", message=str(e)).to_dict()
-    log_tool_call("execute_clinical_query", {"sql_length": len(sql)}, result, (time.perf_counter() - start) * 1000)
-    log_clinical_event("query_executed", {"tool": "execute_clinical_query", "sql_length": len(sql)})
+    log_tool_call(
+        "execute_clinical_query",
+        {"sql_length": len(sql)},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
+    log_clinical_event(
+        "query_executed", {"tool": "execute_clinical_query", "sql_length": len(sql)}
+    )
     return result
 
 
@@ -1376,10 +1795,17 @@ def approve_sql_preview(sql: str, approver_id: str) -> dict[str, Any]:
                 },
             ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="SQL_APPROVAL_ERROR", message=str(e)).to_dict()
-    log_tool_call("approve_sql_preview", {"sql_length": len(sql)}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "approve_sql_preview",
+        {"sql_length": len(sql)},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1387,10 +1813,14 @@ def execute_approved_clinical_query(sql: str, approval_receipt: str) -> dict[str
     """Execute SQL only when safety and an approval receipt both verify."""
     start = time.perf_counter()
     try:
-        validated = ApprovedSqlExecutionInput(sql=sql, approval_receipt=approval_receipt)
+        validated = ApprovedSqlExecutionInput(
+            sql=sql, approval_receipt=approval_receipt
+        )
         safety = validate_sql(validated.sql)
         if not safety["safe"]:
-            result = ToolError(error_code="UNSAFE_SQL", message=safety["reason"]).to_dict()
+            result = ToolError(
+                error_code="UNSAFE_SQL", message=safety["reason"]
+            ).to_dict()
         elif validated.approval_receipt != _receipt("sql-approved", validated.sql):
             result = ToolError(
                 error_code="SQL_APPROVAL_REQUIRED",
@@ -1399,7 +1829,9 @@ def execute_approved_clinical_query(sql: str, approval_receipt: str) -> dict[str
         else:
             query_result = execute_query(validated.sql)
             if query_result.get("error"):
-                result = ToolError(error_code="QUERY_EXECUTION_ERROR", message=query_result["error"]).to_dict()
+                result = ToolError(
+                    error_code="QUERY_EXECUTION_ERROR", message=query_result["error"]
+                ).to_dict()
             else:
                 query_result["approval_receipt"] = validated.approval_receipt
                 result = ToolResponse(
@@ -1407,10 +1839,17 @@ def execute_approved_clinical_query(sql: str, approval_receipt: str) -> dict[str
                     data=query_result,
                 ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="QUERY_ERROR", message=str(e)).to_dict()
-    log_tool_call("execute_approved_clinical_query", {"sql_length": len(sql)}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "execute_approved_clinical_query",
+        {"sql_length": len(sql)},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1431,7 +1870,11 @@ def generate_chart_spec(query_results: str, question: str) -> dict[str, Any]:
     try:
         validated = ChartSpecInput(query_results=query_results, question=question)
         try:
-            data = json.loads(validated.query_results) if isinstance(validated.query_results, str) else validated.query_results
+            data = (
+                json.loads(validated.query_results)
+                if isinstance(validated.query_results, str)
+                else validated.query_results
+            )
         except json.JSONDecodeError:
             data = {"columns": [], "rows": []}
 
@@ -1463,14 +1906,23 @@ def generate_chart_spec(query_results: str, question: str) -> dict[str, Any]:
             data={"chart_spec": chart_spec},
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="CHART_ERROR", message=str(e)).to_dict()
-    log_tool_call("generate_chart_spec", {"question": question[:80]}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "generate_chart_spec",
+        {"question": question[:80]},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
-def generate_clinical_visual(description: str, patient_id: str = "", session_id: str = "") -> dict[str, Any]:
+def generate_clinical_visual(
+    description: str, patient_id: str = "", session_id: str = ""
+) -> dict[str, Any]:
     """Render a clinical data visual as a PNG using the Gemini image-output model.
 
     Calls the `flash-image` tier (llm.MODEL_TIERS) with TEXT+IMAGE response
@@ -1496,6 +1948,7 @@ def generate_clinical_visual(description: str, patient_id: str = "", session_id:
             description=description, patient_id=patient_id, session_id=session_id
         )
         from .config import get_config
+
         config = get_config()
         if not config["gemini_enabled"]:
             result = ToolError(
@@ -1537,7 +1990,11 @@ def generate_clinical_visual(description: str, patient_id: str = "", session_id:
                 ).to_dict()
             else:
                 document_id = f"VIS-{hashlib.sha256(image_bytes).hexdigest()[:16]}"
-                visual_dir = database.active_uploads_root() / (validated.patient_id or "shared") / "visuals"
+                visual_dir = (
+                    database.active_uploads_root()
+                    / (validated.patient_id or "shared")
+                    / "visuals"
+                )
                 visual_dir.mkdir(parents=True, exist_ok=True)
                 file_path = visual_dir / f"{document_id}.png"
                 file_path.write_bytes(image_bytes)
@@ -1561,10 +2018,17 @@ def generate_clinical_visual(description: str, patient_id: str = "", session_id:
                     },
                 ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="VISUAL_ERROR", message=str(e)).to_dict()
-    log_tool_call("generate_clinical_visual", {"patient_id": patient_id, "description": description[:80]}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "generate_clinical_visual",
+        {"patient_id": patient_id, "description": description[:80]},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1584,10 +2048,15 @@ def save_query_to_memory(question: str, sql: str, summary: str) -> dict[str, Any
     """
     start = time.perf_counter()
     try:
-        validated = MemorySaveInput(patient_id="", question=question, answer_summary=summary)
+        validated = MemorySaveInput(
+            patient_id="", question=question, answer_summary=summary
+        )
         db_result = database.save_qa_memory(
-            "", validated.question, validated.answer_summary,
-            sql_query=sql, memory_type="query_pattern",
+            "",
+            validated.question,
+            validated.answer_summary,
+            sql_query=sql,
+            memory_type="query_pattern",
         )
         result = ToolResponse(
             message="Saved query pattern to long-term memory",
@@ -1599,10 +2068,17 @@ def save_query_to_memory(question: str, sql: str, summary: str) -> dict[str, Any
             },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="MEMORY_SAVE_ERROR", message=str(e)).to_dict()
-    log_tool_call("save_query_to_memory", {"question": question[:80]}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "save_query_to_memory",
+        {"question": question[:80]},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1610,7 +2086,10 @@ def save_query_to_memory(question: str, sql: str, summary: str) -> dict[str, Any
 # 4. SHARED / AUDIT TOOLS
 # ============================================================================
 
-def log_audit_event(agent_name: str, action: str, patient_id: str = "", details: str = "{}") -> dict[str, Any]:
+
+def log_audit_event(
+    agent_name: str, action: str, patient_id: str = "", details: str = "{}"
+) -> dict[str, Any]:
     """Record an audit event to the real SQLite audit_log table.
 
     Creates a persistent, structured audit log entry for compliance
@@ -1627,7 +2106,9 @@ def log_audit_event(agent_name: str, action: str, patient_id: str = "", details:
     """
     start = time.perf_counter()
     try:
-        validated = AuditEventInput(agent_name=agent_name, action=action, patient_id=patient_id, details=details)
+        validated = AuditEventInput(
+            agent_name=agent_name, action=action, patient_id=patient_id, details=details
+        )
 
         audit_result = database.log_audit(
             agent_name=validated.agent_name,
@@ -1641,10 +2122,17 @@ def log_audit_event(agent_name: str, action: str, patient_id: str = "", details:
             data=audit_result,
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="AUDIT_ERROR", message=str(e)).to_dict()
-    log_tool_call("log_audit_event", {"agent": agent_name, "action": action}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "log_audit_event",
+        {"agent": agent_name, "action": action},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1675,13 +2163,24 @@ def get_audit_trail(patient_id: str, limit: int = 20) -> dict[str, Any]:
 
         result = ToolResponse(
             message=f"Retrieved {len(events)} audit events for {validated.patient_id}",
-            data={"patient_id": validated.patient_id, "events": events, "total": len(events)},
+            data={
+                "patient_id": validated.patient_id,
+                "events": events,
+                "total": len(events),
+            },
         ).to_dict()
     except ValidationError as e:
-        result = ToolError(error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])).to_dict()
+        result = ToolError(
+            error_code="VALIDATION_ERROR", message=str(e.errors()[0]["msg"])
+        ).to_dict()
     except Exception as e:
         result = ToolError(error_code="AUDIT_TRAIL_ERROR", message=str(e)).to_dict()
-    log_tool_call("get_audit_trail", {"patient_id": patient_id}, result, (time.perf_counter() - start) * 1000)
+    log_tool_call(
+        "get_audit_trail",
+        {"patient_id": patient_id},
+        result,
+        (time.perf_counter() - start) * 1000,
+    )
     return result
 
 
@@ -1689,16 +2188,19 @@ def get_audit_trail(patient_id: str, limit: int = 20) -> dict[str, Any]:
 # Internal helpers
 # ============================================================================
 
+
 def _generate_comparison(per_image: list[dict], clinical_question: str = "") -> str:
     """Generate comparison notes between multiple images using Gemini when available."""
     if len(per_image) < 2:
         return ""
 
     from .config import get_config
+
     config = get_config()
 
     if config["gemini_enabled"]:
         from .document_processor import analyze_with_gemini
+
         descriptions = []
         for i, img in enumerate(per_image, 1):
             descriptions.append(
@@ -1708,8 +2210,9 @@ def _generate_comparison(per_image: list[dict], clinical_question: str = "") -> 
         prompt = (
             f"Compare these clinical images for a patient. "
             f"Clinical question: {clinical_question}\n\n"
-            + "\n".join(descriptions) + "\n\n"
-            f"Provide comparison notes highlighting changes, progression, or stability."
+            + "\n".join(descriptions)
+            + "\n\n"
+            "Provide comparison notes highlighting changes, progression, or stability."
         )
         return analyze_with_gemini(prompt, "clinical")
 

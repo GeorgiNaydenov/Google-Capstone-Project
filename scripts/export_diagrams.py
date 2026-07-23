@@ -36,7 +36,9 @@ def resolve_drawio() -> str:
     for candidate in candidates:
         if candidate and Path(candidate).exists():
             return candidate
-    raise SystemExit("draw.io CLI not found. Set DRAWIO_CLI or install draw.io desktop.")
+    raise SystemExit(
+        "draw.io CLI not found. Set DRAWIO_CLI or install draw.io desktop."
+    )
 
 
 def copy_static_assets() -> None:
@@ -60,34 +62,44 @@ def export_svgs(drawio: str, dry_run: bool) -> None:
     for source in sorted(SOURCE.glob("*.drawio")):
         if source.name == "02-c4-model.drawio":
             for output_stem, page_index in C4_PAGES.items():
-                run([
-                    drawio,
-                    "-x",
-                    "-f",
-                    "svg",
-                    "-e",
-                    "--page-index",
-                    str(page_index),
-                    "-o",
-                    str(SVG_OUT / f"{output_stem}.svg"),
-                    str(source),
-                ], dry_run)
+                run(
+                    [
+                        drawio,
+                        "-x",
+                        "-f",
+                        "svg",
+                        "-e",
+                        "--page-index",
+                        str(page_index),
+                        "-o",
+                        str(SVG_OUT / f"{output_stem}.svg"),
+                        str(source),
+                    ],
+                    dry_run,
+                )
             continue
-        run([
-            drawio,
-            "-x",
-            "-f",
-            "svg",
-            "-e",
-            "-o",
-            str(SVG_OUT / f"{source.stem}.svg"),
-            str(source),
-        ], dry_run)
+        run(
+            [
+                drawio,
+                "-x",
+                "-f",
+                "svg",
+                "-e",
+                "-o",
+                str(SVG_OUT / f"{source.stem}.svg"),
+                str(source),
+            ],
+            dry_run,
+        )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true", help="Print commands without executing draw.io")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print commands without executing draw.io",
+    )
     args = parser.parse_args()
     drawio = resolve_drawio()
     copy_static_assets()

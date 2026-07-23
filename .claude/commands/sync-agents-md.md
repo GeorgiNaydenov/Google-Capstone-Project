@@ -1,9 +1,11 @@
 # Sync Agents MD
 
-Utility command to synchronize files under `.claude/` to `.agents/` and generate `AGENTS.md` from `CLAUDE.md`.
+Incrementally mirror managed files under `.claude/` to `.agents/` and generate
+`AGENTS.md` from `CLAUDE.md`. Destination-only `.agents` assets are preserved.
 
 ## Run
 
-```bash
+```powershell
 python scripts/sync_harness.py
+python scripts/check_harness.py
 ```

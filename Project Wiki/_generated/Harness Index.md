@@ -1,7 +1,7 @@
 ---
 title: Harness Index
 type: generated
-updated: 2026-07-05
+updated: 2026-07-23
 tags:
   - generated
 ---
@@ -20,7 +20,9 @@ Hand-written companion: [[Claude Harness]].
 
 ## commands
 
+- `.claude/commands/handoff.md`
 - `.claude/commands/harness-audit.md`
+- `.claude/commands/harness-status.md`
 - `.claude/commands/pre-commit-gate.md`
 - `.claude/commands/sync-agents-md.md`
 
@@ -29,6 +31,20 @@ Hand-written companion: [[Claude Harness]].
 - `.claude/references/critical-defaults.md`
 - `.claude/references/known-baselines.md`
 - `.claude/references/source-policy.md`
+- `.claude/references/state-contract.md`
+
+## agents
+
+- `.claude/agents/harness-governor.md`
+- `.claude/agents/memory-state-reviewer.md`
+- `.claude/agents/security-reviewer.md`
+- `.claude/agents/verification-runner.md`
+
+## memory
+
+- `.claude/memory/handoff-protocol.md`
+- `.claude/memory/project.md`
+- `.claude/memory/README.md`
 
 ## skills
 
@@ -43,4 +59,13 @@ Hand-written companion: [[Claude Harness]].
 - `.claude/skills/obsidian-cli/SKILL.md`
 - `.claude/skills/obsidian-markdown/SKILL.md`
 - `.claude/skills/testing-workflow/SKILL.md`
+
+## lifecycle hooks
+
+- `SessionStart` -> project memory and state recovery
+- `PreToolUse` -> deterministic harness audit
+- `PreCompact` -> state snapshot
+- `SubagentStart` / `SubagentStop` -> context and handoff lifecycle
+- `Stop` -> state checkpoint plus wiki/harness sync
+- `SessionEnd` -> terminal state checkpoint
 

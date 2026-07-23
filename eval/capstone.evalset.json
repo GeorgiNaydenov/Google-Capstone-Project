@@ -33,19 +33,17 @@
       {
         "invocation_id": "extraction-1",
         "user_content": {
-          "parts": [{"text": "Extract findings from the latest chest CT for patient PT-8829."}],
+          "parts": [{"text": "Extract findings for patient PT-8829 from gs://clinical-data/PT-8829/sessions/SES-8829-003/ct-chest-axial.png."}],
           "role": "user"
         },
         "final_response": {
-          "parts": [{"text": "The image extraction pipeline processed the chest CT for PT-8829. Quality assessment passed. Vision analysis identified findings in the right upper lobe. Structured extraction mapped findings to SNOMED codes with confidence scores. Fields below 0.80 confidence were flagged for your review."}],
+          "parts": [{"text": "The extraction pipeline prepared a review packet for PT-8829 after quality, OCR, vision, structuring, and validation. Its status is pending_review; an identified human must approve or reject it through the product review workflow before any clinical persistence or audit transition."}],
           "role": "model"
         },
         "intermediate_data": {
           "tool_uses": [
             {"name": "assess_image_quality"},
-            {"name": "analyze_clinical_image"},
-            {"name": "structure_clinical_findings"},
-            {"name": "store_to_gcs"}
+            {"name": "analyze_clinical_image"}
           ],
           "tool_responses": [],
           "intermediate_responses": []
@@ -66,7 +64,7 @@
           "role": "user"
         },
         "final_response": {
-          "parts": [{"text": "Based on imaging comparison, the largest hepatic lesion shows interval growth. CT abdomen from the most recent session compared to prior imaging demonstrates size increase. Clinical notes confirm radiologist assessment of disease progression. Confidence: 0.91. Recommended: escalate to oncology for treatment reassessment."}],
+          "parts": [{"text": "The record supports interval growth of the largest hepatic lesion. The answer includes the patient-specific CT visual with a reopenable citation, a concise evidence table, and the confirming radiology note. Review the cited image and source note before escalating to oncology for treatment reassessment."}],
           "role": "model"
         },
         "intermediate_data": {
@@ -75,8 +73,6 @@
             {"name": "search_clinical_notes"},
             {"name": "search_vector_store"},
             {"name": "retrieve_imaging_evidence"},
-            {"name": "fetch_image_from_gcs"},
-            {"name": "analyze_evidence_images"},
             {"name": "build_citations"},
             {"name": "compose_clinical_answer"}
           ],
@@ -99,16 +95,42 @@
           "role": "user"
         },
         "final_response": {
-          "parts": [{"text": "Based on the database query, there are currently 2 high-risk patients in the system. The query was validated for safety and executed successfully. A bar chart has been generated showing the distribution of patients by risk level."}],
+          "parts": [{"text": "The read-only SQL was generated and validated, but the governed database workflow is waiting for explicit human approval before execution. No cohort count is claimed until the approved query runs."}],
           "role": "model"
         },
         "intermediate_data": {
           "tool_uses": [
             {"name": "get_database_schema"},
             {"name": "generate_sql"},
-            {"name": "validate_sql_safety"},
-            {"name": "execute_clinical_query"},
-            {"name": "generate_chart_spec"}
+            {"name": "validate_sql_safety"}
+          ],
+          "tool_responses": [],
+          "intermediate_responses": []
+        },
+        "creation_timestamp": 0.0
+      }
+    ],
+    "creation_timestamp": 0.0,
+    "final_session_state": {}
+  },
+  {
+    "eval_id": "polypharmacy_prevalence_and_chart",
+    "conversation": [
+      {
+        "invocation_id": "db-prevalence-1",
+        "user_content": {
+          "parts": [{"text": "Which patients are on 8 or more active medications, and what proportion of our authorized cohort is that?"}],
+          "role": "user"
+        },
+        "final_response": {
+          "parts": [{"text": "The read-only SQL for the medication threshold, numerator, authorized-cohort denominator, and prevalence was generated and validated. Execution and charting remain pending until an identified human approves the exact query; no patient result is claimed before that gate."}],
+          "role": "model"
+        },
+        "intermediate_data": {
+          "tool_uses": [
+            {"name": "get_database_schema"},
+            {"name": "generate_sql"},
+            {"name": "validate_sql_safety"}
           ],
           "tool_responses": [],
           "intermediate_responses": []
@@ -153,7 +175,7 @@
           "role": "user"
         },
         "final_response": {
-          "parts": [{"text": "Patient PT-1044 (Sarah Smith) is currently at needs_review risk level. AI review status is in progress. Data completeness score and open tasks are available in the dashboard."}],
+          "parts": [{"text": "Patient PT-1044 (Sarah Smith) has a needs_review risk level and needs_review AI review status, with 78% data completeness and 3 open tasks."}],
           "role": "model"
         },
         "intermediate_data": {
@@ -179,7 +201,7 @@
           "role": "user"
         },
         "final_response": {
-          "parts": [{"text": "Patient PT-5510 (Wei Chen) is a 34-year-old psychiatric patient with a primary diagnosis of Major Depressive Disorder. Current risk level is stable. Assigned to Dr. Rachel Kim."}],
+          "parts": [{"text": "Patient PT-5510 (Wei Chen) is 38 years old with recurrent major depressive disorder, a stable risk level, and Dr. Emily Nakamura as the assigned clinician."}],
           "role": "model"
         },
         "intermediate_data": {
@@ -198,7 +220,7 @@
           "role": "user"
         },
         "final_response": {
-          "parts": [{"text": "PT-5510 is currently prescribed Sertraline 100mg daily and Trazodone 50mg at bedtime. No active allergies on record."}],
+          "parts": [{"text": "PT-5510 is currently prescribed Sertraline 100mg daily and Buspirone 10mg twice daily, with no allergies recorded."}],
           "role": "model"
         },
         "intermediate_data": {

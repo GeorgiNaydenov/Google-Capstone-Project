@@ -64,6 +64,7 @@ def _extract_last_user_text(llm_request: LlmRequest) -> str:
 
 # --- Layer 1: Input Safety (before_model_callback) ---
 
+
 def content_safety_callback(
     callback_context: CallbackContext,
     llm_request: LlmRequest,
@@ -83,20 +84,26 @@ def content_safety_callback(
     # Check for injection patterns
     blocked, reason = is_blocked_input(sanitized)
     if blocked:
-        log_security_event("input_blocked", {
-            "reason": reason,
-            "input_length": len(sanitized),
-        })
+        log_security_event(
+            "input_blocked",
+            {
+                "reason": reason,
+                "input_length": len(sanitized),
+            },
+        )
         return _make_block_response(
             "I'm unable to process that request. Please rephrase your question."
         )
 
     out_of_scope, category = is_out_of_scope(sanitized)
     if out_of_scope:
-        log_security_event("out_of_scope_blocked", {
-            "category": category,
-            "input_length": len(sanitized),
-        })
+        log_security_event(
+            "out_of_scope_blocked",
+            {
+                "category": category,
+                "input_length": len(sanitized),
+            },
+        )
         return _make_block_response(
             "I can only help with clinical evidence, patient questions, "
             "extraction, and governed population analysis."
@@ -106,6 +113,7 @@ def content_safety_callback(
 
 
 # --- Layer 2: Tool Authorization (before_tool_callback) ---
+
 
 def tool_authorization_callback(
     tool,
@@ -128,20 +136,26 @@ def tool_authorization_callback(
 
     # Check for empty arguments
     if not tool_args:
-        log_security_event("tool_blocked", {
-            "tool": tool_name,
-            "reason": "empty_arguments",
-        })
+        log_security_event(
+            "tool_blocked",
+            {
+                "tool": tool_name,
+                "reason": "empty_arguments",
+            },
+        )
         return {"status": "error", "message": f"Tool '{tool_name}' requires arguments."}
 
     # Rate limiting: track call count in temp: state
     rate_key = f"temp:tool_calls_{tool_name}"
     call_count = tool_context.state.get(rate_key, 0)
     if call_count >= TOOL_RATE_LIMIT:
-        log_security_event("tool_rate_limited", {
-            "tool": tool_name,
-            "count": call_count,
-        })
+        log_security_event(
+            "tool_rate_limited",
+            {
+                "tool": tool_name,
+                "count": call_count,
+            },
+        )
         return {
             "status": "error",
             "message": f"Tool '{tool_name}' rate limit exceeded ({TOOL_RATE_LIMIT} calls).",
@@ -152,10 +166,13 @@ def tool_authorization_callback(
     args_text = " ".join(str(v) for v in tool_args.values())
     secrets = scan_for_secrets(args_text)
     if secrets:
-        log_security_event("secrets_in_tool_args", {
-            "tool": tool_name,
-            "secret_types": [s["type"] for s in secrets],
-        })
+        log_security_event(
+            "secrets_in_tool_args",
+            {
+                "tool": tool_name,
+                "secret_types": [s["type"] for s in secrets],
+            },
+        )
         return {
             "status": "error",
             "message": "Tool arguments contain sensitive data. Please remove secrets.",
@@ -165,6 +182,7 @@ def tool_authorization_callback(
 
 
 # --- Layer 3: Output Safety (after_model_callback) ---
+
 
 def output_safety_callback(
     callback_context: CallbackContext,
@@ -185,16 +203,22 @@ def output_safety_callback(
         # Check for PII
         pii_findings = detect_pii(part.text)
         if pii_findings:
-            log_security_event("pii_in_output", {
-                "pii_types": [p["type"] for p in pii_findings],
-            })
+            log_security_event(
+                "pii_in_output",
+                {
+                    "pii_types": [p["type"] for p in pii_findings],
+                },
+            )
 
         # Check for leaked secrets
         secret_findings = scan_for_secrets(part.text)
         if secret_findings:
-            log_security_event("secrets_in_output", {
-                "secret_types": [s["type"] for s in secret_findings],
-            })
+            log_security_event(
+                "secrets_in_output",
+                {
+                    "secret_types": [s["type"] for s in secret_findings],
+                },
+            )
             return _make_block_response(
                 "I detected sensitive information in my response and removed it "
                 "for your security. Please rephrase your request."

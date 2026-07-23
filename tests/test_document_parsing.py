@@ -62,12 +62,24 @@ def test_validate_upload_rejects_unsupported_file_type() -> None:
     [
         ("summary.md", b"# Plan\nBNP rising", "text/markdown", "text/markdown"),
         ("note.txt", b"plain clinical text", "text/plain", "text/plain"),
-        ("facts.json", json.dumps({"care_gap": "BNP follow-up"}).encode(), "application/json", "application/json"),
-        ("packet.docx", docx_bytes("DOCX clinical care gap"), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        (
+            "facts.json",
+            json.dumps({"care_gap": "BNP follow-up"}).encode(),
+            "application/json",
+            "application/json",
+        ),
+        (
+            "packet.docx",
+            docx_bytes("DOCX clinical care gap"),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ),
         ("scan.png", PNG_BYTES, "image/png", "image/png"),
     ],
 )
-def test_knowledge_base_upload_accepts_searchable_formats(filename: str, contents: bytes, content_type: str, expected_type: str) -> None:
+def test_knowledge_base_upload_accepts_searchable_formats(
+    filename: str, contents: bytes, content_type: str, expected_type: str
+) -> None:
     """Knowledge-base uploads support mixed document formats outside extraction policy."""
 
     metadata = validate_knowledge_base_upload(contents, content_type, filename)
@@ -81,7 +93,12 @@ def test_knowledge_base_upload_accepts_searchable_formats(filename: str, content
 def test_agent_document_processor_supports_knowledge_base_formats(tmp_path) -> None:
     """ADK upload_document path can read generated DOCX, Markdown, TXT, and JSON files."""
 
-    from capstone_agent.document_processor import detect_content_type, extract_text_from_docx, extract_text_from_json, extract_text_from_plaintext
+    from capstone_agent.document_processor import (
+        detect_content_type,
+        extract_text_from_docx,
+        extract_text_from_json,
+        extract_text_from_plaintext,
+    )
 
     docx_path = tmp_path / "summary.docx"
     json_path = tmp_path / "facts.json"
@@ -92,7 +109,9 @@ def test_agent_document_processor_supports_knowledge_base_formats(tmp_path) -> N
 
     assert detect_content_type(str(docx_path)).endswith("wordprocessingml.document")
     assert detect_content_type(str(md_path)) == "text/markdown"
-    assert "DOCX longitudinal evidence" in extract_text_from_docx(str(docx_path))["text"]
+    assert (
+        "DOCX longitudinal evidence" in extract_text_from_docx(str(docx_path))["text"]
+    )
     assert "abnormal CRP" in extract_text_from_json(str(json_path))["text"]
     assert "abnormal BNP" in extract_text_from_plaintext(str(md_path))["text"]
 
@@ -133,9 +152,15 @@ def test_parse_image_returns_image_contract_and_ocr_warning() -> None:
 def test_upload_request_uses_shared_10mb_limit() -> None:
     """Pydantic metadata should reject the same max size as the upload endpoint."""
 
-    UploadRequest(filename="evidence.png", content_type="image/png", size_bytes=MAX_UPLOAD_BYTES)
+    UploadRequest(
+        filename="evidence.png", content_type="image/png", size_bytes=MAX_UPLOAD_BYTES
+    )
     with pytest.raises(ValidationError):
-        UploadRequest(filename="evidence.png", content_type="image/png", size_bytes=MAX_UPLOAD_BYTES + 1)
+        UploadRequest(
+            filename="evidence.png",
+            content_type="image/png",
+            size_bytes=MAX_UPLOAD_BYTES + 1,
+        )
 
 
 @pytest.mark.parametrize(
@@ -165,6 +190,14 @@ def test_detect_patient_id_ignores_unrelated_numbers() -> None:
 def test_detect_patient_id_from_parsed_scans_preview_then_pages() -> None:
     """Parsed-upload detection should fall back from the preview to page text."""
 
-    parsed = {"textPreview": "", "pages": [{"pageNumber": 1, "text": "Laboratory Results - Patient 900001"}]}
+    parsed = {
+        "textPreview": "",
+        "pages": [{"pageNumber": 1, "text": "Laboratory Results - Patient 900001"}],
+    }
     assert detect_patient_id_from_parsed(parsed) == "900001"
-    assert detect_patient_id_from_parsed({"textPreview": "no identifiers here", "pages": []}) == ""
+    assert (
+        detect_patient_id_from_parsed(
+            {"textPreview": "no identifiers here", "pages": []}
+        )
+        == ""
+    )

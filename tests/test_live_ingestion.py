@@ -1,8 +1,6 @@
 """Unit tests for live mode ingestion, ETL, and database seeding."""
 
-import io
 from pathlib import Path
-import pytest
 from fastapi.testclient import TestClient
 
 from clinical_app.app import create_app
@@ -19,13 +17,14 @@ def live_headers(session: str = "live-test-session") -> dict[str, str]:
         "X-Demo-Session": session,
         "X-Clinical-Role": "admin",
         "X-User": "Dr. IngestionTest",
-        "X-Tenant": "capstone"
+        "X-Tenant": "capstone",
     }
 
 
 def test_import_database_and_documents_etl() -> None:
     # Clear active database cache to force re-initialization
     from capstone_agent import database as capstone_db
+
     capstone_db._INITIALIZED_PATHS.clear()
 
     # Clean up any existing test DB/uploads to ensure test isolation
@@ -39,6 +38,7 @@ def test_import_database_and_documents_etl() -> None:
     uploads_dir = Path("uploads_capstone")
     if uploads_dir.exists():
         import shutil
+
         try:
             shutil.rmtree(uploads_dir)
         except OSError:
@@ -50,9 +50,7 @@ def test_import_database_and_documents_etl() -> None:
     # 1. Database ETL Ingestion
     print("\n[Test] Importing database intelligence cohort...")
     response = api.post(
-        "/api/import",
-        headers=headers,
-        data={"import_type": "database"}
+        "/api/import", headers=headers, data={"import_type": "database"}
     )
     assert response.status_code == 201, f"Import database failed: {response.text}"
     data = response.json()
@@ -76,13 +74,15 @@ def test_import_database_and_documents_etl() -> None:
         "/api/import",
         headers=headers,
         data={"import_type": "document", "patient_id": patient_id},
-        files={"file": ("test_report.pdf", pdf_content, "application/pdf")}
+        files={"file": ("test_report.pdf", pdf_content, "application/pdf")},
     )
     assert response.status_code == 201, f"Import PDF failed: {response.text}"
     doc_data = response.json()
     assert doc_data["status"] == "success"
     assert "documentId" in doc_data
-    assert doc_data["pageCount"] == 0 or doc_data["pageCount"] == 1  # fitz might return 0 on blank pdf signature, or 1
+    assert (
+        doc_data["pageCount"] == 0 or doc_data["pageCount"] == 1
+    )  # fitz might return 0 on blank pdf signature, or 1
 
     # 3. Document ETL Ingestion (PNG Image)
     print("[Test] Ingesting PNG screenshot through ETL...")
@@ -91,7 +91,7 @@ def test_import_database_and_documents_etl() -> None:
         "/api/import",
         headers=headers,
         data={"import_type": "document", "patient_id": patient_id},
-        files={"file": ("screenshot.png", png_content, "image/png")}
+        files={"file": ("screenshot.png", png_content, "image/png")},
     )
     assert response.status_code == 201, f"Import PNG failed: {response.text}"
     img_data = response.json()
@@ -116,6 +116,7 @@ def test_upload_registers_unseen_live_patient_across_sessions() -> None:
     still resolves it through the database fallback.
     """
     from capstone_agent import database as capstone_db
+
     capstone_db._INITIALIZED_PATHS.clear()
 
     db_path = Path("capstone.db")
@@ -140,7 +141,9 @@ def test_upload_registers_unseen_live_patient_across_sessions() -> None:
         data={"patient_id": "900042"},
         files={"file": ("temperature_panel.png", png_content, "image/png")},
     )
-    assert response.status_code == 201, f"Upload for unseen patient failed: {response.text}"
+    assert response.status_code == 201, (
+        f"Upload for unseen patient failed: {response.text}"
+    )
     assert "assetId" in response.json()
 
     # The uploading session sees the registered patient in its roster.
@@ -170,7 +173,10 @@ def test_asset_upload_detects_patient_id_from_document_text() -> None:
 
     doc = fitz.open()
     page = doc.new_page()
-    page.insert_text((72, 72), "Confidential - Patient 990001: Whiteside, Eleanor - Laboratory Results")
+    page.insert_text(
+        (72, 72),
+        "Confidential - Patient 990001: Whiteside, Eleanor - Laboratory Results",
+    )
     pdf_bytes = doc.tobytes()
     doc.close()
 
@@ -202,7 +208,13 @@ def test_asset_upload_detects_patient_id_from_document_text() -> None:
         "/api/knowledge-base/assets",
         headers=headers,
         data={"patient_id": "900043"},
-        files={"file": ("focus_notes.txt", b"Live sample focus panel notes.", "text/plain")},
+        files={
+            "file": ("focus_notes.txt", b"Live sample focus panel notes.", "text/plain")
+        },
     )
-    assert kb_response.status_code == 201, f"KB upload for unseen patient failed: {kb_response.text}"
-    assert any(p["id"] == "900043" for p in api.get("/api/patients", headers=headers).json())
+    assert kb_response.status_code == 201, (
+        f"KB upload for unseen patient failed: {kb_response.text}"
+    )
+    assert any(
+        p["id"] == "900043" for p in api.get("/api/patients", headers=headers).json()
+    )

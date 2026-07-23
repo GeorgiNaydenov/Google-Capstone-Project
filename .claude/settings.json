@@ -1,27 +1,92 @@
 {
   "hooks": {
-    "PreToolUse": [
+    "SessionStart": [
       {
-        "matcher": ".*",
+        "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
             "type": "command",
-            "command": "python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'check_harness.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'check_harness.py').is_file()), None); assert script is not None, 'Unable to locate project harness'; runpy.run_path(str(script), run_name='__main__')\"",
+            "command": "uv run --no-project --python 3.11 python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'harness_runtime.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'harness_runtime.py').is_file()), None); assert script is not None, 'Unable to locate harness runtime'; runpy.run_path(str(script), run_name='__main__')\" session-start",
+            "timeout": 10000,
+            "statusMessage": "Loading project memory and harness state..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python 3.11 python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'check_harness.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'check_harness.py').is_file()), None); assert script is not None, 'Unable to locate project harness'; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 10000,
             "statusMessage": "Verifying harness integrity..."
           }
         ]
       }
     ],
-    "Stop": [
+    "PreCompact": [
       {
-        "matcher": "",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'sync_wiki.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'sync_wiki.py').is_file()), None); assert script is not None, 'Unable to locate wiki sync script'; runpy.run_path(str(script), run_name='__main__')\"",
-            "timeout": 15000,
-            "statusMessage": "Syncing project wiki..."
+            "command": "uv run --no-project --python 3.11 python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'harness_runtime.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'harness_runtime.py').is_file()), None); assert script is not None, 'Unable to locate harness runtime'; runpy.run_path(str(script), run_name='__main__')\" snapshot",
+            "timeout": 10000,
+            "statusMessage": "Snapshotting harness state before compaction..."
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python 3.11 python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'harness_runtime.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'harness_runtime.py').is_file()), None); assert script is not None, 'Unable to locate harness runtime'; runpy.run_path(str(script), run_name='__main__')\" subagent-start",
+            "timeout": 10000,
+            "statusMessage": "Loading subagent memory and pending handoffs..."
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python 3.11 python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'harness_runtime.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'harness_runtime.py').is_file()), None); assert script is not None, 'Unable to locate harness runtime'; runpy.run_path(str(script), run_name='__main__')\" subagent-stop",
+            "timeout": 10000,
+            "statusMessage": "Recording subagent handoff..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python 3.11 python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'harness_runtime.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'harness_runtime.py').is_file()), None); assert script is not None, 'Unable to locate harness runtime'; runpy.run_path(str(script), run_name='__main__')\" stop",
+            "timeout": 30000,
+            "statusMessage": "Persisting turn state and syncing project wiki..."
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project --python 3.11 python -c \"from pathlib import Path; import runpy; script=next((root / 'scripts' / 'harness_runtime.py' for root in (Path.cwd(), *Path.cwd().parents) if (root / 'scripts' / 'harness_runtime.py').is_file()), None); assert script is not None, 'Unable to locate harness runtime'; runpy.run_path(str(script), run_name='__main__')\" session-end",
+            "timeout": 10000,
+            "statusMessage": "Closing harness session state..."
           }
         ]
       }

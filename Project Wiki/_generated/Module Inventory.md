@@ -1,7 +1,7 @@
 ---
 title: Module Inventory
 type: generated
-updated: 2026-07-07
+updated: 2026-07-23
 tags:
   - generated
 ---
@@ -34,6 +34,7 @@ Hand-written companion: [[Module Reference]].
 | `capstone_agent` | `prompts.py` | Clinical AI Command Center — agent instruction templates. |
 | `capstone_agent` | `security.py` | Security module — PII detection, secret scanning, input sanitization. |
 | `capstone_agent` | `tools.py` | Clinical AI Command Center — tool definitions (production). |
+| `capstone_agent` | `vector_store.py` | Semantic vector store — Vertex AI embeddings over the clinical corpus. |
 | `clinical_app` | `__init__.py` | Deterministic clinician product API. |
 | `clinical_app` | `agent_runtime.py` | Deterministic product adapters for the real clinical agent tool layer. |
 | `clinical_app` | `app.py` | FastAPI routes for clinician-facing deterministic application. |
@@ -47,7 +48,8 @@ Hand-written companion: [[Module Reference]].
 | `mcp_server` | `server.py` | Clinical MCP server — real database-backed tools via Model Context Protocol. |
 | `scripts` | `build_docs_site.py` | Build the standalone documentation hub served at /documentation. |
 | `scripts` | `build_llm_wiki.py` | Script to compile the Obsidian Project Wiki into the Karpathy LLM Wiki structure. |
-| `scripts` | `check_harness.py` | (no docstring) |
+| `scripts` | `build_vector_index.py` | Backfill the semantic vector index for a tenant clinical database. |
+| `scripts` | `check_harness.py` | Deterministically validate executable repository harness configuration. |
 | `scripts` | `check_source_safety.py` | Repository safety gate for public source and commit metadata. |
 | `scripts` | `export_diagrams.py` | Export Project Wiki draw.io diagrams into frontend public assets. |
 | `scripts` | `generate_database_showcase.py` | Generate a large governed SQLite cohort for the database agent. |
@@ -57,10 +59,11 @@ Hand-written companion: [[Module Reference]].
 | `scripts` | `generate_live_test_data.py` | Generate a small live test dataset (database cohort, PDF, images) and run ETL ingestion. |
 | `scripts` | `generate_multimodal_patient_showcase.py` | Generate multimodal patient bundles for the Q&A agent. |
 | `scripts` | `generate_multimodal_patient_showcase_demo2.py` | Generate the second-platform multimodal Q&A demo bundle set. |
+| `scripts` | `harness_runtime.py` | Lifecycle state and handoff runtime for the repository agent harness. |
 | `scripts` | `ingest_capstone_live_samples.py` | Ingest the corrected multi-patient live sample dataset into the real Capstone tenant database. |
 | `scripts` | `run_clinical_app_dev.py` | Run the clinical FastAPI app from the local Windows dev environment. |
 | `scripts` | `showcase_clinical_core.py` | Shared clinically coherent synthetic cohort engine for all showcase generators. |
-| `scripts` | `sync_harness.py` | (no docstring) |
+| `scripts` | `sync_harness.py` | Safely mirror the Claude harness into the cross-agent ``.agents`` tree. |
 | `scripts` | `sync_wiki.py` | Deterministic Project Wiki and harness synchronization. |
 | `tests` | `__init__.py` | (no docstring) |
 | `tests` | `conftest.py` | Pytest configuration and shared fixtures for agent evaluation. |
@@ -71,6 +74,7 @@ Hand-written companion: [[Module Reference]].
 | `tests` | `test_context.py` | Tests for context engineering utilities (Day 1 working memory). |
 | `tests` | `test_document_parsing.py` | Document upload policy and extraction contract tests. |
 | `tests` | `test_eval.py` | ADK evaluation harness test (Day 4b). |
+| `tests` | `test_harness_runtime.py` | Tests for lifecycle state, handoff, and safe mirror harness tooling. |
 | `tests` | `test_live_bridge.py` | Unit tests for the live-mode ADK bridge parsing helpers. |
 | `tests` | `test_live_ingestion.py` | Unit tests for live mode ingestion, ETL, and database seeding. |
 | `tests` | `test_memory.py` | Tests for memory governance (Day 3b). |
@@ -81,5 +85,6 @@ Hand-written companion: [[Module Reference]].
 | `tests` | `test_showcase_generators.py` | Smoke tests for showcase data generators. |
 | `tests` | `test_template_generators.py` | Unit tests for template-based showcase data generators. |
 | `tests` | `test_tools.py` | Clinical tool validation tests — ensures consistent I/O contracts. |
+| `tests` | `test_vector_store.py` | Unit tests for the semantic vector store (capstone_agent/vector_store.py). |
 | `tests` | `test_versioned_api.py` | Unit tests for the versioned API backend endpoints (V1 and V2). |
 | `tests` | `test_wiki_sync.py` | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |

@@ -12,8 +12,8 @@ from capstone_agent.tools import (
 )
 
 
-def test_extraction_pipeline_includes_reviewed_persistence_and_audit():
-    """Extraction construction exposes each user-visible production stage."""
+def test_extraction_pipeline_stops_at_external_human_review():
+    """Autonomous extraction cannot impersonate a reviewer or persist data."""
     pipeline = orchestration.build_image_extraction_pipeline()
     assert [agent.name for agent in pipeline.sub_agents] == [
         "quality_assessor_agent",
@@ -21,10 +21,9 @@ def test_extraction_pipeline_includes_reviewed_persistence_and_audit():
         "vision_analyzer_agent",
         "clinical_structuring_agent",
         "validation_gate",
-        "clinical_review_gate_agent",
-        "extraction_persistence_agent",
-        "extraction_audit_agent",
+        "clinical_review_request_agent",
     ]
+    assert pipeline.sub_agents[-1].tools == []
 
 
 def test_ocr_returns_stable_receipt():
@@ -70,6 +69,7 @@ def test_qa_pipeline_starts_with_explicit_request_validation():
     """Q&A never retrieves evidence before validating patient scope."""
     pipeline = orchestration.build_patient_qa_pipeline()
     assert pipeline.sub_agents[0].name == "qa_request_validation_agent"
+    assert pipeline.sub_agents[-1].name == "qa_response_agent"
     valid = validate_qa_request("PT-8829", "What changed in recent imaging?")
     invalid = validate_qa_request("PT-8829", "What changed?", "email")
     assert valid["status"] == "success"
@@ -80,7 +80,9 @@ def test_db_pipeline_has_preview_approval_before_execution():
     """Database construction places explicit approval before executor."""
     pipeline = orchestration.build_db_intelligence_pipeline()
     names = [agent.name for agent in pipeline.sub_agents]
-    assert names.index("sql_preview_approval_agent") < names.index("query_executor_agent")
+    assert names.index("sql_preview_approval_agent") < names.index(
+        "query_executor_agent"
+    )
 
 
 def test_sql_execution_requires_receipt_for_exact_preview():

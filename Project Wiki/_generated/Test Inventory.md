@@ -1,7 +1,7 @@
 ---
 title: Test Inventory
 type: generated
-updated: 2026-07-09
+updated: 2026-07-23
 tags:
   - generated
 ---
@@ -14,23 +14,25 @@ Hand-written companion: [[Testing and Eval]].
 | Test file | Tests | Covers |
 |-----------|-------|--------|
 | `test_agent_eval.py` | 3 | Agent evaluation tests — validates agent behavior end-to-end. |
-| `test_callbacks.py` | 10 | Unit tests for the 3-layer security callbacks. |
-| `test_clinical_api.py` | 25 | Frontend contract tests for deterministic clinician product API. |
+| `test_callbacks.py` | 11 | Unit tests for the 3-layer security callbacks. |
+| `test_clinical_api.py` | 28 | Frontend contract tests for deterministic clinician product API. |
 | `test_clinical_tools.py` | 34 | Clinical tool integration tests — mock data consistency and HITL. |
 | `test_context.py` | 5 | Tests for context engineering utilities (Day 1 working memory). |
 | `test_document_parsing.py` | 11 | Document upload policy and extraction contract tests. |
 | `test_eval.py` | 1 | ADK evaluation harness test (Day 4b). |
+| `test_harness_runtime.py` | 3 | Tests for lifecycle state, handoff, and safe mirror harness tooling. |
 | `test_live_bridge.py` | 21 | Unit tests for the live-mode ADK bridge parsing helpers. |
 | `test_live_ingestion.py` | 3 | Unit tests for live mode ingestion, ETL, and database seeding. |
-| `test_memory.py` | 3 | Tests for memory governance (Day 3b). |
+| `test_memory.py` | 6 | Tests for memory governance (Day 3b). |
 | `test_orchestration.py` | 7 | Tests for the orchestration building blocks (Day 1b / 2a). |
 | `test_product_integration.py` | 24 | End-to-end contracts joining the clinical UI API to product state. |
 | `test_product_orchestration.py` | 8 | Contract tests for clinician-facing production workflow boundaries. |
-| `test_security.py` | 11 | Security test suite — validates all detection and sanitization functions. |
+| `test_security.py` | 13 | Security test suite — validates all detection and sanitization functions. |
 | `test_showcase_generators.py` | 4 | Smoke tests for showcase data generators. |
 | `test_template_generators.py` | 3 | Unit tests for template-based showcase data generators. |
 | `test_tools.py` | 73 | Clinical tool validation tests — ensures consistent I/O contracts. |
+| `test_vector_store.py` | 9 | Unit tests for the semantic vector store (capstone_agent/vector_store.py). |
 | `test_versioned_api.py` | 5 | Unit tests for the versioned API backend endpoints (V1 and V2). |
 | `test_wiki_sync.py` | 7 | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |
 
-**Total test functions: 258**
+**Total test functions: 279**

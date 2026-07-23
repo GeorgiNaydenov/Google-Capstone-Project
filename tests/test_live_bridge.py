@@ -16,7 +16,10 @@ class TestExtractFields:
     """_extract_fields must tolerate nested JSON, code fences, and prose."""
 
     def test_flat_json(self) -> None:
-        assert _extract_fields('{"bp": "120/80", "hr": "72"}') == {"bp": "120/80", "hr": "72"}
+        assert _extract_fields('{"bp": "120/80", "hr": "72"}') == {
+            "bp": "120/80",
+            "hr": "72",
+        }
 
     def test_nested_json_values_serialized(self) -> None:
         fields = _extract_fields('{"vitals": {"bp": "120/80"}, "note": "stable"}')
@@ -24,7 +27,9 @@ class TestExtractFields:
         assert fields["vitals"] == '{"bp": "120/80"}'
 
     def test_json_inside_code_fence(self) -> None:
-        text = 'Findings below.\n```json\n{"diagnosis": "T2DM", "confidence": 0.91}\n```'
+        text = (
+            'Findings below.\n```json\n{"diagnosis": "T2DM", "confidence": 0.91}\n```'
+        )
         fields = _extract_fields(text)
         assert fields["diagnosis"] == "T2DM"
 
@@ -42,7 +47,9 @@ class TestExtractFields:
         assert "heading" not in fields
 
     def test_field_names_normalized_to_snake_case(self) -> None:
-        fields = _extract_fields('{"documentType": "CT report", "Primary Finding": "lesion"}')
+        fields = _extract_fields(
+            '{"documentType": "CT report", "Primary Finding": "lesion"}'
+        )
         assert fields == {"document_type": "CT report", "primary_finding": "lesion"}
 
     def test_no_structure_returns_empty(self) -> None:
@@ -57,7 +64,9 @@ class TestExtractSql:
         assert sql == "SELECT risk_level FROM patients_core"
 
     def test_select_inside_narration(self) -> None:
-        sql = _extract_sql("Here is the query:\nSELECT COUNT(*) FROM sessions WHERE date > '2026-01-01'")
+        sql = _extract_sql(
+            "Here is the query:\nSELECT COUNT(*) FROM sessions WHERE date > '2026-01-01'"
+        )
         assert sql.startswith("SELECT COUNT(*)")
 
     def test_no_select_returns_empty(self) -> None:
@@ -75,7 +84,9 @@ class TestExtractSql:
         """The ```sql fence the prompts require wins over SELECT-ish prose."""
 
         text = "The word SELECT appears here first.\n```sql\nWITH recent AS (SELECT 1) SELECT * FROM lab_results\n```\nDone."
-        assert _extract_sql(text) == "WITH recent AS (SELECT 1) SELECT * FROM lab_results"
+        assert (
+            _extract_sql(text) == "WITH recent AS (SELECT 1) SELECT * FROM lab_results"
+        )
 
 
 class TestStringSource:
@@ -91,7 +102,9 @@ class TestStringSource:
 
     def test_serializes_dict_values(self) -> None:
         outputs = {"structured_output": {"finding": "lesion"}}
-        assert _string_source(outputs, ("structured_output",)) == '{"finding": "lesion"}'
+        assert (
+            _string_source(outputs, ("structured_output",)) == '{"finding": "lesion"}'
+        )
 
     def test_missing_keys_return_empty(self) -> None:
         assert _string_source({}, ("structured_output",)) == ""

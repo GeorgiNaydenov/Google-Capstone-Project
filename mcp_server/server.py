@@ -86,7 +86,9 @@ def list_patients(risk_level: str = "all", limit: int = 20) -> str:
             sql = f"SELECT patient_id, name, age, risk_level, primary_diagnosis, assigned_clinician, last_session_date FROM patients_core WHERE risk_level = '{risk_level}' LIMIT {limit}"
 
         result = database.execute_sql(sql)
-        return json.dumps({"patients": result["rows"], "total": result["row_count"]}, indent=2)
+        return json.dumps(
+            {"patients": result["rows"], "total": result["row_count"]}, indent=2
+        )
     except Exception as e:
         logger.error(f"list_patients failed: {e}")
         return f"Error listing patients: {e}"
@@ -110,7 +112,9 @@ def get_patient_record(patient_id: str) -> str:
     try:
         logger.info(f"get_patient_record: patient_id={patient_id}")
         # Core data from SQLite
-        result = database.execute_sql(f"SELECT * FROM patients_core WHERE patient_id = '{patient_id}'")
+        result = database.execute_sql(
+            f"SELECT * FROM patients_core WHERE patient_id = '{patient_id}'"
+        )
         if not result["rows"]:
             return f"Error: No patient found with ID '{patient_id}'."
 
@@ -120,7 +124,11 @@ def get_patient_record(patient_id: str) -> str:
         extended_raw = full.pop("extended_data", None)
         if extended_raw:
             try:
-                extended = json.loads(extended_raw) if isinstance(extended_raw, str) else extended_raw
+                extended = (
+                    json.loads(extended_raw)
+                    if isinstance(extended_raw, str)
+                    else extended_raw
+                )
                 full.update(extended)
             except (json.JSONDecodeError, TypeError):
                 pass
@@ -172,7 +180,9 @@ def list_extraction_sessions(patient_id: str, limit: int = 10) -> str:
             f"FROM sessions WHERE patient_id = '{patient_id}' "
             f"ORDER BY session_date DESC LIMIT {limit}"
         )
-        return json.dumps({"sessions": result["rows"], "total": result["row_count"]}, indent=2)
+        return json.dumps(
+            {"sessions": result["rows"], "total": result["row_count"]}, indent=2
+        )
     except Exception as e:
         logger.error(f"list_extraction_sessions failed: {e}")
         return f"Error listing sessions for '{patient_id}': {e}"
@@ -198,7 +208,9 @@ def store_extraction_result(patient_id: str, session_id: str, result_json: str) 
         return "Error: result_json is required."
 
     try:
-        logger.info(f"store_extraction_result: patient_id={patient_id}, session_id={session_id}")
+        logger.info(
+            f"store_extraction_result: patient_id={patient_id}, session_id={session_id}"
+        )
         json.loads(result_json)  # validate JSON
 
         database.log_audit(
@@ -209,13 +221,16 @@ def store_extraction_result(patient_id: str, session_id: str, result_json: str) 
             details=json.dumps({"result_length": len(result_json)}),
         )
 
-        return json.dumps({
-            "status": "stored",
-            "patient_id": patient_id,
-            "session_id": session_id,
-            "storage_location": f"database://clinical/{patient_id}/sessions/{session_id}",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }, indent=2)
+        return json.dumps(
+            {
+                "status": "stored",
+                "patient_id": patient_id,
+                "session_id": session_id,
+                "storage_location": f"database://clinical/{patient_id}/sessions/{session_id}",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+            indent=2,
+        )
     except json.JSONDecodeError:
         return "Error: result_json is not valid JSON."
     except Exception as e:
@@ -243,6 +258,7 @@ def upload_document(file_path: str, patient_id: str = "") -> str:
     try:
         logger.info(f"upload_document: file_path={file_path}, patient_id={patient_id}")
         from capstone_agent.document_processor import process_document
+
         result = process_document(file_path.strip(), patient_id.strip())
 
         if result.get("error"):
@@ -273,9 +289,15 @@ def search_all_documents(query: str, patient_id: str = "", limit: int = 20) -> s
         return "Error: query is required."
 
     try:
-        logger.info(f"search_all_documents: query={query[:80]}, patient_id={patient_id}")
+        logger.info(
+            f"search_all_documents: query={query[:80]}, patient_id={patient_id}"
+        )
         results = database.search_documents(query.strip(), patient_id.strip(), limit)
-        return json.dumps({"results": results, "total": len(results), "query": query}, indent=2, default=str)
+        return json.dumps(
+            {"results": results, "total": len(results), "query": query},
+            indent=2,
+            default=str,
+        )
     except Exception as e:
         logger.error(f"search_all_documents failed: {e}")
         return f"Error searching documents: {e}"
@@ -295,7 +317,9 @@ def list_documents(patient_id: str = "", limit: int = 50) -> str:
     try:
         logger.info(f"list_documents: patient_id={patient_id}, limit={limit}")
         docs = database.list_documents(patient_id.strip() if patient_id else "", limit)
-        return json.dumps({"documents": docs, "total": len(docs)}, indent=2, default=str)
+        return json.dumps(
+            {"documents": docs, "total": len(docs)}, indent=2, default=str
+        )
     except Exception as e:
         logger.error(f"list_documents failed: {e}")
         return f"Error listing documents: {e}"
@@ -331,7 +355,9 @@ def query_clinical_database(sql: str) -> str:
 
 
 @mcp.tool()
-def log_clinical_audit(agent: str, action: str, patient_id: str = "", details: str = "") -> str:
+def log_clinical_audit(
+    agent: str, action: str, patient_id: str = "", details: str = ""
+) -> str:
     """Record an audit event in the persistent compliance log.
 
     Writes directly to the SQLite audit_log table for durable storage.

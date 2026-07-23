@@ -2,7 +2,7 @@
 title: Claude Harness
 type: harness
 status: active
-updated: 2026-07-04
+updated: 2026-07-23
 source: CLAUDE.md, .claude/, scripts/
 tags:
   - harness
@@ -10,52 +10,63 @@ tags:
 
 # Claude Harness
 
-The `.claude/` harness controls and validates agent-assisted development on this repository. The live, machine-generated index is [[Harness Index]].
+The `.claude/` harness controls and validates agent-assisted development. The
+live machine-generated inventory is [[Harness Index]].
 
-## Rules (`.claude/rules/`)
+## Executable components
 
-| File | Enforces |
+| Area | Contents |
 |------|----------|
-| `brevity.md` | Caveman-micro response style with auto-clarity exceptions |
-| `engineering.md` | Python 3.11+, typing, scope discipline, `build_model(tier)` only, uv commands, named git staging |
-| `security.md` | Fixed 3-layer callback order, secret/PII scan rules, redaction before logging |
-| `testing.md` | pytest layout, LLM non-determinism constraint, `@requires_model` marker |
+| Rules | Engineering, security, testing, and response constraints |
+| Skills | On-demand project workflows |
+| Agents | Named specialists with bounded ownership and tools |
+| Memory | Shared project facts, handoff contract, and per-agent learned memory |
+| State | Gitignored session, compaction, active-agent, and handoff records |
+| Commands | Harness audit, status, handoff, sync, and pre-commit gates |
 
-## Skills (`.claude/skills/`)
+## Named agents
 
-grill-me, grill-with-docs, testing-workflow, defuddle, deployment, obsidian-markdown, json-canvas, obsidian-bases, obsidian-cli.
+| Agent | Responsibility |
+|-------|----------------|
+| `harness-governor` | Hooks, sync, state contracts, and harness integrity |
+| `memory-state-reviewer` | ADK session, memory, compaction, and A2A boundaries |
+| `security-reviewer` | Read-only data-leak and callback boundary review |
+| `verification-runner` | Deterministic gates and reproducible failure reports |
 
-## Commands (`.claude/commands/`)
+Each profile uses project-scoped persistent memory and writes a sanitized
+handoff before returning control.
 
-| Command | Purpose |
-|---------|---------|
-| `pre-commit-gate.md` | Formatting, harness audit, and pytest before commits |
-| `harness-audit.md` | Audits file indexing and sync status |
-| `sync-agents-md.md` | Mirrors `.claude` → `.agents` and CLAUDE.md → AGENTS.md |
-
-## References (`.claude/references/`)
-
-`critical-defaults.md` (always-on behaviors), `known-baselines.md` (baseline stats), `source-policy.md` (local check priorities).
-
-## Hooks (`.claude/settings.json`)
+## Lifecycle hooks
 
 | Hook | Script | Purpose |
 |------|--------|---------|
-| `PreToolUse` (matcher `.*`) | `scripts/check_harness.py` | Verifies harness integrity before every tool call: required directories, CLAUDE.md/AGENTS.md sync, skill frontmatter, index completeness |
-| `Stop` | `scripts/sync_wiki.py` | Deterministic wiki + harness auto-update after each work session — see [[Development Workflow]] |
+| `SessionStart` | `scripts/harness_runtime.py` | Initializes/resumes state and injects durable project memory |
+| `PreToolUse` (matcher `*`) | `scripts/check_harness.py` | Verifies profiles, memory, hook wiring, indexes, and mirror integrity |
+| `PreCompact` | `scripts/harness_runtime.py` | Snapshots local state before context compaction |
+| `SubagentStart` | `scripts/harness_runtime.py` | Registers ownership and injects pending handoffs |
+| `SubagentStop` | `scripts/harness_runtime.py` | Records completion and a sanitized fallback handoff |
+| `Stop` | `scripts/harness_runtime.py` | Checkpoints turn state, then runs wiki/harness sync |
+| `SessionEnd` | `scripts/harness_runtime.py` | Marks session ended without deleting recovery state |
 
-## Sync scripts (`scripts/`)
+## Scripts
 
-- `check_harness.py` — fails fast when the harness drifts: missing dirs, unsynced CLAUDE.md/AGENTS.md (byte-compare after `## Default Style` with `.agents/`→`.claude/` translation), bad skill frontmatter, unindexed files.
-- `sync_harness.py` — wipes and regenerates `.agents/` from `.claude/` (path-translated) and AGENTS.md from CLAUDE.md. Run after any CLAUDE.md edit.
-- `sync_wiki.py` — regenerates the machine-owned wiki pages (`_generated/`), the [[Module Dependency Graph]] AUTO block, the `## Project Structure` AUTO block in CLAUDE.md, and root `MEMORY.md`; then calls `sync_harness` so everything stays consistent.
+- `harness_runtime.py` — standard-library lifecycle state, context injection,
+  compaction snapshots, and handoff queue.
+- `check_harness.py` — fails fast on missing executable contracts, invalid hook
+  wiring/frontmatter, unindexed files, or mirror drift.
+- `sync_harness.py` — incrementally mirrors managed `.claude/` files and
+  preserves destination-only `.agents/` skills/assets.
+- `sync_wiki.py` — regenerates machine-owned wiki content and calls safe mirror
+  synchronization.
 
-## Memory files
+## Memory ownership
 
 | File | Contains |
 |------|----------|
-| `MEMORY.md` (repo root) | Workspace variables and active model registers — AUTO block maintained by `sync_wiki.py` |
-| `.claude/memory/` | Harness memory directory (currently placeholder) |
-| User auto-memory (`~/.claude/projects/...`) | Cross-session facts maintained by Claude Code |
+| `MEMORY.md` | Generated workspace inventory |
+| `.claude/memory/project.md` | Shared durable facts injected at lifecycle boundaries |
+| `.claude/memory/handoff-protocol.md` | Cross-agent completion contract |
+| `.claude/agent-memory/<agent>/MEMORY.md` | Project-scoped learned memory |
+| `.claude/state/` | Gitignored ephemeral lifecycle and handoff state |
 
 Related: [[Development Workflow]] · [[Testing and Eval]]

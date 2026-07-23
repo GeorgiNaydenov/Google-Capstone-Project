@@ -10,13 +10,10 @@ All extracted content is stored in SQLite via database.py for
 downstream search, citation building, and Q&A.
 """
 
-import base64
 import hashlib
 import json
 import logging
-import os
 import zipfile
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 import xml.etree.ElementTree as ET
@@ -65,6 +62,7 @@ def detect_content_type(file_path: str) -> str:
 # PDF extraction (PyMuPDF)
 # ---------------------------------------------------------------------------
 
+
 def extract_text_from_pdf(file_path: str) -> dict[str, Any]:
     """Extract text from every page of a PDF using PyMuPDF.
 
@@ -80,11 +78,13 @@ def extract_text_from_pdf(file_path: str) -> dict[str, Any]:
 
     for i, page in enumerate(doc):
         text = page.get_text("text")
-        pages.append({
-            "page_number": i + 1,
-            "text": text,
-            "char_count": len(text),
-        })
+        pages.append(
+            {
+                "page_number": i + 1,
+                "text": text,
+                "char_count": len(text),
+            }
+        )
         full_text_parts.append(text)
         image_count += len(page.get_images(full=True))
 
@@ -103,6 +103,7 @@ def extract_text_from_pdf(file_path: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Image extraction (Gemini Vision)
 # ---------------------------------------------------------------------------
+
 
 def _get_genai_client():
     """Create a google.genai Client configured for the current environment.
@@ -184,6 +185,7 @@ def extract_text_from_image(file_path: str) -> dict[str, Any]:
 # Plain text extraction
 # ---------------------------------------------------------------------------
 
+
 def extract_text_from_plaintext(file_path: str) -> dict[str, Any]:
     """Read plain text files directly."""
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
@@ -219,7 +221,9 @@ def extract_text_from_docx(file_path: str) -> dict[str, Any]:
     namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     paragraphs = []
     for paragraph in root.iter(f"{namespace}p"):
-        text = "".join(node.text or "" for node in paragraph.iter(f"{namespace}t")).strip()
+        text = "".join(
+            node.text or "" for node in paragraph.iter(f"{namespace}t")
+        ).strip()
         if text:
             paragraphs.append(text)
     full_text = "\n".join(paragraphs)
@@ -234,6 +238,7 @@ def extract_text_from_docx(file_path: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Text chunking
 # ---------------------------------------------------------------------------
+
 
 def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> list[dict]:
     """Split text into overlapping chunks for search indexing.
@@ -261,12 +266,14 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> list[di
 
         chunk_text_content = text[start:end].strip()
         if chunk_text_content:
-            chunks.append({
-                "index": index,
-                "text": chunk_text_content,
-                "start_char": start,
-                "end_char": end,
-            })
+            chunks.append(
+                {
+                    "index": index,
+                    "text": chunk_text_content,
+                    "start_char": start,
+                    "end_char": end,
+                }
+            )
             index += 1
 
         start = end - overlap
@@ -279,6 +286,7 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> list[di
 # ---------------------------------------------------------------------------
 # Gemini-powered clinical analysis
 # ---------------------------------------------------------------------------
+
 
 def analyze_with_gemini(text: str, analysis_type: str = "clinical") -> str:
     """Send extracted text to Gemini for clinical structuring and analysis.
@@ -333,7 +341,10 @@ def analyze_with_gemini(text: str, analysis_type: str = "clinical") -> str:
 # Main processing pipeline
 # ---------------------------------------------------------------------------
 
-def process_document(file_path: str, patient_id: str = "", pre_extraction: dict[str, Any] | None = None) -> dict[str, Any]:
+
+def process_document(
+    file_path: str, patient_id: str = "", pre_extraction: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Process a document end-to-end: extract text, chunk, analyze, store.
 
     This is the main entry point called by the upload_document tool.
@@ -422,11 +433,13 @@ def process_document(file_path: str, patient_id: str = "", pre_extraction: dict[
                 if chunk["start_char"] < cumulative:
                     page_num = pg["page_number"]
                     break
-        chunk_dicts.append({
-            "index": chunk["index"],
-            "text": chunk["text"],
-            "page": page_num,
-        })
+        chunk_dicts.append(
+            {
+                "index": chunk["index"],
+                "text": chunk["text"],
+                "page": page_num,
+            }
+        )
 
     chunk_count = database.store_document_chunks(document_id, chunk_dicts, patient_id)
 
@@ -435,13 +448,15 @@ def process_document(file_path: str, patient_id: str = "", pre_extraction: dict[
         agent_name="document_processor",
         action="document_uploaded",
         patient_id=patient_id,
-        details=json.dumps({
-            "document_id": document_id,
-            "filename": filename,
-            "page_count": page_count,
-            "chunk_count": chunk_count,
-            "content_type": content_type,
-        }),
+        details=json.dumps(
+            {
+                "document_id": document_id,
+                "filename": filename,
+                "page_count": page_count,
+                "chunk_count": chunk_count,
+                "content_type": content_type,
+            }
+        ),
     )
 
     return {

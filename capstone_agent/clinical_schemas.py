@@ -47,7 +47,6 @@ SCHEMA_DDL: dict[str, str] = {
     record_quality VARCHAR(30),            -- 'high', 'mixed', 'requires_reconciliation'
     primary_provider_id INTEGER            -- REFERENCES providers(provider_id)
 );""",
-
     "sessions": """CREATE TABLE sessions (
     session_id VARCHAR(20) PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -60,7 +59,6 @@ SCHEMA_DDL: dict[str, str] = {
     vector_sync_status VARCHAR(20),
     audit_status VARCHAR(20)
 );""",
-
     "extracted_fields": """CREATE TABLE extracted_fields (
     field_id SERIAL PRIMARY KEY,
     session_id VARCHAR(20) REFERENCES sessions(session_id),
@@ -71,7 +69,6 @@ SCHEMA_DDL: dict[str, str] = {
     ontology_code VARCHAR(50),             -- SNOMED CT or LOINC code
     needs_review BOOLEAN DEFAULT FALSE
 );""",
-
     "clinical_notes": """CREATE TABLE clinical_notes (
     note_id VARCHAR(20) PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -83,7 +80,6 @@ SCHEMA_DDL: dict[str, str] = {
     is_signed BOOLEAN DEFAULT TRUE,
     signed_at TIMESTAMP
 );""",
-
     "lab_results": """CREATE TABLE lab_results (
     result_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -101,7 +97,6 @@ SCHEMA_DDL: dict[str, str] = {
     is_abnormal BOOLEAN DEFAULT FALSE,
     result_status VARCHAR(20)              -- 'Normal', 'High', 'Low', 'Critical High', 'Critical Low'
 );""",
-
     "lab_panels": """CREATE TABLE lab_panels (
     panel_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -114,7 +109,6 @@ SCHEMA_DDL: dict[str, str] = {
     accession_number VARCHAR(20),
     status VARCHAR(20)                     -- 'Final', 'Preliminary', 'Corrected'
 );""",
-
     "imaging_studies": """CREATE TABLE imaging_studies (
     study_id SERIAL PRIMARY KEY,
     session_id VARCHAR(20) REFERENCES sessions(session_id),
@@ -131,7 +125,6 @@ SCHEMA_DDL: dict[str, str] = {
     dicom_compliant BOOLEAN DEFAULT FALSE,
     file_size_kb INTEGER
 );""",
-
     "audit_log": """CREATE TABLE audit_log (
     event_id SERIAL PRIMARY KEY,
     event_timestamp TIMESTAMP NOT NULL,
@@ -142,7 +135,6 @@ SCHEMA_DDL: dict[str, str] = {
     details JSONB,
     user_role VARCHAR(20)
 );""",
-
     "documents": """CREATE TABLE documents (
     document_id VARCHAR(50) PRIMARY KEY,
     patient_id VARCHAR(10),
@@ -155,7 +147,6 @@ SCHEMA_DDL: dict[str, str] = {
     processing_status VARCHAR(20) DEFAULT 'processed',
     gemini_analysis TEXT
 );""",
-
     "document_chunks": """CREATE TABLE document_chunks (
     chunk_id SERIAL PRIMARY KEY,
     document_id VARCHAR(50) REFERENCES documents(document_id),
@@ -164,7 +155,6 @@ SCHEMA_DDL: dict[str, str] = {
     chunk_text TEXT NOT NULL,
     source_page INTEGER
 );""",
-
     "vector_chunks": """CREATE TABLE vector_chunks (
     chunk_id VARCHAR(120) PRIMARY KEY,
     patient_id VARCHAR(10),
@@ -175,7 +165,6 @@ SCHEMA_DDL: dict[str, str] = {
     embedding_model VARCHAR(60) NOT NULL,
     created_at TIMESTAMP NOT NULL
 );""",
-
     "patient_conditions": """CREATE TABLE patient_conditions (
     condition_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -190,7 +179,6 @@ SCHEMA_DDL: dict[str, str] = {
     notes TEXT,
     resolved_date DATE
 );""",
-
     "medications": """CREATE TABLE medications (
     medication_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -211,7 +199,6 @@ SCHEMA_DDL: dict[str, str] = {
     pharmacy_name VARCHAR(80),
     ndc_code VARCHAR(20)
 );""",
-
     "allergies": """CREATE TABLE allergies (
     allergy_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -224,7 +211,6 @@ SCHEMA_DDL: dict[str, str] = {
     verified_by VARCHAR(100),
     is_active BOOLEAN DEFAULT TRUE
 );""",
-
     "encounters": """CREATE TABLE encounters (
     encounter_id VARCHAR(30) PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -235,7 +221,6 @@ SCHEMA_DDL: dict[str, str] = {
     reason VARCHAR(200),
     disposition VARCHAR(80)
 );""",
-
     "vital_signs": """CREATE TABLE vital_signs (
     vital_id SERIAL PRIMARY KEY,
     encounter_id VARCHAR(30) REFERENCES encounters(encounter_id),
@@ -253,7 +238,6 @@ SCHEMA_DDL: dict[str, str] = {
     blood_glucose_mgdl FLOAT,
     recorded_by VARCHAR(100)
 );""",
-
     "care_gaps": """CREATE TABLE care_gaps (
     gap_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -264,7 +248,6 @@ SCHEMA_DDL: dict[str, str] = {
     status VARCHAR(30),
     owner VARCHAR(100)
 );""",
-
     "procedures": """CREATE TABLE procedures (
     procedure_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -281,7 +264,6 @@ SCHEMA_DDL: dict[str, str] = {
     complications VARCHAR(200),
     status VARCHAR(30)                     -- 'Completed', 'Scheduled', 'Cancelled'
 );""",
-
     "social_determinants": """CREATE TABLE social_determinants (
     sdoh_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -303,7 +285,6 @@ SCHEMA_DDL: dict[str, str] = {
     employment_status VARCHAR(40),
     occupation VARCHAR(80)
 );""",
-
     "providers": """CREATE TABLE providers (
     provider_id SERIAL PRIMARY KEY,
     first_name VARCHAR(60),
@@ -317,21 +298,18 @@ SCHEMA_DDL: dict[str, str] = {
     phone VARCHAR(20),
     is_active BOOLEAN DEFAULT TRUE
 );""",
-
     "icd10_codes": """CREATE TABLE icd10_codes (
     icd10_id SERIAL PRIMARY KEY,
     code VARCHAR(10) UNIQUE,               -- e.g. 'E11.9'
     description VARCHAR(200),
     category VARCHAR(60)                   -- e.g. 'Endocrine', 'Cardiovascular'
 );""",
-
     "cpt_codes": """CREATE TABLE cpt_codes (
     cpt_id SERIAL PRIMARY KEY,
     code VARCHAR(10),                      -- e.g. '99214'
     description VARCHAR(200),
     category VARCHAR(60)                   -- e.g. 'Office Visit', 'Surgery'
 );""",
-
     "insurance_policies": """CREATE TABLE insurance_policies (
     policy_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -351,7 +329,6 @@ SCHEMA_DDL: dict[str, str] = {
     is_primary BOOLEAN,
     is_active BOOLEAN DEFAULT TRUE
 );""",
-
     "emergency_contacts": """CREATE TABLE emergency_contacts (
     contact_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -363,7 +340,6 @@ SCHEMA_DDL: dict[str, str] = {
     email VARCHAR(120),
     is_primary BOOLEAN
 );""",
-
     "immunizations": """CREATE TABLE immunizations (
     immunization_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -380,7 +356,6 @@ SCHEMA_DDL: dict[str, str] = {
     series_complete BOOLEAN,
     expiration_date DATE
 );""",
-
     "appointments": """CREATE TABLE appointments (
     appointment_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -396,7 +371,6 @@ SCHEMA_DDL: dict[str, str] = {
     follow_up_required BOOLEAN,
     follow_up_date DATE
 );""",
-
     "medical_history": """CREATE TABLE medical_history (
     history_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -406,7 +380,6 @@ SCHEMA_DDL: dict[str, str] = {
     resolution_year INTEGER,
     is_chronic BOOLEAN
 );""",
-
     "surgical_history": """CREATE TABLE surgical_history (
     surgery_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -419,7 +392,6 @@ SCHEMA_DDL: dict[str, str] = {
     outcome VARCHAR(200),
     anesthesia_type VARCHAR(60)
 );""",
-
     "family_history": """CREATE TABLE family_history (
     family_id SERIAL PRIMARY KEY,
     patient_id VARCHAR(10) REFERENCES patients_core(patient_id),
@@ -430,7 +402,6 @@ SCHEMA_DDL: dict[str, str] = {
     is_deceased BOOLEAN,
     cause_of_death VARCHAR(160)
 );""",
-
     "qa_memory": """CREATE TABLE qa_memory (
     memory_id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id VARCHAR(10),
@@ -474,8 +445,18 @@ def get_schema(tables: str = "all") -> str:
 # ---------------------------------------------------------------------------
 
 BLOCKED_KEYWORDS = {
-    "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE",
-    "CREATE", "GRANT", "REVOKE", "EXEC", "EXECUTE", "CALL",
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "DROP",
+    "ALTER",
+    "TRUNCATE",
+    "CREATE",
+    "GRANT",
+    "REVOKE",
+    "EXEC",
+    "EXECUTE",
+    "CALL",
 }
 
 
@@ -491,14 +472,26 @@ def validate_sql(sql: str) -> dict[str, Any]:
     # any mutation smuggled inside a CTE is caught by the blocked-keyword
     # scan below, which covers the whole statement.
     if not upper_sql.startswith(("SELECT", "WITH")):
-        return {"safe": False, "reason": "Query must start with SELECT.", "tables_referenced": []}
+        return {
+            "safe": False,
+            "reason": "Query must start with SELECT.",
+            "tables_referenced": [],
+        }
 
     for keyword in BLOCKED_KEYWORDS:
         if keyword in upper_sql.split():
-            return {"safe": False, "reason": f"Blocked keyword: {keyword}", "tables_referenced": []}
+            return {
+                "safe": False,
+                "reason": f"Blocked keyword: {keyword}",
+                "tables_referenced": [],
+            }
 
     if "INFORMATION_SCHEMA" in upper_sql or "PG_CATALOG" in upper_sql:
-        return {"safe": False, "reason": "System catalog access not allowed.", "tables_referenced": []}
+        return {
+            "safe": False,
+            "reason": "System catalog access not allowed.",
+            "tables_referenced": [],
+        }
 
     tables_found = []
     for table in ALLOWED_TABLES:
@@ -506,16 +499,26 @@ def validate_sql(sql: str) -> dict[str, Any]:
             tables_found.append(table)
 
     if not tables_found:
-        return {"safe": False, "reason": "No recognized tables in query.", "tables_referenced": []}
+        return {
+            "safe": False,
+            "reason": "No recognized tables in query.",
+            "tables_referenced": [],
+        }
 
-    return {"safe": True, "reason": "Query passed safety checks.", "tables_referenced": tables_found}
+    return {
+        "safe": True,
+        "reason": "Query passed safety checks.",
+        "tables_referenced": tables_found,
+    }
 
 
 # ---------------------------------------------------------------------------
 # Mock query executor (simulates Cloud SQL / BigQuery)
 # ---------------------------------------------------------------------------
 
+
 def execute_query(sql: str) -> dict[str, Any]:
     """Execute a read-only SQL query against the real SQLite database."""
     from . import database
+
     return database.execute_sql(sql)

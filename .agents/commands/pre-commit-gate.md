@@ -12,18 +12,32 @@ project subdirectory.
 $root = git rev-parse --show-toplevel
 Push-Location $root
 try {
+  # Keep uv cache project-local in restricted runners. Reuse the healthy
+  # execution environment when this workspace has quarantined a stale .venv.
+  $env:UV_CACHE_DIR = Join-Path $root '.uv-cache'
+  $env:UV_PROJECT_ENVIRONMENT = if (Test-Path (Join-Path $root '.run-venv')) {
+    '.run-venv'
+  } else {
+    '.venv'
+  }
+  # Tests import the agent and observability stack. Never export local gate
+  # spans to Cloud Trace, even when the developer .env enables production tracing.
+  $env:ENABLE_TRACING = 'FALSE'
+  uv sync --frozen
+
   # 1. Run harness audit to ensure indexes and folders are synced and valid
-  python scripts/check_harness.py
+  uv run --no-project --python 3.11 python scripts/check_harness.py
 
   # 2. Block committed secret-shaped fixtures and unsafe co-author trailers
-  python scripts/check_source_safety.py
+  uv run --no-project --python 3.11 python scripts/check_source_safety.py
 
   # 3. Run formatting and linting
-  ruff check .
-  ruff format --check .
+  uv run ruff check .
+  uv run ruff format --check .
 
-  # 4. Run testing suite (model tests skip without GOOGLE_API_KEY)
-  pytest tests/ -v
+  # 4. Run deterministic tests. Live model behavior is the separate ADK eval
+  # gate and must never become an accidental, billable pre-commit side effect.
+  uv run pytest tests/ -v -m 'not requires_model'
 } finally {
   Pop-Location
 }

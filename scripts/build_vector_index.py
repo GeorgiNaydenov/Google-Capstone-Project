@@ -28,13 +28,19 @@ from capstone_agent import vector_store  # noqa: E402
 def main() -> int:
     """Run the backfill against the requested tenant database."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--db", default=None, help="Tenant SQLite file (default: clinical.db)")
+    parser.add_argument(
+        "--db", default=None, help="Tenant SQLite file (default: clinical.db)"
+    )
     parser.add_argument("--uploads", default=None, help="Tenant uploads directory")
-    parser.add_argument("--limit", type=int, default=400, help="Maximum chunks to embed")
+    parser.add_argument(
+        "--limit", type=int, default=400, help="Maximum chunks to embed"
+    )
     args = parser.parse_args()
 
     if not vector_store.store.available():
-        print("Vector search unavailable: Vertex credentials or ENABLE_VECTOR_SEARCH missing.")
+        print(
+            "Vector search unavailable: Vertex credentials or ENABLE_VECTOR_SEARCH missing."
+        )
         return 1
 
     db_path = ROOT / args.db if args.db else None
