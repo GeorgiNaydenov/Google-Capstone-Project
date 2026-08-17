@@ -1,0 +1,55 @@
+import { type ReactNode } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { ClinicalProvider, useClinical } from "./context";
+import { ErrorBoundary, ToastProvider } from "./components";
+import { Shell } from "./Shell";
+import { AdminDashboard, AgentConfiguration, DataStorage, UsersRoles } from "./screens/AdminScreens";
+import { ClinicalInbox, ClinicianDashboard, PatientOverview, PatientProfile, PatientSearch, SessionDetail } from "./screens/ClinicalScreens";
+import { DocsAccess, Landing, RoleSelection } from "./screens/EntryScreens";
+import { DatabaseIntelligence, Extraction, PatientQa } from "./screens/WorkflowScreens";
+import { DeveloperConsole } from "./screens/DeveloperConsole";
+import type { Role } from "./types";
+
+export const primaryRoutes = [
+  "/", "/roles", "/app/patients", "/app/overview", "/app/dashboard", "/app/queue",
+  "/app/patient/:patientId", "/app/session/:sessionId", "/app/extraction", "/app/qa",
+  "/app/database", "/app/inbox", "/app/admin", "/app/users", "/app/storage", "/app/configuration", "/app/console",
+  "/docs-viewer", "/docs-access",
+] as const;
+
+const REPOSITORY_URL = "https://github.com/GeorgiNaydenov/Google-Capstone-Project";
+
+function PaidServicesDisabledBanner() {
+  return <aside className="paid-services-disabled-banner" role="alert" aria-live="assertive">
+    <strong>Public demo notice:</strong> Paid API and agent services have been removed from this deployment. The source code is available on <a href={REPOSITORY_URL} target="_blank" rel="noreferrer">GitHub</a>. To run the application, deploy your own copy in an environment you control.
+  </aside>;
+}
+
+function RequireRole({ allow, fallback, children }: { allow: Role; fallback: string; children: ReactNode }) {
+  const { role } = useClinical();
+  if (role !== allow) return <Navigate to={fallback} replace />;
+  return <>{children}</>;
+}
+
+export function App() {
+  return <div className="paid-services-disabled"><PaidServicesDisabledBanner/><ClinicalProvider><ToastProvider><ErrorBoundary label="The application"><Routes>
+    <Route path="/" element={<Landing/>}/><Route path="/roles" element={<RoleSelection/>}/>
+    <Route path="/docs-viewer" element={<DeveloperConsole/>}/>
+    <Route path="/docs-access" element={<DocsAccess/>}/>
+    <Route path="/app" element={<Shell/>}>
+      <Route index element={<Navigate to="dashboard" replace/>}/>
+      <Route path="patients" element={<PatientSearch/>}/><Route path="overview" element={<PatientOverview/>}/>
+      <Route path="dashboard" element={<ClinicianDashboard/>}/><Route path="queue" element={<PatientSearch queue/>}/>
+      <Route path="patient/:patientId" element={<PatientProfile/>}/><Route path="session/:sessionId" element={<SessionDetail/>}/>
+      <Route path="extraction" element={<Extraction/>}/><Route path="qa" element={<PatientQa/>}/>
+      <Route path="database" element={<DatabaseIntelligence/>}/><Route path="inbox" element={<ClinicalInbox/>}/>
+      <Route path="admin" element={<RequireRole allow="admin" fallback="/app/dashboard"><AdminDashboard/></RequireRole>}/>
+      <Route path="users" element={<RequireRole allow="admin" fallback="/app/dashboard"><UsersRoles/></RequireRole>}/>
+      <Route path="storage" element={<RequireRole allow="admin" fallback="/app/dashboard"><DataStorage/></RequireRole>}/>
+      {/* Both roles can inspect agent configuration and monitoring; the screen
+          itself renders read-only for clinicians and only admins can save. */}
+      <Route path="configuration" element={<AgentConfiguration/>}/>
+      <Route path="console" element={<Navigate to="/docs-viewer?tab=api_runner" replace/>}/>
+    </Route><Route path="*" element={<Navigate to="/" replace/>}/>
+  </Routes></ErrorBoundary></ToastProvider></ClinicalProvider></div>;
+}

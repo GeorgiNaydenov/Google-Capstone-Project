@@ -1,0 +1,44 @@
+filters:
+  and:
+    - 'type == "module"'
+    - 'file.inFolder("_generated/modules")'
+properties:
+  file.name:
+    displayName: "Module"
+  package:
+    displayName: "Package"
+  purpose:
+    displayName: "Purpose"
+  updated:
+    displayName: "Last Sync"
+views:
+  - type: table
+    name: "All Modules"
+    order:
+      - file.name
+      - package
+      - purpose
+      - updated
+    sort:
+      - property: package
+        direction: ASC
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: "Agent Backend (capstone_agent)"
+    filters:
+      and:
+        - 'package == "capstone_agent"'
+    order:
+      - file.name
+      - purpose
+      - updated
+  - type: table
+    name: "Product Server (clinical_app)"
+    filters:
+      and:
+        - 'package == "clinical_app"'
+    order:
+      - file.name
+      - purpose
+      - updated

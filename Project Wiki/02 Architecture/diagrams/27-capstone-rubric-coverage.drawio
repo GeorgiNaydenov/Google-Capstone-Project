@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Capstone Rubric Coverage">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" page="1" pageWidth="1500" pageHeight="800">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Capstone Rubric Coverage Map (6 pillars mapped to implementing modules)" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="10" width="860" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p1" value="Agent / Multi-agent (ADK)" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="220" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="p1a" value="agent.py&#xa;root agent, sub-agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1">
+          <mxGeometry x="15" y="40" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1b" value="orchestration.py&#xa;Sequential, Loop, Parallel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1">
+          <mxGeometry x="15" y="90" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1c" value="llm.py&#xa;3 tier model registry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1">
+          <mxGeometry x="15" y="140" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1d" value="prompts.py&#xa;agent instructions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="p1">
+          <mxGeometry x="15" y="190" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" value="MCP Server" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="70" width="220" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="p2a" value="mcp_server/server.py&#xa;FastMCP with 10 tools" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2">
+          <mxGeometry x="15" y="40" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2b" value="database.py&#xa;SQLite persistence layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2">
+          <mxGeometry x="15" y="90" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2c" value="clinical_schemas.py&#xa;schema DDL and query engine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="p2">
+          <mxGeometry x="15" y="135" width="190" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" value="Security" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="70" width="220" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="p3a" value="security.py&#xa;PII, secrets, injection patterns" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="p3">
+          <mxGeometry x="15" y="40" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p3b" value="callbacks.py&#xa;3 layer ADK callbacks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="p3">
+          <mxGeometry x="15" y="90" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p3c" value="config.py&#xa;redact_secrets, secret mgmt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="p3">
+          <mxGeometry x="15" y="140" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" value="Deployability" style="swimlane;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="70" width="220" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="p4a" value="deployment/Dockerfile&#xa;Cloud Run container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="p4">
+          <mxGeometry x="15" y="40" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4b" value="cloudbuild.yaml&#xa;CI/CD pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="p4">
+          <mxGeometry x="15" y="90" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p4c" value="a2a_server.py&#xa;Agent2Agent protocol serving" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="p4">
+          <mxGeometry x="15" y="140" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p5" value="Agent Skills" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="70" width="220" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="p5a" value="tools.py&#xa;clinical production tools" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="p5">
+          <mxGeometry x="15" y="40" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p5b" value="document_processor.py&#xa;PDF, image extraction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="p5">
+          <mxGeometry x="15" y="90" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p5c" value="human_in_the_loop.py&#xa;HITL approval workflow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="p5">
+          <mxGeometry x="15" y="140" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6" value="Antigravity (Observability)" style="swimlane;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="70" width="190" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="p6a" value="observability.py&#xa;logs, traces, metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;" vertex="1" parent="p6">
+          <mxGeometry x="10" y="40" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6b" value="plugins.py&#xa;ObservabilityPlugin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;" vertex="1" parent="p6">
+          <mxGeometry x="10" y="90" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p6c" value="context.py&#xa;token budgeting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=11;" vertex="1" parent="p6">
+          <mxGeometry x="10" y="140" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cross" value="Cross-cutting: memory.py (4 layers), models.py (Pydantic contracts), eval/ (ADK eval), frontend/ (React 16 routes), Project Wiki/ (Obsidian knowledge base)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="400" width="1100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="score" value="Technical Implementation 50 pts: all 6 pillars covered. Documentation 20 pts: README, inline docstrings, wiki. Core Concept 10 pts, Video 10 pts, Writeup 10 pts." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="200" y="480" width="1100" height="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

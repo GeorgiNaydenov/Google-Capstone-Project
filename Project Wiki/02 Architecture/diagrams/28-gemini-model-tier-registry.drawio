@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Gemini Model Tier Registry">
+    <mxGraphModel dx="1300" dy="900" grid="1" gridSize="10" page="1" pageWidth="1300" pageHeight="700">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Gemini Model Tier Registry (capstone_agent/llm.py)" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="340" y="10" width="620" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="registry" value="build_model(tier) factory" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="480" y="70" width="340" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="retry" value="HttpRetryOptions&#xa;5 attempts, exponential backoff&#xa;retries 429, 500, 502, 503, 504" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="260" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t1" value="flash-lite (DEFAULT)" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="360" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="t1id" value="gemini-3.1-flash-lite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;fontSize=12;" vertex="1" parent="t1">
+          <mxGeometry x="20" y="40" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t1use" value="Cheap, fast, high frequency routing&#xa;and simple tasks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;" vertex="1" parent="t1">
+          <mxGeometry x="20" y="80" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="t1agents" value="Used by: coordination agents, routing,&#xa;quality assessor, audit agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="t1">
+          <mxGeometry x="20" y="130" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="t1env" value="Set via MODEL_TIER=flash-lite in .env" style="text;html=1;fontSize=10;fontColor=#666666;align=center;" vertex="1" parent="t1">
+          <mxGeometry x="20" y="180" width="320" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" value="pro" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="200" width="360" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="t2id" value="gemini-3.1-pro-preview" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;" vertex="1" parent="t2">
+          <mxGeometry x="20" y="40" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t2use" value="Frontier reasoning for hard,&#xa;multi step sub-tasks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="t2">
+          <mxGeometry x="20" y="80" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="t2agents" value="Used by: answer synthesis, clinical&#xa;structuring, insight chart agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="t2">
+          <mxGeometry x="20" y="130" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="t2env" value="Set via MODEL_TIER=pro in .env" style="text;html=1;fontSize=10;fontColor=#666666;align=center;" vertex="1" parent="t2">
+          <mxGeometry x="20" y="180" width="320" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t3" value="pro-customtools" style="swimlane;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="880" y="200" width="380" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="t3id" value="gemini-3.1-pro-preview-customtools" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontStyle=1;fontSize=12;" vertex="1" parent="t3">
+          <mxGeometry x="20" y="40" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t3use" value="Dedicated tool calling variant,&#xa;most reliable function calling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="t3">
+          <mxGeometry x="20" y="80" width="340" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="t3agents" value="Used by: tool heavy agents, nl_to_sql,&#xa;evidence retrieval, query executor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="t3">
+          <mxGeometry x="20" y="130" width="340" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="t3env" value="Set via MODEL_TIER=pro-customtools in .env" style="text;html=1;fontSize=10;fontColor=#666666;align=center;" vertex="1" parent="t3">
+          <mxGeometry x="20" y="180" width="340" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" value="flash-image" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="490" width="360" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="t4id" value="gemini-3.1-flash-image" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontStyle=1;fontSize=12;" vertex="1" parent="t4">
+          <mxGeometry x="20" y="40" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t4use" value="Image OUTPUT tier for generate_clinical_visual.&#xa;Called via google-genai with response_modalities." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="t4">
+          <mxGeometry x="20" y="80" width="320" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="resolve" value="resolve_model_id handles tier lookup,&#xa;MODEL_ID override in .env, and raw model id passthrough" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="500" width="420" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="wraps every model" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="retry" target="registry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="registry" target="t1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="registry" target="t2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="registry" target="t3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

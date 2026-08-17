@@ -1,0 +1,152 @@
+{
+  "_instructions": {
+    "purpose": "Seeding showcase SQLite database tables for custom patient cohorts.",
+    "format": "Each key represents a database table name. The lists contain row objects matching table columns.",
+    "extended_data_note": "For patients_core, extended_data is a JSON object with keys like demographics, medications, allergies, care_team, and diagnoses."
+  },
+  "patients_core": [
+    {
+      "patient_id": "PT-T0001",
+      "name": "Alex Mercer",
+      "age": 54,
+      "sex": "Male",
+      "risk_level": "high",
+      "primary_diagnosis": "Metastatic NSCLC",
+      "assigned_clinician": "Dr. Sarah Miller",
+      "last_session_date": "2026-07-05",
+      "data_completeness_score": 0.95,
+      "open_tasks": 2,
+      "ai_review_status": "needs_review",
+      "extended_data": {
+        "demographics": {
+          "dob": "1972-04-12",
+          "mrn": "MRN-123401",
+          "insurance": "Blue Cross Blue Shield",
+          "primary_language": "English",
+          "emergency_contact": "Kelly Mercer (spouse)"
+        },
+        "medications": [
+          {"name": "Pembrolizumab", "dose": "200mg IV q3w", "status": "active"},
+          {"name": "Ondansetron", "dose": "8mg PRN", "status": "active"}
+        ],
+        "allergies": ["Sulfonamides"],
+        "care_team": ["Dr. Sarah Miller (Oncology)", "RN Lisa Wong"],
+        "diagnoses": [
+          {"code": "C34.1", "description": "NSCLC, right upper lobe", "date": "2025-11-10", "status": "active"}
+        ]
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "SES-T000101",
+      "patient_id": "PT-T0001",
+      "session_date": "2026-07-05",
+      "uploaded_image_count": 1,
+      "extraction_confidence": 0.88,
+      "clinician_verification": "pending",
+      "json_sync_status": "synced",
+      "relational_sync_status": "pending",
+      "vector_sync_status": "pending",
+      "audit_status": "recorded"
+    }
+  ],
+  "extracted_fields": [
+    {
+      "session_id": "SES-T000101",
+      "patient_id": "PT-T0001",
+      "field_name": "tumor_size_cm",
+      "field_value": "4.5",
+      "confidence": 0.92,
+      "ontology_code": "254291000",
+      "needs_review": false
+    }
+  ],
+  "clinical_notes": [
+    {
+      "note_id": "NOTE-T000101",
+      "patient_id": "PT-T0001",
+      "note_date": "2026-07-05",
+      "author": "Dr. Sarah Miller",
+      "note_type": "Progress Note",
+      "note_text": "Alex Mercer presents for oncology follow-up. Tolerating pembrolizumab well. CT of chest shows primary lung tumor size is 4.5cm, stable from prior exam.",
+      "vector_chunk_id": "VEC-T000101"
+    }
+  ],
+  "lab_results": [
+    {
+      "patient_id": "PT-T0001",
+      "result_date": "2026-07-05",
+      "test_name": "CBC",
+      "component": "Hemoglobin",
+      "value": "11.2",
+      "unit": "g/dL",
+      "reference_range": "13.5-17.5",
+      "flag": "low"
+    }
+  ],
+  "imaging_studies": [
+    {
+      "session_id": "SES-T000101",
+      "patient_id": "PT-T0001",
+      "gcs_uri": "gs://clinical-data/PT-T0001/SES-T000101/ct-chest.png",
+      "modality": "CT",
+      "body_region": "Chest",
+      "description": "CT Chest with contrast showing right upper lobe mass",
+      "quality_score": 0.94,
+      "resolution": "1024x1024",
+      "bit_depth": 16,
+      "contrast": "high",
+      "artifacts": "none",
+      "dicom_compliant": true,
+      "file_size_kb": 1540
+    }
+  ],
+  "audit_log": [
+    {
+      "event_timestamp": "2026-07-05T19:50:00",
+      "agent_name": "database_intelligence_pipeline",
+      "action": "cohort_row_indexed",
+      "patient_id": "PT-T0001",
+      "session_id": "SES-T000101",
+      "details": {
+        "risk_level": "high",
+        "primary_diagnosis": "Metastatic NSCLC"
+      },
+      "user_role": "admin"
+    }
+  ],
+  "documents": [
+    {
+      "document_id": "DOC-T000101",
+      "patient_id": "PT-T0001",
+      "filename": "oncology_report.pdf",
+      "content_type": "application/pdf",
+      "file_path": "uploads/oncology_report.pdf",
+      "uploaded_at": "2026-07-05T19:40:00",
+      "raw_text": "ONCOLOGY PROGRESS REPORT\nPatient Name: Alex Mercer\nPrimary tumor size: 4.5cm.\nSigned: Dr. Sarah Miller",
+      "page_count": 1,
+      "processing_status": "processed",
+      "gemini_analysis": "Summary of oncologist progress note detailing 4.5cm tumor size."
+    }
+  ],
+  "document_chunks": [
+    {
+      "document_id": "DOC-T000101",
+      "patient_id": "PT-T0001",
+      "chunk_index": 0,
+      "chunk_text": "ONCOLOGY PROGRESS REPORT Patient Name: Alex Mercer Primary tumor size: 4.5cm.",
+      "source_page": 1
+    }
+  ],
+  "qa_memory": [
+    {
+      "patient_id": "PT-T0001",
+      "question": "What is the latest tumor size?",
+      "answer_summary": "The latest tumor size is 4.5cm as of 2026-07-05.",
+      "sql_query": "SELECT field_value FROM extracted_fields WHERE patient_id = 'PT-T0001' AND field_name = 'tumor_size_cm';",
+      "created_at": "2026-07-05T19:45:00",
+      "memory_type": "qa"
+    }
+  ]
+}

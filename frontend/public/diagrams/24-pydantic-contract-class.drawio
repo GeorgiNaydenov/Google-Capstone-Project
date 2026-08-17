@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Pydantic Contract Class Diagram">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" page="1" pageWidth="1400" pageHeight="800">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Pydantic Contract Class Diagram (capstone_agent/models.py and clinical_app/models.py)" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="280" y="10" width="840" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="box1" value="capstone_agent/models.py" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="600" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="tr" value="&lt;&lt;BaseModel&gt;&gt;&#xa;ToolResponse" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#6c8ebf;html=1;" vertex="1" parent="box1">
+          <mxGeometry x="30" y="50" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="tr1" value="status: str&#xa;data: dict[str, Any]&#xa;message: str = &quot;&quot;" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="tr">
+          <mxGeometry x="10" y="50" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="te" value="&lt;&lt;BaseModel&gt;&gt;&#xa;ToolError" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#b85450;html=1;" vertex="1" parent="box1">
+          <mxGeometry x="310" y="50" width="240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="te1" value="error_code: str&#xa;error_message: str&#xa;details: dict[str, Any] = {}" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="te">
+          <mxGeometry x="10" y="50" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pi" value="&lt;&lt;BaseModel&gt;&gt;&#xa;PatientInput" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#82b366;html=1;" vertex="1" parent="box1">
+          <mxGeometry x="30" y="210" width="240" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="pi1" value="patient_id: str&#xa;(validated at function boundary)" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="pi">
+          <mxGeometry x="10" y="50" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qi" value="&lt;&lt;BaseModel&gt;&gt;&#xa;QueryInput" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#82b366;html=1;" vertex="1" parent="box1">
+          <mxGeometry x="310" y="210" width="240" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="qi1" value="query: str&#xa;(SQL validated by before_tool)" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="qi">
+          <mxGeometry x="10" y="50" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="box2" value="clinical_app/models.py" style="swimlane;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;html=1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="70" width="660" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="rr" value="&lt;&lt;BaseModel&gt;&gt;&#xa;RunRequest" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#d79b00;html=1;" vertex="1" parent="box2">
+          <mxGeometry x="20" y="50" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="rr1" value="patientId: str&#xa;sessionId: str | None" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="rr">
+          <mxGeometry x="10" y="50" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qr" value="&lt;&lt;BaseModel&gt;&gt;&#xa;QuestionRequest" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#d79b00;html=1;" vertex="1" parent="box2">
+          <mxGeometry x="240" y="50" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="qr1" value="patientId: str&#xa;question: str" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="qr">
+          <mxGeometry x="10" y="50" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dr" value="&lt;&lt;BaseModel&gt;&gt;&#xa;DatabaseRequest" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#d79b00;html=1;" vertex="1" parent="box2">
+          <mxGeometry x="460" y="50" width="180" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dr1" value="query: str" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="dr">
+          <mxGeometry x="10" y="50" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="or_" value="&lt;&lt;BaseModel&gt;&gt;&#xa;OrchestrateRequest" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#d79b00;html=1;" vertex="1" parent="box2">
+          <mxGeometry x="20" y="200" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="or1" value="patientId: str&#xa;sessionId: str | None&#xa;question: str | None" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="or_">
+          <mxGeometry x="10" y="50" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="rev" value="&lt;&lt;BaseModel&gt;&gt;&#xa;ReviewRequest" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#d79b00;html=1;" vertex="1" parent="box2">
+          <mxGeometry x="240" y="200" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="rev1" value="runId: str&#xa;decision: str&#xa;comment: str | None" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="rev">
+          <mxGeometry x="10" y="50" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="role" value="&lt;&lt;Literal&gt;&gt;&#xa;Role" style="swimlane;fontStyle=1;align=center;startSize=40;fillColor=#ffffff;strokeColor=#9673a6;html=1;" vertex="1" parent="box2">
+          <mxGeometry x="460" y="200" width="180" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="role1" value="clinician | admin | reviewer" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="role">
+          <mxGeometry x="10" y="50" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="All tool functions return ToolResponse or ToolError. API routes accept typed Pydantic request bodies. Validation happens at system boundaries." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="200" y="480" width="1000" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="every tool returns" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="box1" target="note">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="API accepts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="box2" target="note">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,135 @@
+# =============================================================================
+# Environment and secrets — NEVER commit real credentials
+# =============================================================================
+.env
+.env.local
+*.env.local
+.env.production
+.env.staging
+
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+*.pyo
+*.pyd
+.Python
+
+# =============================================================================
+# Virtual environment
+# =============================================================================
+.venv/
+venv/
+env/
+ENV/
+
+# =============================================================================
+# IDE and editors
+# =============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# =============================================================================
+# OS generated
+# =============================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# =============================================================================
+# Testing and coverage
+# =============================================================================
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# =============================================================================
+# Frontend
+# =============================================================================
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+frontend/vite-dev.log
+frontend/vite-dev.err.log
+
+# =============================================================================
+# Runtime databases — generated at runtime, not source
+# =============================================================================
+*.db
+*.db-shm
+*.db-wal
+capstone_sessions.db
+clinical.db
+capstone_agent/.adk/
+
+# =============================================================================
+# Uploads — runtime user data (root-level only, not design system)
+# =============================================================================
+/uploads/
+/uploads_capstone/
+
+# =============================================================================
+# Deployment logs
+# =============================================================================
+*.log
+
+# =============================================================================
+# Tool caches
+# =============================================================================
+.uv-cache/
+.deepeval/
+.ruff_cache/
+.mypy_cache/
+
+# =============================================================================
+# Claude Code / Codex / Antigravity — local settings and state
+# =============================================================================
+.claude/settings.local.json
+.claude/state/
+.agents/state/
+.agents/settings.local.json
+.agents/scheduled_tasks.lock
+.codex/
+.run-logs/
+
+# drawio skill: upstream clone (embedded git repo) + local symlink into it.
+# The committed copy of the skill lives at .agents/skills/drawio/.
+.claude/skills/drawio-skill/
+.agents/skills/drawio-skill/
+.claude/skills/drawio
+
+# =============================================================================
+# Generated showcase data — reproducible via scripts/generate_*_showcase.py
+# =============================================================================
+showcase_data/
+
+# =============================================================================
+# Claude memory — conversation-specific, not source
+# =============================================================================
+/MEMORY.md
+
+# =============================================================================
+# Obsidian vault — per-user workspace state, not source
+# =============================================================================
+Project Wiki/.obsidian/workspace.json
+
+# Local build/tool artifacts
+.docker-tmp/
+tmp_sharex_*.jpg
+.tmp/
+.tmp_showcase_validation/

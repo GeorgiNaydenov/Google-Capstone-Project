@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Wiki Auto Sync Hook BPMN">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" page="1" pageWidth="1500" pageHeight="700">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Wiki Auto Sync Hook BPMN (scripts/sync_wiki.py)" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="420" y="10" width="660" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pool" value="" style="swimlane;html=1;startSize=0;horizontal=0;fillColor=none;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1420" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="lane1" value="Claude Code agent" style="swimlane;html=1;startSize=30;horizontal=0;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="pool">
+          <mxGeometry x="0" y="0" width="1420" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2" value="sync_wiki.py" style="swimlane;html=1;startSize=30;horizontal=0;fillColor=#f0f6ff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="pool">
+          <mxGeometry x="0" y="160" width="1420" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="lane3" value="Project Wiki output" style="swimlane;html=1;startSize=30;horizontal=0;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="pool">
+          <mxGeometry x="0" y="410" width="1420" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="start" value="Agent turn&#xa;completes" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane1">
+          <mxGeometry x="50" y="40" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="hook" value="Stop hook fires&#xa;sync_wiki.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;" vertex="1" parent="lane1">
+          <mxGeometry x="230" y="45" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="done" value="Agent resumes,&#xa;wiki pages current" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
+          <mxGeometry x="1210" y="45" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="scan" value="Scan PACKAGES&#xa;capstone_agent, clinical_app,&#xa;mcp_server, scripts, tests" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="50" y="50" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ast" value="AST parse each .py&#xa;extract classes,&#xa;functions, imports" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="300" y="50" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="gen" value="Regenerate _generated pages&#xa;Module Inventory, Test Inventory,&#xa;Harness Index, Changelog,&#xa;Drift Report" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="540" y="40" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="auto" value="Rewrite AUTO blocks&#xa;in Module Dependency Graph,&#xa;CLAUDE.md, MEMORY.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="810" y="50" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="harness" value="Run sync_harness.py&#xa;mirrors CLAUDE.md&#xa;to AGENTS.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="1060" y="50" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="check" value="write_if_changed&#xa;only writes when non volatile&#xa;content differs (idempotent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="lane2">
+          <mxGeometry x="540" y="170" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="mod" value="Module Inventory.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="50" y="50" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="test" value="Test Inventory.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="240" y="50" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="harni" value="Harness Index.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="430" y="50" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="clog" value="Changelog.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="620" y="50" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="drift" value="Drift Report.md" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="810" y="50" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="endev" value="Sync&#xa;complete" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="lane3">
+          <mxGeometry x="1060" y="40" width="80" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="Pure stdlib, no LLM calls. Deterministic and always exits 0. Errors recorded in Drift Report." style="text;html=1;fontSize=12;align=center;fontColor=#666666;" vertex="1" parent="lane3">
+          <mxGeometry x="200" y="130" width="700" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="start" target="hook">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="hook" target="scan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="scan" target="ast">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="ast" target="gen">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="gen" target="auto">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="auto" target="harness">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="harness" target="done">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="uses" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="gen" target="check">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="writes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=1;exitY=0.75;entryX=1;entryY=0.5;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="gen" target="clog">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="810" y="335" />
+              <mxPoint x="810" y="495" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="drift" target="endev">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

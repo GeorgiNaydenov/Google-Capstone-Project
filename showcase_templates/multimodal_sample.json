@@ -1,0 +1,84 @@
+[
+  {
+    "_instructions": {
+      "patient": "Core patient clinical profile for the target multimodal patient.",
+      "timeline": "Chronological history of patient encounters, notes, or diagnostic events.",
+      "labs": "Laboratory results with dates, test components, and reference ranges.",
+      "images": "Imaging studies referencing modality, body region, and descriptions.",
+      "notes": "Text-based clinical notes which will be embedded into knowledge base / text indexing.",
+      "comparator_cohort": "Cohort of other similar patients for comparative analysis.",
+      "qa_prompts": "Custom predefined Q&A prompts that will be packaged into the showcase bundle."
+    },
+    "patient": {
+      "patient_id": "PT-T0003",
+      "name": "David Okafor",
+      "age": 59,
+      "sex": "Male",
+      "risk_level": "high",
+      "primary_diagnosis": "Type 2 diabetes with retinopathy",
+      "assigned_clinician": "Dr. Elena Park",
+      "data_completeness_score": 0.94,
+      "care_team": ["Dr. Elena Park (Endocrinology)", "RN Lisa Wong"],
+      "allergies": ["Penicillin"],
+      "medications": [
+        {"name": "Metformin", "dose": "1000mg BID", "status": "active"},
+        {"name": "Atorvastatin", "dose": "40mg daily", "status": "active"}
+      ]
+    },
+    "timeline": [
+      {
+        "date": "2026-07-01",
+        "type": "Encounter",
+        "description": "Routine diabetic eye screen. Fundoscopy shows moderate non-proliferative diabetic retinopathy."
+      }
+    ],
+    "labs": [
+      {
+        "date": "2026-07-01",
+        "test": "CMP",
+        "component": "HbA1c",
+        "value": "8.4",
+        "unit": "%",
+        "reference_range": "<5.7",
+        "flag": "high"
+      }
+    ],
+    "images": [
+      {
+        "image_id": "IMG-T000301",
+        "gcs_uri": "gs://clinical-data/PT-T0003/fundoscopy.png",
+        "modality": "Fundoscopy",
+        "body_region": "Eye",
+        "description": "Left eye fundus photography showing microaneurysms.",
+        "quality_score": 0.95
+      }
+    ],
+    "notes": [
+      {
+        "note_id": "NOTE-T000301",
+        "date": "2026-07-01",
+        "author": "Dr. Elena Park",
+        "type": "Consult",
+        "text": "David is showing signs of moderate retinopathy. Metformin dose is verified. HbA1c remains elevated at 8.4%. Recommending strict glycemic control."
+      }
+    ],
+    "comparator_cohort": [
+      {
+        "patient_id": "PT-T0003-C01",
+        "name": "Jane Smith",
+        "age": 62,
+        "sex": "Female",
+        "risk_level": "needs_review",
+        "primary_diagnosis": "Type 2 diabetes",
+        "assigned_clinician": "Dr. Elena Park"
+      }
+    ],
+    "qa_prompts": [
+      {
+        "question": "What is the status of David's diabetic retinopathy and what is the latest HbA1c value?",
+        "expected_sources": ["clinical_notes", "labs"],
+        "expected_output": "diabetic retinopathy is moderate, and latest HbA1c is 8.4%."
+      }
+    ]
+  }
+]

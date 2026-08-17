@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patient QA Pipeline · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Patient QA Pipeline</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>Patient QA Pipeline</h1>
+<p>SequentialAgent (7 agents) answering clinical questions with cited evidence from notes, images, and vector search — grounded in patient context.</p>
+<pre class="mermaid">flowchart TD
+    START([Patient-scoped question]) --> CA
+    CA["context_assembly_agent (flash-lite)<br/>lookup_patient_record, validate_qa_request"] --> ER
+    ER["evidence_retrieval_agent (pro-customtools)<br/>search_clinical_notes, search_vector_store,<br/>retrieve_imaging_evidence"] --> IE
+    IE["image_evidence_agent (pro)<br/>analyze_evidence_images, fetch_image_from_gcs"] --> CB
+    CB["citation_builder_agent (flash-lite)<br/>build_citations"] --> AS
+    AS["answer_synthesis_agent (pro)<br/>compose_clinical_answer"] --> AU
+    AU["qa_audit_agent (flash-lite)<br/>log_audit_event, save_qa_to_memory"] --> DONE([Cited answer + audit trail])
+</pre>
+<p>Key facts:</p>
+<ul>
+<li>Validation happens first: <code>validate_qa_request</code> rejects out-of-scope requests before any retrieval.</li>
+<li>Evidence is multimodal — text notes, vector search hits, and imaging pulled from GCS and analyzed by Gemini Vision.</li>
+<li>Every answer carries citations built before synthesis, so sources are traceable in the UI (<a href="../../project-wiki/06%20Operations/Clinical%20App.html">Clinical App</a>).</li>
+<li>The audit stage persists the exchange to long-term memory (<code>save_qa_to_memory</code>) with PHI filtered first (<a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a> Layer 3).</li>
+</ul>
+<p>Related: <a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a> · <a href="../../project-wiki/03%20Processes/End-to-End%20Request%20Flow.html">End-to-End Request Flow</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

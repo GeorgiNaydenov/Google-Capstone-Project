@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DB Intelligence Pipeline · Nexus Documentation</title>
+<link rel="icon" href="/favicon.png">
+<link rel="stylesheet" href="../../docs.css">
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+</script>
+</head>
+<body>
+<header class="doc-topbar">
+  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;DB Intelligence Pipeline</span>
+  <span class="spacer"></span>
+  <nav class="actions">
+    <a class="ghost" href="/">Back to main page</a>
+    <a class="primary" href="/roles">Enter the application</a>
+  </nav>
+</header>
+<main>
+<h1>DB Intelligence Pipeline</h1>
+<p>SequentialAgent (6 agents) translating natural language into safe SQL with validation before execution and chart-spec generation after. Lanes: Agents, Safety Gate.</p>
+<pre class="mermaid">flowchart TD
+    subgraph LANE_AG["Lane: Pipeline agents"]
+        SD["schema_discovery_agent (flash-lite)<br/>get_database_schema"]
+        NL["nl_to_sql_agent (pro)<br/>generate_sql"]
+        EX["query_executor_agent (pro-customtools)"]
+        IC["insight_chart_agent (flash-lite)<br/>generate_chart_spec, save_query_to_memory"]
+    end
+
+    subgraph LANE_GATE["Lane: Safety gate"]
+        SV{sql_validator_agent (flash-lite)<br/>validate_sql_safety}
+        APPR{Approval boundary<br/>approve_sql_preview}
+    end
+
+    START([Natural-language question]) --> SD --> NL --> SV
+    SV -->|unsafe| REJ([Rejected + logged])
+    SV -->|safe| APPR
+    APPR -->|direct| RUN["execute_clinical_query"]
+    APPR -->|preview approved| RUN2["execute_approved_clinical_query"]
+    RUN --> IC
+    RUN2 --> IC
+    IC --> DONE([Table / chart / CSV export + history + audit])
+</pre>
+<p>Key facts:</p>
+<ul>
+<li>SQL never executes without passing <code>validate_sql_safety</code>; the product exposes a <strong>read-only SQL preview with an explicit execution boundary</strong> (<a href="../../project-wiki/01%20Overview/Problem%20and%20Solution.html">Problem and Solution</a>).</li>
+<li>The executor is <code>pro-customtools</code> tier; generation is <code>pro</code> tier (<a href="../../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a>).</li>
+<li>Results feed <code>generate_chart_spec</code> for visual output, and the query is persisted to memory (<code>save_query_to_memory</code>) for later recall.</li>
+<li>Schema and query engine live in <code>clinical_schemas.py</code> and <code>database.py</code> (<a href="../../project-wiki/02%20Architecture/Module%20Reference.html">Module Reference</a>).</li>
+</ul>
+<p>Related: <a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a> · <a href="../../project-wiki/03%20Processes/End-to-End%20Request%20Flow.html">End-to-End Request Flow</a></p>
+
+<footer class="doc-footer">
+  <a href="../../index.html">Documentation hub</a>
+  <a href="/">Product landing</a>
+  <a href="/roles">Enter the application</a>
+  <a href="/docs">Swagger API console</a>
+  <a href="/redoc">ReDoc API reference</a>
+</footer>
+</main>
+</body>
+</html>

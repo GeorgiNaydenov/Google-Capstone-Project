@@ -1,0 +1,69 @@
+# Cloud Build pipeline for deploying Clinical AI Kit to Cloud Run.
+#
+# Trigger from the repo root:
+#   gcloud builds submit --config deployment/cloudbuild.yaml .
+#
+# Public-demo deployment. Paid model, Vertex, MCP, A2A, tracing, and cloud
+# storage integrations are disabled in both runtime configuration and product
+# routes. It needs no AI-service IAM roles or API-key secret.
+
+substitutions:
+  _REGION: us-central1
+  _SERVICE: clinical-ai-kit
+  _REPOSITORY: clinical-ai-kit
+  _IMAGE: clinical-ai-kit
+
+steps:
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud artifacts repositories describe "${_REPOSITORY}" --location="${_REGION}" >/dev/null 2>&1 ||
+        gcloud artifacts repositories create "${_REPOSITORY}" \
+          --repository-format=docker \
+          --location="${_REGION}" \
+          --description="Clinical AI Kit container images"
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$BUILD_ID
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:latest
+      - -f
+      - deployment/Dockerfile
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$BUILD_ID
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --memory=1Gi
+      - --cpu=1
+      - --concurrency=4
+      - --min-instances=0
+      - --max-instances=1
+      - --execution-environment=gen2
+      - --clear-volumes
+      - --clear-volume-mounts
+      - --set-env-vars=AGENT_EXECUTION_MODE=disabled,ENABLE_VECTOR_SEARCH=FALSE,ENABLE_RERANKER=FALSE,HIPAA_MODE=TRUE,PHI_REDACTION=TRUE,MEMORY_BACKEND=memory,SESSION_BACKEND=memory,ENABLE_TRACING=FALSE,CLINICAL_DATA_DIR=/data
+      - --remove-secrets=GOOGLE_API_KEY
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$BUILD_ID
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:latest

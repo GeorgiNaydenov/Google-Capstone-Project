@@ -1,0 +1,23 @@
+[
+  {
+    "patient": {
+      "patient_id": "",
+      "name": "",
+      "age": 0,
+      "sex": "",
+      "risk_level": "",
+      "primary_diagnosis": "",
+      "assigned_clinician": "",
+      "data_completeness_score": 0.0,
+      "care_team": [],
+      "allergies": [],
+      "medications": []
+    },
+    "timeline": [],
+    "labs": [],
+    "images": [],
+    "notes": [],
+    "comparator_cohort": [],
+    "qa_prompts": []
+  }
+]
