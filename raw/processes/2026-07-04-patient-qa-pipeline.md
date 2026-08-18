@@ -6,17 +6,19 @@
 
 # Patient QA Pipeline
 
-SequentialAgent (7 agents) answering clinical questions with cited evidence from notes, images, and vector search — grounded in patient context.
+`SequentialAgent` containing 8 specialist LLM agents answers clinical questions with cited evidence from notes, images, and vector search — grounded in patient context.
 
 ```mermaid
 flowchart TD
-    START([Patient-scoped question]) --> CA
-    CA["context_assembly_agent (flash-lite)<br/>lookup_patient_record, validate_qa_request"] --> ER
+    START([Patient-scoped question]) --> VR
+    VR["qa_request_validation_agent (flash-lite)<br/>validate_qa_request"] --> CA
+    CA["context_assembly_agent (flash-lite)<br/>lookup_patient_record, load_memory,<br/>search_past_conversations"] --> ER
     ER["evidence_retrieval_agent (pro-customtools)<br/>search_clinical_notes, search_vector_store,<br/>retrieve_imaging_evidence"] --> IE
-    IE["image_evidence_agent (pro)<br/>analyze_evidence_images, fetch_image_from_gcs"] --> CB
+    IE["image_evidence_agent (pro-customtools)<br/>analyze_evidence_images, fetch_image_from_gcs"] --> CB
     CB["citation_builder_agent (flash-lite)<br/>build_citations"] --> AS
     AS["answer_synthesis_agent (pro)<br/>compose_clinical_answer"] --> AU
-    AU["qa_audit_agent (flash-lite)<br/>log_audit_event, save_qa_to_memory"] --> DONE([Cited answer + audit trail])
+    AU["qa_audit_agent (flash-lite)<br/>log_audit_event, save_qa_to_memory"] --> RS
+    RS["qa_response_agent (flash-lite)<br/>return cited answer"] --> DONE([Cited answer + audit trail])
 ```
 
 Key facts:

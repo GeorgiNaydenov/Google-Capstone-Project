@@ -13,7 +13,7 @@ aliases:
 
 # MCP and A2A
 
-Two interoperability surfaces let external clients and agents use Nexus capabilities.
+Two interoperability surfaces let external clients and agents use Clinical AI Kit capabilities.
 
 ```mermaid
 flowchart LR

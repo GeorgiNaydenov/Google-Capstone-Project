@@ -1,6 +1,6 @@
 # tests — Test Suite
 
-pytest test suite for the Nexus Clinical AI Command Center. Tests are organized by concern and designed to pass without a `GOOGLE_API_KEY` — model-dependent tests are skipped automatically when credentials are unavailable.
+pytest test suite for Clinical AI Kit. Tests are organized by concern and designed to pass without a `GOOGLE_API_KEY` — model-dependent tests are skipped automatically when credentials are unavailable.
 
 ---
 
@@ -13,7 +13,7 @@ pytest test suite for the Nexus Clinical AI Command Center. Tests are organized 
 | `test_tools.py` | No | Tool input/output validation with Pydantic contracts |
 | `test_context.py` | No | Context engineering — token estimation, history compaction, boundary injection |
 | `test_memory.py` | No | Memory governance, PII redaction before persistence, session service creation |
-| `test_orchestration.py` | No | Pipeline construction — verifies all 16 agents are wired correctly |
+| `test_orchestration.py` | No | Pipeline construction — verifies all clinical agents are wired correctly |
 | `test_clinical_tools.py` | No | Clinical-specific tool validation and database operations |
 | `test_clinical_api.py` | No | FastAPI endpoint integration tests |
 | `test_document_parsing.py` | No | Document upload validation and parsing |

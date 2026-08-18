@@ -65,7 +65,7 @@ const steps: TourStep[] = [
   {
     id: "qa", route: `/app/qa?query=${encodeURIComponent("What changed between the last two sessions?")}`, eyebrow: "AI WORKFLOW 2: PATIENT Q&A", screen: "Patient Q&A",
     title: "Ask the record a clinical question.",
-    body: "The question field behind this panel is already filled in. Close or step past this panel and press \"Ask Nexus agents\" to see the real agents retrieve across notes, labs, and images, with citations to the exact scan, note, or value.",
+    body: "The question field behind this panel is already filled in. Close or step past this panel and press \"Ask Clinical AI Kit agents\" to see the real agents retrieve across notes, labs, and images, with citations to the exact scan, note, or value.",
   },
   {
     id: "database", route: `/app/database?query=${encodeURIComponent("Count patients by risk level")}`, eyebrow: "AI WORKFLOW 3: POPULATION INTELLIGENCE", screen: "Population insights",
@@ -80,7 +80,7 @@ const steps: TourStep[] = [
   {
     id: "orchestrator", route: "/app/inbox", eyebrow: "ONE COMMAND BAR", screen: "Workflow planning",
     title: "Describe the task and inspect the plan before it runs.",
-    body: "From any screen, Nexus maps your request to a workflow, care team permissions, and expected output. The plan is visible first, so clinical context stays under your control.",
+    body: "From any screen, Clinical AI Kit maps your request to a workflow, care team permissions, and expected output. The plan is visible first, so clinical context stays under your control.",
     visual: <ChipRow flow chips={["Intent", "Workflow", "Agents", "Permissions", "Run"]}/>,
   },
   {

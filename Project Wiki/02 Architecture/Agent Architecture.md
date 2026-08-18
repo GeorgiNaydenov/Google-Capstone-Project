@@ -8,21 +8,20 @@ tags:
   - architecture
   - agents
 aliases:
-  - 16-Agent Architecture
-  - 22-Agent Pipeline Overview
+  - 22-LLM-Agent Architecture
 ---
 
 # Agent Architecture
 
-A root orchestrator routes every request to one of three SequentialAgent pipelines. All agents get their model via `llm.build_model(tier)` — see [[Model Registry]] — and every interaction passes through the [[Security Layers]] callbacks.
+A root orchestrator routes every request to one of three `SequentialAgent` pipelines. The topology contains 22 LLM agents total: the root plus 21 specialists. Extraction also nests a `LoopAgent` container. All LLM agents get their model via `llm.build_model(tier)` — see [[Model Registry]] — and every interaction passes through the [[Security Layers]] callbacks.
 
 ## Pipeline overview
 
 | Pipeline | Agents | Model tiers | Purpose |
 |----------|--------|-------------|---------|
-| **Image Extraction** | 9 agents (SequentialAgent + LoopAgent) | flash-lite, pro, pro-customtools | Quality → OCR → AI vision → structuring → critic/refiner loop → review gate → persistence → audit |
-| **Patient Q&A** | 7 agents (SequentialAgent) | flash-lite, pro, pro-customtools, flash-image | Validation → context → retrieval → image evidence → citations → answer synthesis (with generated visuals) → audit |
-| **DB Intelligence** | 6 agents (SequentialAgent) | flash-lite, pro, flash-image | Schema discovery → NL-to-SQL → safety validation → approval gate → execution → insights/charts |
+| **Image Extraction** | 7 specialist LLM agents (`SequentialAgent` + nested `LoopAgent`) | flash-lite, pro, pro-customtools | Quality → OCR → AI vision → structuring → critic/refiner loop → review-request preparation |
+| **Patient Q&A** | 8 specialist LLM agents (`SequentialAgent`) | flash-lite, pro, pro-customtools | Validation → context → retrieval → image evidence → citations → answer synthesis → audit → response |
+| **DB Intelligence** | 6 specialist LLM agents (`SequentialAgent`) | flash-lite, pro | Schema discovery → NL-to-SQL → safety validation → approval preparation → execution → insights/charts |
 | **Orchestrator** | 1 root agent | flash-lite | Intent routing, MCP tools, memory recall, HITL approval |
 
 ## Root orchestrator
@@ -36,23 +35,27 @@ A root orchestrator routes every request to one of three SequentialAgent pipelin
 | Agent | Tier | Tools |
 |-------|------|-------|
 | `quality_assessor_agent` | flash-lite | `assess_image_quality` |
-| `vision_analyzer_agent` | pro | `analyze_clinical_image` |
+| `ocr_processor_agent` | flash-lite | `extract_clinical_text` |
+| `vision_analyzer_agent` | pro-customtools | `analyze_clinical_image` |
 | `clinical_structuring_agent` | pro | `structure_clinical_findings`, `store_to_gcs` |
-| `validation_gate` (LoopAgent) | — | wraps critic + refiner (Day 1b loop pattern) |
-| `critic_agent` | — | `exit_loop` (confidence >= threshold) |
-| `refiner_agent` | — | `flag_for_review` (fields below 0.80) |
-| HITL review gate | — | `transition_extraction_review`, `persist_extraction_relational`, `persist_extraction_vector` |
+| `extraction_critic_agent` | flash-lite | `exit_loop` (confidence check) |
+| `extraction_refiner_agent` | flash-lite | `flag_for_review` (low-confidence fields) |
+| `clinical_review_request_agent` | flash-lite | prepares a pending packet for external clinician review |
+
+`validation_gate` is the non-LLM `LoopAgent` container around the critic and refiner. Clinician approval, persistence, and audit are external deterministic product/tool boundaries, not additional LLM agents.
 
 ### Patient Q&A (see [[Patient QA Pipeline]])
 
 | Agent | Tier | Tools |
 |-------|------|-------|
-| `context_assembly_agent` | flash-lite | `lookup_patient_record`, `validate_qa_request` |
-| `evidence_retrieval_agent` | pro-customtools | `search_clinical_notes`, `search_vector_store`, `retrieve_imaging_evidence` |
-| `image_evidence_agent` | pro | `analyze_evidence_images`, `fetch_image_from_gcs` |
+| `qa_request_validation_agent` | flash-lite | `validate_qa_request` |
+| `context_assembly_agent` | flash-lite | `lookup_patient_record`, `load_memory`, `search_past_conversations` |
+| `evidence_retrieval_agent` | pro-customtools | `search_clinical_notes`, `search_vector_store`, `search_documents`, `retrieve_imaging_evidence` |
+| `image_evidence_agent` | pro-customtools | `analyze_evidence_images`, `fetch_image_from_gcs` |
 | `citation_builder_agent` | flash-lite | `build_citations` |
-| `answer_synthesis_agent` | pro | `compose_clinical_answer` |
+| `answer_synthesis_agent` | pro | `compose_clinical_answer`, `generate_clinical_visual` |
 | `qa_audit_agent` | flash-lite | `log_audit_event`, `save_qa_to_memory` |
+| `qa_response_agent` | flash-lite | returns the cited response after audit and memory writes |
 
 ### DB Intelligence (see [[DB Intelligence Pipeline]])
 
@@ -61,8 +64,9 @@ A root orchestrator routes every request to one of three SequentialAgent pipelin
 | `schema_discovery_agent` | flash-lite | `get_database_schema` |
 | `nl_to_sql_agent` | pro | `generate_sql` |
 | `sql_validator_agent` | flash-lite | `validate_sql_safety` |
-| `query_executor_agent` | pro-customtools | `execute_clinical_query` (or `approve_sql_preview` → `execute_approved_clinical_query`) |
-| `insight_chart_agent` | flash-lite | `generate_chart_spec`, `save_query_to_memory` |
+| `sql_preview_approval_agent` | pro | `approve_sql_preview` |
+| `query_executor_agent` | pro | `execute_approved_clinical_query` |
+| `insight_chart_agent` | pro | `generate_chart_spec`, `generate_clinical_visual`, `log_audit_event`, `save_query_to_memory` |
 
 ## output_key plumbing
 

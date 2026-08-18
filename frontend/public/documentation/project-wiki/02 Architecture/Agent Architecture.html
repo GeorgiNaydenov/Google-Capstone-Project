@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Architecture · Nexus Documentation</title>
+<title>Agent Architecture · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Agent Architecture</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -23,7 +23,7 @@
 </header>
 <main>
 <h1>Agent Architecture</h1>
-<p>A root orchestrator routes every request to one of three SequentialAgent pipelines. All agents get their model via <code>llm.build_model(tier)</code> — see <a href="../../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a> — and every interaction passes through the <a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a> callbacks.</p>
+<p>A root orchestrator routes every request to one of three <code>SequentialAgent</code> pipelines. The topology contains 22 LLM agents total: the root plus 21 specialists. Extraction also nests a <code>LoopAgent</code> container. All LLM agents get their model via <code>llm.build_model(tier)</code> — see <a href="../../project-wiki/02%20Architecture/Model%20Registry.html">Model Registry</a> — and every interaction passes through the <a href="../../project-wiki/04%20Security/Security%20Layers.html">Security Layers</a> callbacks.</p>
 <h2>Pipeline overview</h2>
 <table>
 <thead>
@@ -37,21 +37,21 @@
 <tbody>
 <tr>
 <td><strong>Image Extraction</strong></td>
-<td>9 agents (SequentialAgent + LoopAgent)</td>
+<td>7 specialist LLM agents (<code>SequentialAgent</code> + nested <code>LoopAgent</code>)</td>
 <td>flash-lite, pro, pro-customtools</td>
-<td>Quality → OCR → AI vision → structuring → critic/refiner loop → review gate → persistence → audit</td>
+<td>Quality → OCR → AI vision → structuring → critic/refiner loop → review-request preparation</td>
 </tr>
 <tr>
 <td><strong>Patient Q&amp;A</strong></td>
-<td>7 agents (SequentialAgent)</td>
-<td>flash-lite, pro, pro-customtools, flash-image</td>
-<td>Validation → context → retrieval → image evidence → citations → answer synthesis (with generated visuals) → audit</td>
+<td>8 specialist LLM agents (<code>SequentialAgent</code>)</td>
+<td>flash-lite, pro, pro-customtools</td>
+<td>Validation → context → retrieval → image evidence → citations → answer synthesis → audit → response</td>
 </tr>
 <tr>
 <td><strong>DB Intelligence</strong></td>
-<td>6 agents (SequentialAgent)</td>
-<td>flash-lite, pro, flash-image</td>
-<td>Schema discovery → NL-to-SQL → safety validation → approval gate → execution → insights/charts</td>
+<td>6 specialist LLM agents (<code>SequentialAgent</code>)</td>
+<td>flash-lite, pro</td>
+<td>Schema discovery → NL-to-SQL → safety validation → approval preparation → execution → insights/charts</td>
 </tr>
 <tr>
 <td><strong>Orchestrator</strong></td>
@@ -80,8 +80,13 @@
 <td><code>assess_image_quality</code></td>
 </tr>
 <tr>
+<td><code>ocr_processor_agent</code></td>
+<td>flash-lite</td>
+<td><code>extract_clinical_text</code></td>
+</tr>
+<tr>
 <td><code>vision_analyzer_agent</code></td>
-<td>pro</td>
+<td>pro-customtools</td>
 <td><code>analyze_clinical_image</code></td>
 </tr>
 <tr>
@@ -90,27 +95,23 @@
 <td><code>structure_clinical_findings</code>, <code>store_to_gcs</code></td>
 </tr>
 <tr>
-<td><code>validation_gate</code> (LoopAgent)</td>
-<td>—</td>
-<td>wraps critic + refiner (Day 1b loop pattern)</td>
+<td><code>extraction_critic_agent</code></td>
+<td>flash-lite</td>
+<td><code>exit_loop</code> (confidence check)</td>
 </tr>
 <tr>
-<td><code>critic_agent</code></td>
-<td>—</td>
-<td><code>exit_loop</code> (confidence &gt;= threshold)</td>
+<td><code>extraction_refiner_agent</code></td>
+<td>flash-lite</td>
+<td><code>flag_for_review</code> (low-confidence fields)</td>
 </tr>
 <tr>
-<td><code>refiner_agent</code></td>
-<td>—</td>
-<td><code>flag_for_review</code> (fields below 0.80)</td>
-</tr>
-<tr>
-<td>HITL review gate</td>
-<td>—</td>
-<td><code>transition_extraction_review</code>, <code>persist_extraction_relational</code>, <code>persist_extraction_vector</code></td>
+<td><code>clinical_review_request_agent</code></td>
+<td>flash-lite</td>
+<td>prepares a pending packet for external clinician review</td>
 </tr>
 </tbody>
 </table>
+<p><code>validation_gate</code> is the non-LLM <code>LoopAgent</code> container around the critic and refiner. Clinician approval, persistence, and audit are external deterministic product/tool boundaries, not additional LLM agents.</p>
 <h3>Patient Q&amp;A (see <a href="../../project-wiki/03%20Processes/Patient%20QA%20Pipeline.html">Patient QA Pipeline</a>)</h3>
 <table>
 <thead>
@@ -122,18 +123,23 @@
 </thead>
 <tbody>
 <tr>
+<td><code>qa_request_validation_agent</code></td>
+<td>flash-lite</td>
+<td><code>validate_qa_request</code></td>
+</tr>
+<tr>
 <td><code>context_assembly_agent</code></td>
 <td>flash-lite</td>
-<td><code>lookup_patient_record</code>, <code>validate_qa_request</code></td>
+<td><code>lookup_patient_record</code>, <code>load_memory</code>, <code>search_past_conversations</code></td>
 </tr>
 <tr>
 <td><code>evidence_retrieval_agent</code></td>
 <td>pro-customtools</td>
-<td><code>search_clinical_notes</code>, <code>search_vector_store</code>, <code>retrieve_imaging_evidence</code></td>
+<td><code>search_clinical_notes</code>, <code>search_vector_store</code>, <code>search_documents</code>, <code>retrieve_imaging_evidence</code></td>
 </tr>
 <tr>
 <td><code>image_evidence_agent</code></td>
-<td>pro</td>
+<td>pro-customtools</td>
 <td><code>analyze_evidence_images</code>, <code>fetch_image_from_gcs</code></td>
 </tr>
 <tr>
@@ -144,12 +150,17 @@
 <tr>
 <td><code>answer_synthesis_agent</code></td>
 <td>pro</td>
-<td><code>compose_clinical_answer</code></td>
+<td><code>compose_clinical_answer</code>, <code>generate_clinical_visual</code></td>
 </tr>
 <tr>
 <td><code>qa_audit_agent</code></td>
 <td>flash-lite</td>
 <td><code>log_audit_event</code>, <code>save_qa_to_memory</code></td>
+</tr>
+<tr>
+<td><code>qa_response_agent</code></td>
+<td>flash-lite</td>
+<td>returns the cited response after audit and memory writes</td>
 </tr>
 </tbody>
 </table>
@@ -179,14 +190,19 @@
 <td><code>validate_sql_safety</code></td>
 </tr>
 <tr>
+<td><code>sql_preview_approval_agent</code></td>
+<td>pro</td>
+<td><code>approve_sql_preview</code></td>
+</tr>
+<tr>
 <td><code>query_executor_agent</code></td>
-<td>pro-customtools</td>
-<td><code>execute_clinical_query</code> (or <code>approve_sql_preview</code> → <code>execute_approved_clinical_query</code>)</td>
+<td>pro</td>
+<td><code>execute_approved_clinical_query</code></td>
 </tr>
 <tr>
 <td><code>insight_chart_agent</code></td>
-<td>flash-lite</td>
-<td><code>generate_chart_spec</code>, <code>save_query_to_memory</code></td>
+<td>pro</td>
+<td><code>generate_chart_spec</code>, <code>generate_clinical_visual</code>, <code>log_audit_event</code>, <code>save_query_to_memory</code></td>
 </tr>
 </tbody>
 </table>

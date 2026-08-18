@@ -26,9 +26,9 @@ The project covers **all 10 course notebooks** (Days 1a through 5b).
 |----------|--------|----------------|
 | Technical Implementation | 50 | Multi-agent pipelines, MCP, 3-layer security, 4-layer memory, Pydantic, observability |
 | Documentation | 20 | README, inline docstrings, architecture docs, this wiki |
-| Core Concept & Value | 10 | Clinical intelligence with visible agent reasoning |
+| Core Concept & Value | 10 | Clinical intelligence with inspectable execution, tool, and evidence traces |
 | Video Demo | 10 | End-to-end workflow demonstration |
 | Writeup | 10 | Problem-solution-architecture-journey articulation |
 
 > [!note] Capstone requirement
-> Must demonstrate at least 3 of: ADK multi-agent, MCP server, Antigravity, security, deployability, Agents CLI. Nexus demonstrates multi-agent ([[Agent Architecture]]), MCP ([[MCP and A2A]]), security ([[Security Layers]]), and deployability ([[Deployment]]).
+> Must demonstrate at least 3 of: ADK multi-agent, MCP server, Antigravity, security, deployability, Agents CLI. Clinical AI Kit demonstrates multi-agent ([[Agent Architecture]]), MCP ([[MCP and A2A]]), security ([[Security Layers]]), and deployability ([[Deployment]]).

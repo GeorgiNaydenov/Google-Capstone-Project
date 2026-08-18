@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Module Inventory · Nexus Documentation</title>
+<title>Module Inventory · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Module Inventory</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -37,7 +37,7 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 <tr>
 <td><code>capstone_agent</code></td>
 <td><code>__init__.py</code></td>
-<td>(no docstring)</td>
+<td>Local clinical data utilities used by the deterministic public demo.</td>
 </tr>
 <tr>
 <td><code>capstone_agent</code></td>
@@ -58,6 +58,11 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 <td><code>capstone_agent</code></td>
 <td><code>callbacks.py</code></td>
 <td>Security callbacks — defense in depth for agent safety.</td>
+</tr>
+<tr>
+<td><code>capstone_agent</code></td>
+<td><code>catalog.py</code></td>
+<td>Dependency-light metadata for the public clinical agent topology.</td>
 </tr>
 <tr>
 <td><code>capstone_agent</code></td>
@@ -140,6 +145,11 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 <td>Clinical AI Command Center — tool definitions (production).</td>
 </tr>
 <tr>
+<td><code>capstone_agent</code></td>
+<td><code>vector_store.py</code></td>
+<td>Semantic vector store — Vertex AI embeddings over the clinical corpus.</td>
+</tr>
+<tr>
 <td><code>clinical_app</code></td>
 <td><code>__init__.py</code></td>
 <td>Deterministic clinician product API.</td>
@@ -206,8 +216,13 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 </tr>
 <tr>
 <td><code>scripts</code></td>
+<td><code>build_vector_index.py</code></td>
+<td>Backfill the semantic vector index for a tenant clinical database.</td>
+</tr>
+<tr>
+<td><code>scripts</code></td>
 <td><code>check_harness.py</code></td>
-<td>(no docstring)</td>
+<td>Deterministically validate executable repository harness configuration.</td>
 </tr>
 <tr>
 <td><code>scripts</code></td>
@@ -256,6 +271,11 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 </tr>
 <tr>
 <td><code>scripts</code></td>
+<td><code>harness_runtime.py</code></td>
+<td>Lifecycle state and handoff runtime for the repository agent harness.</td>
+</tr>
+<tr>
+<td><code>scripts</code></td>
 <td><code>ingest_capstone_live_samples.py</code></td>
 <td>Ingest the corrected multi-patient live sample dataset into the real Capstone tenant database.</td>
 </tr>
@@ -272,7 +292,7 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 <tr>
 <td><code>scripts</code></td>
 <td><code>sync_harness.py</code></td>
-<td>(no docstring)</td>
+<td>Safely mirror the Claude harness into the cross-agent <code>.agents</code> tree.</td>
 </tr>
 <tr>
 <td><code>scripts</code></td>
@@ -326,6 +346,11 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 </tr>
 <tr>
 <td><code>tests</code></td>
+<td><code>test_harness_runtime.py</code></td>
+<td>Tests for lifecycle state, handoff, and safe mirror harness tooling.</td>
+</tr>
+<tr>
+<td><code>tests</code></td>
 <td><code>test_live_bridge.py</code></td>
 <td>Unit tests for the live-mode ADK bridge parsing helpers.</td>
 </tr>
@@ -373,6 +398,11 @@ Hand-written companion: <a href="../../project-wiki/02%20Architecture/Module%20R
 <td><code>tests</code></td>
 <td><code>test_tools.py</code></td>
 <td>Clinical tool validation tests — ensures consistent I/O contracts.</td>
+</tr>
+<tr>
+<td><code>tests</code></td>
+<td><code>test_vector_store.py</code></td>
+<td>Unit tests for the semantic vector store (capstone_agent/vector_store.py).</td>
 </tr>
 <tr>
 <td><code>tests</code></td>

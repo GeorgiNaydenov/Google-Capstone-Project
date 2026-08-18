@@ -1,6 +1,11 @@
 """Contract tests for clinician-facing production workflow boundaries."""
 
 from capstone_agent import orchestration
+from capstone_agent.catalog import (
+    PIPELINE_AGENT_NAMES,
+    SPECIALIST_LLM_AGENT_COUNT,
+    TOTAL_LLM_AGENT_COUNT,
+)
 from capstone_agent.tools import (
     approve_sql_preview,
     execute_approved_clinical_query,
@@ -83,6 +88,31 @@ def test_db_pipeline_has_preview_approval_before_execution():
     assert names.index("sql_preview_approval_agent") < names.index(
         "query_executor_agent"
     )
+
+
+def _leaf_agent_names(agent: object) -> list[str]:
+    """Return LLM-agent leaf names from nested Sequential/Loop containers."""
+
+    sub_agents = getattr(agent, "sub_agents", None)
+    if sub_agents:
+        return [name for child in sub_agents for name in _leaf_agent_names(child)]
+    return [str(getattr(agent, "name"))]
+
+
+def test_public_catalog_matches_executable_pipeline_topology():
+    """Public agent counts and names cannot drift from ADK pipeline builders."""
+
+    pipelines = {
+        "extraction": orchestration.build_image_extraction_pipeline(),
+        "qa": orchestration.build_patient_qa_pipeline(),
+        "database": orchestration.build_db_intelligence_pipeline(),
+    }
+    assert {
+        pipeline_id: tuple(_leaf_agent_names(pipeline))
+        for pipeline_id, pipeline in pipelines.items()
+    } == PIPELINE_AGENT_NAMES
+    assert SPECIALIST_LLM_AGENT_COUNT == 21
+    assert TOTAL_LLM_AGENT_COUNT == 22
 
 
 def test_sql_execution_requires_receipt_for_exact_preview():

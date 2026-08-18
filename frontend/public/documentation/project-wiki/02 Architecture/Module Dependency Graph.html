@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Module Dependency Graph · Nexus Documentation</title>
+<title>Module Dependency Graph · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Module Dependency Graph</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -49,6 +49,7 @@ The Mermaid graph between the AUTO markers is rewritten by <code>scripts/sync_wi
     prompts[prompts.py]
     security[security.py]
     tools[tools.py]
+    vector_store[vector_store.py]
 
     agent --> a2a_server
     agent --> app
@@ -60,6 +61,7 @@ The Mermaid graph between the AUTO markers is rewritten by <code>scripts/sync_wi
     config --> a2a_server
     config --> agent
     config --> app
+    config --> callbacks
     config --> context
     config --> document_processor
     config --> llm
@@ -68,6 +70,7 @@ The Mermaid graph between the AUTO markers is rewritten by <code>scripts/sync_wi
     config --> plugins
     config --> security
     config --> tools
+    config --> vector_store
     context --> agent
     context --> plugins
     database --> document_processor

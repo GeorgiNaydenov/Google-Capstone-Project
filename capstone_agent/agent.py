@@ -1,17 +1,18 @@
 """Root agent definition — entry point for `adk run capstone_agent`.
 
 Architecture: the Clinical AI Command Center orchestrator with three
-specialist pipelines (22 sub-agents total) demonstrating every principle
+specialist pipelines (21 specialist LLM agents; 22 LLM agents including the
+root orchestrator) demonstrating every principle
 from the 5-day course as reusable, production-grade scaffolding.
 `root_agent` is discovered automatically by ADK via __init__.py.
 For the richer runtime (plugins, history compaction, resumable HITL)
 wrap it with the App in app.py.
 
 Clinical pipelines:
-- Image Extraction Pipeline (9 agents): quality → OCR → vision → structuring
-  → critic/refiner loop → review gate → persistence → audit
-- Patient Q&A Pipeline (7 agents): validation → context → retrieval → image
-  evidence → citations → answer synthesis → audit
+- Image Extraction Pipeline (7 LLM agents): quality → OCR → vision →
+  structuring → critic/refiner loop → review request
+- Patient Q&A Pipeline (8 LLM agents): validation → context → retrieval →
+  image evidence → citations → answer synthesis → audit → response
 - DB Intelligence Pipeline (6 agents): schema → NL-to-SQL → validation
   → approval gate → execution → insights
 
@@ -93,7 +94,7 @@ _config = get_config()
 
 
 # --- Clinical Pipelines (Day 1b: multi-agent orchestration) ---
-# Three pipelines with 16 sub-agents total. Each pipeline is a
+# Three pipelines with 21 specialist LLM agents total. Each pipeline is a
 # SequentialAgent that the root orchestrator delegates to based on
 # user intent. See orchestration.py for construction details.
 

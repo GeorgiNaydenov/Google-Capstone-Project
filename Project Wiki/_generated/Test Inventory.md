@@ -1,7 +1,7 @@
 ---
 title: Test Inventory
 type: generated
-updated: 2026-08-17
+updated: 2026-08-18
 tags:
   - generated
 ---
@@ -26,7 +26,7 @@ Hand-written companion: [[Testing and Eval]].
 | `test_memory.py` | 6 | Tests for memory governance (Day 3b). |
 | `test_orchestration.py` | 7 | Tests for the orchestration building blocks (Day 1b / 2a). |
 | `test_product_integration.py` | 24 | End-to-end contracts joining the clinical UI API to product state. |
-| `test_product_orchestration.py` | 8 | Contract tests for clinician-facing production workflow boundaries. |
+| `test_product_orchestration.py` | 9 | Contract tests for clinician-facing production workflow boundaries. |
 | `test_security.py` | 13 | Security test suite — validates all detection and sanitization functions. |
 | `test_showcase_generators.py` | 4 | Smoke tests for showcase data generators. |
 | `test_template_generators.py` | 3 | Unit tests for template-based showcase data generators. |
@@ -35,4 +35,4 @@ Hand-written companion: [[Testing and Eval]].
 | `test_versioned_api.py` | 6 | Unit tests for the versioned API backend endpoints (V1 and V2). |
 | `test_wiki_sync.py` | 7 | Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py). |
 
-**Total test functions: 280**
+**Total test functions: 281**

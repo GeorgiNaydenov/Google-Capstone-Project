@@ -30,9 +30,9 @@ flowchart TD
     end
 
     subgraph LANE_PIPE["Lane: Pipelines (SequentialAgent)"]
-        P1[Image Extraction<br/>9 agents]
-        P2[Patient Q&A<br/>7 agents]
-        P3[DB Intelligence<br/>6 agents]
+        P1[Image Extraction<br/>7 specialist LLM agents]
+        P2[Patient Q&A<br/>8 specialist LLM agents]
+        P3[DB Intelligence<br/>6 specialist LLM agents]
         TOOLS[Tool execution<br/>Pydantic-validated]
     end
 

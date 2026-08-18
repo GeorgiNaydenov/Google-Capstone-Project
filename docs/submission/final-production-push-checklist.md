@@ -11,7 +11,7 @@ Use this as the last gate before submitting the Kaggle writeup and sharing the p
 - [ ] Media Gallery includes the YouTube video.
 - [ ] Media Gallery includes at least the architecture, agent hierarchy, security, HITL, document ingestion, database, deployment, and rubric diagrams.
 - [ ] Project Description pasted from `docs/submission/kaggle-writeup.md`.
-- [ ] Project Links include the GitHub repo and deployed app URL, if available.
+- [ ] Project Links include `https://github.com/GeorgiNaydenov/Google-Capstone-Project` and `https://clinical-ai-kit-330118805806.us-central1.run.app/`.
 - [ ] Writeup is saved and submitted, not left as a draft.
 
 ## Repository
@@ -61,9 +61,9 @@ After deployment:
 - [ ] `/health` returns 200.
 - [ ] `/ready` returns 200.
 - [ ] `/documentation` opens.
-- [ ] `AGENT_EXECUTION_MODE=live` only if Vertex/Gemini credentials are configured.
-- [ ] Runtime service account has `roles/aiplatform.user`.
-- [ ] `CLINICAL_DATA_DIR` points to persistent storage if live tenant data must survive revisions.
+- [ ] Public service reports deterministic/disabled agent execution and has no paid ADK/Gemini credentials.
+- [ ] A separate self-controlled live deployment, if created, uses explicit credentials and the documented service-account roles.
+- [ ] Durable storage is externalized before any self-controlled live tenant is expected to survive revisions.
 - [ ] Cloud Run max instances remains 1 until shared persistent state is externalized.
 
 ## Final Human Step
@@ -73,5 +73,5 @@ The only irreversible/human-facing steps are:
 - Make the GitHub repo public.
 - Upload the YouTube video.
 - Paste the YouTube URL into Kaggle Media Gallery.
-- Add the final deployed app URL, if one exists.
+- Add `https://clinical-ai-kit-330118805806.us-central1.run.app/`.
 - Click Submit on Kaggle before the deadline.

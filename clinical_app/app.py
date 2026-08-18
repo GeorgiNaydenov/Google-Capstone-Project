@@ -29,6 +29,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from time import monotonic
 
+from capstone_agent.catalog import (
+    SPECIALIST_LLM_AGENT_COUNT,
+    public_pipeline_catalog,
+)
+
 # Load .env before any request handling so GOOGLE_API_KEY and Vertex settings
 # reach the environment without requiring the lazy agent import.
 load_dotenv()
@@ -91,6 +96,14 @@ from clinical_app.repository import (
     now,
 )
 from clinical_app.tenancy import TenantConfig, resolve_tenant
+
+
+async def execute_live(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Load the private live bridge only when a real tenant reaches it."""
+
+    from clinical_app.live_bridge import execute_live as bridge_execute_live
+
+    return await bridge_execute_live(*args, **kwargs)
 
 
 def _rank_patient_evidence(
@@ -421,17 +434,17 @@ def audit_view(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-API_DESCRIPTION = """
+API_DESCRIPTION = f"""
 ## Clinical AI Command Center API & Agent Hub
 
-This API serves as the clinician-facing product backend and orchestration layer for the Clinician AI Kit, bridging the React/Vite frontend with Google ADK agent execution environments.
+This API serves as the clinician-facing product backend and orchestration layer for Clinical AI Kit, bridging the React/Vite frontend with Google ADK agent execution environments.
 
 ### Core Architecture
 
-- **Agent Engine**: Managed via Google ADK (`google-adk`). Wires a root orchestrator with 22 specialist agents.
+- **Agent Engine**: Managed via Google ADK (`google-adk`). Wires one root orchestrator with {SPECIALIST_LLM_AGENT_COUNT} specialist LLM agents ({SPECIALIST_LLM_AGENT_COUNT + 1} total).
 - **Multimodal Ingest**: Supports quality inspection, OCR, vision analysis, and clinical structuring.
-- **Persistent Compliance Log**: Real Persisted SQLite persistence (`clinical.db`) under an immutable audit trail.
-- **Multi-Tenant Scoping**: Dynamic tenant switching between demo settings (`research-clinic`) and live mode (`capstone`).
+- **Persistent Audit Log**: SQLite-backed event records with immutable audit identifiers.
+- **Multi-Tenant Scoping**: Isolated deterministic showcase tenants in the public build; private deployments can configure live execution separately.
 
 ### Versioned Operations
 
@@ -760,51 +773,7 @@ def create_app() -> FastAPI:
             "executionMode": effective_mode(ctx[3]),
             "orchestrator": "clinical_orchestrator",
             "framework": "Google ADK",
-            "pipelines": [
-                {
-                    "id": "extraction",
-                    "name": "Clinical Evidence Extraction",
-                    "route": "/app/extraction",
-                    "agents": [
-                        "quality_assessor_agent",
-                        "ocr_processor_agent",
-                        "vision_analyzer_agent",
-                        "clinical_structuring_agent",
-                        "extraction_critic_agent",
-                        "extraction_refiner_agent",
-                        "clinical_review_gate_agent",
-                        "extraction_persistence_agent",
-                        "extraction_audit_agent",
-                    ],
-                },
-                {
-                    "id": "qa",
-                    "name": "Patient Q&A",
-                    "route": "/app/qa",
-                    "agents": [
-                        "qa_request_validation_agent",
-                        "context_assembly_agent",
-                        "evidence_retrieval_agent",
-                        "image_evidence_agent",
-                        "citation_builder_agent",
-                        "answer_synthesis_agent",
-                        "qa_audit_agent",
-                    ],
-                },
-                {
-                    "id": "database",
-                    "name": "Population Insights",
-                    "route": "/app/database",
-                    "agents": [
-                        "schema_discovery_agent",
-                        "nl_to_sql_agent",
-                        "sql_validator_agent",
-                        "sql_preview_approval_agent",
-                        "query_executor_agent",
-                        "insight_chart_agent",
-                    ],
-                },
-            ],
+            "pipelines": public_pipeline_catalog(),
         }
 
     @v1_router.get(
@@ -3634,7 +3603,9 @@ def create_app() -> FastAPI:
     )
     def a2a_card() -> dict[str, Any]:
         """Reject A2A discovery before the ADK root agent can be imported."""
-        raise HTTPException(410, "A2A agent discovery is disabled in this public deployment.")
+        raise HTTPException(
+            410, "A2A agent discovery is disabled in this public deployment."
+        )
 
     # Wiki folders live at the repository root; anchor them there instead of
     # trusting the server process working directory.
@@ -3741,7 +3712,7 @@ def create_app() -> FastAPI:
 
         response = get_swagger_ui_html(
             openapi_url=api.openapi_url,
-            title="Clinician AI Kit - API & Swagger Console",
+            title="Clinical AI Kit - API & Swagger Console",
             oauth2_redirect_url=api.swagger_ui_oauth2_redirect_url,
         )
 
@@ -3958,17 +3929,17 @@ def create_app() -> FastAPI:
         from fastapi.openapi.docs import get_redoc_html
 
         return get_redoc_html(
-            openapi_url=api.openapi_url, title="Clinician AI Kit - ReDoc Specification"
+            openapi_url=api.openapi_url, title="Clinical AI Kit - ReDoc Specification"
         )
 
     # Standalone documentation hub — built into frontend/public/documentation by
     # scripts/build_docs_site.py and copied into dist/ by npm run build. Prefer
-    # the built copy, but fall back to the committed source folder so the hub
-    # serves without a frontend build (dev servers and the test client).
+    # the committed source so a stale local dist/ cannot shadow regenerated
+    # documentation; production builds contain the same files in both paths.
     project_root = Path(__file__).resolve().parents[1]
     for candidate in (
-        project_root / "frontend" / "dist" / "documentation",
         project_root / "frontend" / "public" / "documentation",
+        project_root / "frontend" / "dist" / "documentation",
     ):
         if candidate.is_dir():
             api.mount(

@@ -18,7 +18,7 @@ The clinician-facing product: a React frontend served by a FastAPI server that r
 | `clinical_app/repository.py` | Session-isolated mutable repository for deterministic product demos |
 | `clinical_app/models.py` | Pydantic contracts for the clinician product API |
 | `clinical_app/document.py` | Document parsing and upload policy for clinical evidence files |
-| `frontend/` | React/Vite/TypeScript UI — 16 routes, clinician + admin views |
+| `frontend/` | React/Vite/TypeScript UI — 16 core product screens plus 3 documentation/utility routes |
 
 Additional frontend documentation surfaces:
 
@@ -71,8 +71,8 @@ Three tenants are selectable from the organization dropdown in the Shell topbar 
 
 ## Demo vs live mode
 
-- **Demo (default)** — fully deterministic, no model key required. `repository.py` provides session-isolated state with full reset; `agent_runtime.py` adapts the same tool layer deterministically.
-- **Live** — the Capstone tenant is always live; for demo tenants, set `AGENT_EXECUTION_MODE=live` in `.env` plus one auth path (API key or Vertex ADC — see [[Model Registry]]) to force live execution over `clinical.db`. `live_bridge.py` lazily wires the ADK runner so demo mode never imports ADK.
+- **Public Cloud Run build** — fully deterministic, no model key required, and paid ADK/Gemini execution is disabled. `repository.py` provides session-isolated state with full reset; `agent_runtime.py` adapts the same tool layer deterministically.
+- **Self-controlled live deployment** — set `AGENT_EXECUTION_MODE=live` plus one auth path (API key or Vertex ADC — see [[Model Registry]]) to enable ADK/Gemini execution. `live_bridge.py` lazily wires the ADK runner so deterministic mode never imports ADK.
 
 ## Product guarantees
 

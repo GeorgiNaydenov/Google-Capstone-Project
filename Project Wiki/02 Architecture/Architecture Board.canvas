@@ -1,10 +1,10 @@
 {
 	"nodes": [
 		{"id":"a1f2e3d4c5b6a790","type":"group","label":"React Frontend (frontend/)","x":-40,"y":-40,"width":980,"height":200},
-		{"id":"b2e3d4c5a6f79081","type":"text","text":"**16-route clinical UI** — Vite + TypeScript\nClinician + admin views, served as production build by FastAPI","x":0,"y":20,"width":900,"height":100},
+		{"id":"b2e3d4c5a6f79081","type":"text","text":"**19 public routes** — 16 core screens + 3 docs/utility routes\nVite + TypeScript, served as production build by FastAPI","x":0,"y":20,"width":900,"height":100},
 		{"id":"c3d4e5f6a7b89012","type":"group","label":"FastAPI Product Server (clinical_app/)","x":-40,"y":240,"width":980,"height":220},
 		{"id":"d4e5f6a7b8c90123","type":"file","file":"06 Operations/Clinical App.md","x":0,"y":300,"width":440,"height":120},
-		{"id":"e5f6a7b8c9d01234","type":"text","text":"Demo mode (deterministic) **or** Live ADK bridge\nSession isolation · role-based access · audit trail","x":480,"y":300,"width":420,"height":120},
+		{"id":"e5f6a7b8c9d01234","type":"text","text":"Public build: deterministic workflows\nPrivate deployment option: Live ADK bridge\nSession isolation · role-based access · audit trail","x":480,"y":300,"width":420,"height":120},
 		{"id":"f6a7b8c9d0e12345","type":"group","label":"ADK Agent Backend (capstone_agent/)","x":-40,"y":540,"width":1480,"height":620},
 		{"id":"a7b8c9d0e1f23456","type":"text","text":"**clinical_orchestrator** (flash-lite)\nIntent routing · MCP tools · memory recall · HITL approval","x":300,"y":600,"width":500,"height":110,"color":"4"},
 		{"id":"b8c9d0e1f2a34567","type":"file","file":"03 Processes/Image Extraction Pipeline.md","x":0,"y":780,"width":420,"height":130,"color":"5"},
@@ -18,7 +18,7 @@
 		{"id":"d6e7f8a9b0c12345","type":"text","text":"**mcp_server/server.py**\n7 clinical tools via FastMCP (JSON-RPC 2.0)","x":1560,"y":780,"width":440,"height":110,"color":"6"},
 		{"id":"e7f8a9b0c1d23456","type":"text","text":"**a2a_server.py** :8001\nAgent card at /.well-known/agent-card.json","x":1560,"y":980,"width":440,"height":110,"color":"6"},
 		{"id":"f8a9b0c1d2e34567","type":"group","label":"Deployment Targets","x":-40,"y":1240,"width":1480,"height":220},
-		{"id":"a9b0c1d2e3f45678","type":"text","text":"**Cloud Run**\nDockerfile: non-root, healthcheck, :8000","x":0,"y":1300,"width":420,"height":110},
+		{"id":"a9b0c1d2e3f45678","type":"text","text":"**Cloud Run**\nDockerfile: non-root, /health, :8080","x":0,"y":1300,"width":420,"height":110},
 		{"id":"b0c1d2e3f4a56789","type":"text","text":"**Vertex AI Agent Engine**\nautoscale + Memory Bank","x":460,"y":1300,"width":420,"height":110},
 		{"id":"c1d2e3f4a5b67890","type":"text","text":"**GKE**\nself-managed Kubernetes","x":920,"y":1300,"width":420,"height":110}
 	],

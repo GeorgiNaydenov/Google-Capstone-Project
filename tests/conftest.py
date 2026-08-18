@@ -9,7 +9,11 @@ import uuid
 
 # Unit and contract tests must never export spans to a real backend. Set this
 # before importing the agent because observability initializes at import time.
+# Retrieval tests exercise deterministic keyword fallback, never paid Vertex
+# embeddings or ranking calls.
 os.environ["ENABLE_TRACING"] = "FALSE"
+os.environ["ENABLE_VECTOR_SEARCH"] = "FALSE"
+os.environ["ENABLE_RERANKER"] = "FALSE"
 
 import pytest
 from dotenv import load_dotenv
@@ -32,6 +36,22 @@ def _demo_execution_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     Tests that exercise live mode opt back in with monkeypatch.setenv.
     """
     monkeypatch.delenv("AGENT_EXECUTION_MODE", raising=False)
+
+    # Production registers no real tenant, so forged headers cannot invoke
+    # paid services. Live-path tests opt in through this test-only tenant.
+    from clinical_app.tenancy import TENANTS, TenantConfig, TenantKind
+
+    monkeypatch.setitem(
+        TENANTS,
+        "test-live",
+        TenantConfig(
+            id="test-live",
+            display_name="Test Live Tenant",
+            kind=TenantKind.REAL,
+            db_filename="capstone.db",
+            uploads_dirname="uploads_capstone",
+        ),
+    )
 
 
 @pytest.fixture

@@ -521,60 +521,23 @@ def test_upload_limit_and_repository_eviction() -> None:
     assert "sentinel" not in registry.get("first").uploads
 
 
-def test_live_mode_uses_lazy_bridge_and_persists_metadata(
-    tmp_path, monkeypatch
-) -> None:
-    """The real (Capstone) tenant invokes the bridge while demo stays offline."""
+def test_retired_live_tenant_alias_cannot_enable_paid_agent_execution() -> None:
+    """Forged legacy tenant headers remain on deterministic public workflows."""
 
-    import importlib
+    api = client()
+    capstone = {**clinician("retired-live"), "X-Tenant": "capstone"}
+    catalog = api.get("/api/agents", headers=capstone)
+    assert catalog.status_code == 200
+    assert catalog.json()["executionMode"] == "local"
 
-    app_module = importlib.import_module("clinical_app.app")
-    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
-
-    async def fake_live(query: str, user_id: str, **_: object) -> dict[str, object]:
-        assert query and user_id
-        return {
-            "finalResponse": "Safe live response",
-            "authorSteps": [{"author": "root_agent", "eventId": "EV-1"}],
-        }
-
-    original_bridge = app_module.execute_live
-    try:
-        app_module.execute_live = fake_live
-        api = TestClient(app_module.create_app())
-        capstone = {**clinician("live"), "X-Tenant": "capstone"}
-        run = api.post(
-            "/api/runs/qa",
-            headers=capstone,
-            json={"patientId": "PT-9921", "question": "Summarize recent status"},
-        ).json()
-        run = poll_until_settled(api, capstone, run["id"])
-        assert run["result"]["liveResponse"] == "Safe live response"
-        assert run["result"]["authorSteps"][0]["author"] == "root_agent"
-        assert any(step["name"] == "Root Agent" for step in run["steps"])
-        resumed_api = TestClient(app_module.create_app())
-        resumed_headers = {**clinician("live-resumed"), "X-Tenant": "capstone"}
-        restored = resumed_api.get(
-            "/api/runs", headers=resumed_headers, params={"workflow": "qa"}
-        ).json()
-        assert run["id"] in {item["id"] for item in restored}
-        assert (
-            next(item for item in restored if item["id"] == run["id"])["result"][
-                "liveResponse"
-            ]
-            == "Safe live response"
-        )
-        # Demo tenants never touch the model even when the bridge is patched.
-        demo_headers = clinician("demo-live")
-        demo_patient = api.get("/api/patients", headers=demo_headers).json()[0]["id"]
-        demo_run = api.post(
-            "/api/runs/qa",
-            headers=demo_headers,
-            json={"patientId": demo_patient, "question": "Summarize recent status"},
-        ).json()
-        assert "liveResponse" not in demo_run["result"]
-    finally:
-        app_module.execute_live = original_bridge
+    patient_id = api.get("/api/patients", headers=capstone).json()[0]["id"]
+    run = api.post(
+        "/api/runs/qa",
+        headers=capstone,
+        json={"patientId": patient_id, "question": "Summarize recent status"},
+    )
+    assert run.status_code == 201
+    assert "liveResponse" not in run.json()["result"]
 
 
 def test_tenant_header_selects_distinct_demo_datasets() -> None:
@@ -830,7 +793,7 @@ def test_documentation_hub_served_standalone() -> None:
     api = client()
     hub = api.get("/documentation/")
     assert hub.status_code == 200
-    assert "Nexus documentation" in hub.text
+    assert "Clinical AI Kit documentation" in hub.text
     assert "Enter the application" in hub.text
     assert 'href="/roles"' in hub.text
     wiki_page = api.get("/documentation/llm-wiki/index.html")

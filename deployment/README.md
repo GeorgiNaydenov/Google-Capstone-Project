@@ -1,46 +1,52 @@
 # Deployment (Day 5b)
 
-Three supported targets. All read configuration from `.env` / Secret Manager —
-no secrets are baked into images.
+Three supported targets. No secrets are baked into images. Public hosted build
+uses deterministic workflows and needs no model credentials; self-controlled
+live deployments read model configuration from environment variables or Secret
+Manager.
 
 ## 1. Cloud Run (clinical product)
 
-The `Dockerfile` builds `frontend/`, installs the FastAPI and ADK runtime, runs
-as a non-root user, and serves the clinical product on Cloud Run's `PORT`.
-ADK Web remains a local developer surface. Deploy via Cloud Build:
+The `Dockerfile` builds `frontend/`, installs FastAPI plus ADK dependencies,
+runs as a non-root user, and serves Clinical AI Kit on Cloud Run's `PORT`.
+ADK Web remains a local developer surface.
+
+### Public deterministic deployment
+
+The checked-in `cloudbuild.yaml` intentionally deploys a cost-controlled public
+showcase. It keeps deterministic clinical workflows, synthetic data, API docs,
+diagram atlas, Project Wiki, and LLM Wiki available while disabling paid model,
+Vertex retrieval/reranking, MCP/A2A runtime, tracing, and cloud storage calls.
+Deploy it with:
 
 ```bash
-# One-time: let the default Cloud Run runtime service account call Vertex AI.
-PROJECT_ID="your-project-id"
-PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
-
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
-    --role="roles/aiplatform.user"
-
-# Optional when ENABLE_TRACING=TRUE is kept in cloudbuild.yaml.
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
-    --role="roles/cloudtrace.agent"
-
 # Build + push + deploy
 gcloud builds submit --config deployment/cloudbuild.yaml .
 ```
 
-Live-mode environment set by `cloudbuild.yaml`:
+Public environment set by `cloudbuild.yaml`:
 
 | Variable | Value | Why |
 |---|---|---|
-| `AGENT_EXECUTION_MODE` | `live` | Product API routes through real ADK agents |
-| `GOOGLE_GENAI_USE_VERTEXAI` | `TRUE` | Gemini via Vertex AI with the runtime SA's ADC — no API key |
-| `GOOGLE_CLOUD_LOCATION` | `global` | Gemini 3.1 models are only served from the global endpoint |
-| `HIPAA_MODE` | `TRUE` | Forces PHI redaction on all output paths |
-| `CLINICAL_DATA_DIR` | `/data` | Writable path owned by the non-root container user |
-| `MODEL_REQUESTS_PER_MINUTE` | `10` | Per-session sliding-window model request budget |
-| `MAX_CONCURRENT_MODEL_RUNS` | `2` | Per-session active model execution cap |
-| `MAX_TOOL_COUNT` | `15` | Per-tool invocation cap enforced by ADK callbacks |
+| `AGENT_EXECUTION_MODE` | `disabled` | Prevents paid live-agent execution on public routes |
+| `ENABLE_VECTOR_SEARCH` | `FALSE` | Disables Vertex embedding calls |
+| `ENABLE_RERANKER` | `FALSE` | Disables Vertex Ranking API calls |
+| `ENABLE_TRACING` | `FALSE` | Disables external trace export |
+| `HIPAA_MODE` / `PHI_REDACTION` | `TRUE` | Keeps privacy-aware redaction controls enabled; this is not a compliance certification |
+| `CLINICAL_DATA_DIR` | `/data` | Writable ephemeral path owned by non-root container user |
 
-Constraints to respect until the storage layer moves off-instance:
+`--max-instances=1` keeps in-memory demo sessions coherent. Cloud Run storage is
+ephemeral and the public demo is designed to reset safely between revisions.
+
+### Self-controlled live deployment
+
+To enable real ADK/Gemini execution, clone `cloudbuild.yaml` into a private
+deployment configuration and set `AGENT_EXECUTION_MODE=live`. Configure either
+Vertex AI ADC (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`, project, and location) or a
+Secret Manager-backed `GOOGLE_API_KEY`. Enable retrieval, reranking, tracing,
+MCP, or A2A only when their required IAM roles and service budgets exist.
+
+Live-mode constraints until storage moves off-instance:
 
 - **`--max-instances=1` is mandatory.** Browser demo/live session state lives in
   process memory (`RepositoryRegistry`) and clinical data in a local SQLite
@@ -70,10 +76,9 @@ volume (Cloud Run volume mounts or a GCS FUSE mount). The demo tenants keep no
 files, so they need no volume. The default `clinical.db` self-seeds on first
 touch and is safe to leave ephemeral.
 
-`cloudbuild.yaml` mounts `CLINICAL_DATA_DIR=/data` onto a GCS bucket
-(`_DATA_BUCKET`, GCS FUSE volume) via `--execution-environment=gen2` so the
-real `capstone.db` and `uploads_capstone/` persist across restarts, scale-to-
-zero, and redeploys. One-time setup before the first deploy:
+For a private live Cloud Run deployment, a GCS FUSE volume can persist the
+real `capstone.db` and `uploads_capstone/` across restarts. The checked-in public
+`cloudbuild.yaml` explicitly clears volume mounts. Example one-time setup:
 
 ```bash
 gcloud storage buckets create gs://capstone-project-500212-clinical-data --location=us-central1
@@ -99,9 +104,8 @@ paths at its edge, so a route such as `/healthz` can return a Google-generated
 
 ### Optional API-key deployment
 
-The default Cloud Run path uses Vertex AI ADC. If you must deploy with a Gemini
-API key instead, create a Secret Manager secret and edit the Cloud Run deploy
-step in `deployment/cloudbuild.yaml`:
+A private live Cloud Run path can use Vertex AI ADC. To use a Gemini API key
+instead, create a Secret Manager secret and add it to your private deploy step:
 
 ```bash
 gcloud secrets create GOOGLE_API_KEY --replication-policy=automatic
@@ -114,8 +118,8 @@ Then set `GOOGLE_GENAI_USE_VERTEXAI=FALSE` and add:
 --update-secrets=GOOGLE_API_KEY=GOOGLE_API_KEY:latest
 ```
 
-The generic ADK CLI deployment below exposes the ADK developer UI rather than
-the Nexus product and is retained only for agent-runtime troubleshooting:
+The generic ADK CLI deployment below exposes ADK developer UI rather than the
+Clinical AI Kit product and is retained only for agent-runtime troubleshooting:
 
 ```bash
 adk deploy cloud_run --project=PROJECT_ID --region=us-central1 \

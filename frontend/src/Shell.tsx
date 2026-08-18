@@ -144,7 +144,7 @@ export function Shell() {
   return <div className={menuOpen ? "clinical-shell menu-open" : "clinical-shell"}>
     {menuOpen && <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)}/>}
     <aside className={menuOpen ? "clinical-sidebar open" : "clinical-sidebar"}>
-      <Link to="/" className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></Link>
+      <Link to="/" className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinical AI Kit</strong><small>Clinical Command v2.4</small></span></Link>
       <button className="new-session" onClick={() => navigate("/app/extraction")}><Icon name="plus" size={16}/>New session</button>
       <nav className="grouped-nav" aria-label={`${role} navigation`}>{nav.map(group => <section key={group.label}><h2>{group.label}</h2>{group.items.map(item => {
         const target = item.to.split("?")[0];

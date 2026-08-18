@@ -3,7 +3,7 @@
 ## Purpose
 
 This directory is the execution source of truth for turning the existing
-Google ADK capstone harness and static Clinical AI Command Center prototype
+Google ADK capstone harness and static Clinical AI Kit prototype
 into the end-to-end clinician-facing application described in the product
 brief.
 
@@ -62,7 +62,7 @@ ADK Web remains a developer surface. It is not the clinician product.
 6. Persist run and step events before showing them in the UI.
 7. Make every mutation visible through the API response, repository state,
    audit event, refreshed UI, and browser assertion.
-8. Expose safe workflow rationale and evidence, never hidden chain-of-thought.
+8. Expose inspectable execution, tool, and evidence traces without disclosing hidden model reasoning.
 9. Keep architecture diagrams visible in the product and wiki when routes,
    agents, data flows, or API boundaries change.
 10. Use synthetic data only in the public demo.
@@ -79,7 +79,7 @@ ADK Web remains a developer surface. It is not the clinician product.
 
 ## Product Completion Test
 
-The product is complete only when all 16 screens are routed and connected,
+The product is complete only when all 16 core screens are routed and connected alongside the 3 documentation/utility routes,
 the three guided workflows pass end to end, role changes preserve relevant
 context, the demo resets deterministically, all security and quality gates
 pass, and the deployed public application matches the documented behavior.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>End-to-End Request Flow · Nexus Documentation</title>
+<title>End-to-End Request Flow · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;End-to-End Request Flow</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -45,9 +45,9 @@
     end
 
     subgraph LANE_PIPE["Lane: Pipelines (SequentialAgent)"]
-        P1[Image Extraction<br/>9 agents]
-        P2[Patient Q&A<br/>7 agents]
-        P3[DB Intelligence<br/>6 agents]
+        P1[Image Extraction<br/>7 specialist LLM agents]
+        P2[Patient Q&A<br/>8 specialist LLM agents]
+        P3[DB Intelligence<br/>6 specialist LLM agents]
         TOOLS[Tool execution<br/>Pydantic-validated]
     end
 

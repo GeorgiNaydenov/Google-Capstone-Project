@@ -9,8 +9,8 @@ Generic patterns (from the course):
 
 Clinical pipelines:
 - Image Extraction Pipeline (SequentialAgent + LoopAgent validation)
-- Patient Q&A Pipeline (SequentialAgent with 6 stages)
-- DB Intelligence Pipeline (SequentialAgent with 5 stages)
+- Patient Q&A Pipeline (SequentialAgent with 8 LLM-agent stages)
+- DB Intelligence Pipeline (SequentialAgent with 6 LLM-agent stages)
 
 Each pipeline uses output_key for inter-stage state plumbing and
 per-agent model tier selection for cost/capability balancing.

@@ -5,7 +5,7 @@ wired as reusable scaffolding with placeholder tools. For an agent-only domain
 demo, specialization follows the short checklist below without changing the
 core harness structure.
 
-The Clinical AI Command Center has progressed beyond agent-only
+Clinical AI Kit has progressed beyond agent-only
 specialization. Its full-stack product work requires additional application
 boundaries while preserving this ADK foundation. Use
 [`clinical-product/README.md`](clinical-product/README.md) for the current

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Image Extraction Pipeline · Nexus Documentation</title>
+<title>Image Extraction Pipeline · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Image Extraction Pipeline</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -23,17 +23,19 @@
 </header>
 <main>
 <h1>Image Extraction Pipeline</h1>
-<p>SequentialAgent (9 agents) processing clinical images through quality assessment, AI vision analysis, structured field extraction, a critic/refiner validation loop, and clinician review before persistence. Lanes: Agents, Validation Loop, Clinician.</p>
+<p><code>SequentialAgent</code> containing 7 specialist LLM agents, with a nested <code>LoopAgent</code>, processes clinical images through quality assessment, OCR, AI vision analysis, structured field extraction, critic/refiner validation, and review-request preparation. Clinician review and persistence remain external deterministic boundaries. Lanes: Agents, Validation Loop, Clinician.</p>
 <pre class="mermaid">flowchart TD
     subgraph LANE_AG["Lane: Pipeline agents"]
         QA["quality_assessor_agent (flash-lite)<br/>assess_image_quality"]
-        VA["vision_analyzer_agent (pro)<br/>analyze_clinical_image"]
+        OCR["ocr_processor_agent (flash-lite)<br/>extract_clinical_text"]
+        VA["vision_analyzer_agent (pro-customtools)<br/>analyze_clinical_image"]
         CS["clinical_structuring_agent (pro)<br/>structure_clinical_findings, store_to_gcs"]
+        RR["clinical_review_request_agent (flash-lite)<br/>prepare pending review packet"]
     end
 
     subgraph LANE_LOOP["Lane: validation_gate (LoopAgent, Day 1b)"]
-        CRIT{critic_agent<br/>confidence >= threshold?}
-        REF["refiner_agent<br/>flag_for_review (fields < 0.80)"]
+        CRIT{extraction_critic_agent<br/>confidence >= threshold?}
+        REF["extraction_refiner_agent<br/>flag_for_review (fields < 0.80)"]
         EXIT["exit_loop"]
     end
 
@@ -43,9 +45,9 @@
         DISCARD["Discard + reason logged"]
     end
 
-    START([Clinical image uploaded]) --> QA --> VA --> CS --> CRIT
+    START([Clinical image uploaded]) --> QA --> OCR --> VA --> CS --> CRIT
     CRIT -->|below threshold| REF --> CRIT
-    CRIT -->|passes| EXIT --> GATE
+    CRIT -->|passes| EXIT --> RR --> GATE
     GATE -->|approve| PERSIST --> DONE([Stored + timeline updated + audit event])
     GATE -->|reject| DISCARD --> DONE2([Rejected, audit logged])
 </pre>
@@ -53,6 +55,7 @@
 <ul>
 <li><strong>output_key plumbing</strong>: each agent writes its result to <code>session.state</code>; the next stage reads it — no direct coupling (<a href="../../project-wiki/05%20Memory/Memory%20Layers.html">Memory Layers</a> Layer 2).</li>
 <li>The <strong>LoopAgent</strong> repeats critic → refiner until field confidence passes the threshold; fields below 0.80 are flagged for review.</li>
+<li>The seven LLM specialists end with <code>clinical_review_request_agent</code>; clinician approval, persistence, and audit are product/tool boundaries rather than extra agents.</li>
 <li><strong>State machine</strong>: <code>transition_extraction_review</code> only allows <code>needs_review</code> → <code>approved</code> or <code>needs_review</code> → <code>rejected</code>. Persistence tools require an approved review receipt — see <a href="../../project-wiki/03%20Processes/Human-in-the-Loop%20Approval.html">Human-in-the-Loop Approval</a>.</li>
 </ul>
 <p>Related: <a href="../../project-wiki/02%20Architecture/Agent%20Architecture.html">Agent Architecture</a> · <a href="../../project-wiki/03%20Processes/End-to-End%20Request%20Flow.html">End-to-End Request Flow</a></p>

@@ -3,7 +3,7 @@ title: capstone_agent/__init__.py
 type: module
 package: capstone_agent
 purpose: "Local clinical data utilities used by the deterministic public demo."
-updated: 2026-08-17
+updated: 2026-08-18
 ---
 
 # capstone_agent/__init__.py

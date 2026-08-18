@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deployment · Nexus Documentation</title>
+<title>Deployment · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Deployment</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -28,7 +28,7 @@
 Raw: <a href="../../raw/operations/2026-07-04-deployment.html">Deployment Source</a></p>
 </blockquote>
 <h1>Deployment</h1>
-<p>Three supported targets — all read secrets from <code>.env</code> / Secret Manager at runtime, never baked into images. Full instructions in <code>deployment/README.md</code>; process diagram in [[Deployment Pipeline]].</p>
+<p>Three supported targets are documented. The public Cloud Run target is intentionally deterministic and does not receive paid ADK/Gemini credentials. Self-controlled live targets read secrets from <code>.env</code>, Application Default Credentials, or Secret Manager at runtime; secrets are never baked into images. Full instructions are in <code>deployment/README.md</code>; the process diagram is in [[Deployment Pipeline]].</p>
 <table>
 <thead>
 <tr>
@@ -41,7 +41,7 @@ Raw: <a href="../../raw/operations/2026-07-04-deployment.html">Deployment Source
 <tr>
 <td><strong>Cloud Run</strong></td>
 <td><code>gcloud builds submit --config deployment/cloudbuild.yaml .</code></td>
-<td>Production clinical product</td>
+<td>Public deterministic product build; paid ADK/Gemini execution disabled</td>
 </tr>
 <tr>
 <td><strong>Vertex AI Agent Engine</strong></td>
@@ -70,7 +70,7 @@ Raw: <a href="../../raw/operations/2026-07-04-deployment.html">Deployment Source
 </tr>
 <tr>
 <td><code>cloudbuild.yaml</code></td>
-<td>Cloud Build pipeline — pulls the API key from Secret Manager</td>
+<td>Public Cloud Build pipeline — deploys deterministic mode and clears paid-service credentials</td>
 </tr>
 <tr>
 <td><code>.agent_engine_config.json</code></td>

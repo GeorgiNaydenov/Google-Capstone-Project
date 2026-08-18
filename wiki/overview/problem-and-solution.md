@@ -1,8 +1,7 @@
 # Problem and Solution
 
-> Source: Project Wiki/01 Overview/Problem and Solution.md
-> Collected: 2026-07-05
-> Published: 2026-07-04
+> Sources: Antigravity, 2026-07-05
+> Raw: [Problem and Solution Source](../../raw/overview/2026-07-04-problem-and-solution.md)
 
 # Problem and Solution
 
@@ -12,13 +11,13 @@ Clinical work spans disconnected notes, session images, structured records, hist
 
 ## Solution
 
-Nexus provides a dense, role-aware command center for synthetic clinical data. The product exposes three guided AI workflows:
+Clinical AI Kit provides a dense, role-aware command center for synthetic clinical data. The product exposes three guided AI workflows:
 
 1. **Session Image Extraction** — OCR, field confidence, clinician review, storage receipts, timeline updates, and audit events. See [[Image Extraction Pipeline]].
 2. **Patient-Scoped Multimodal Q&A** — evidence citations, source viewing, and multi-modal reasoning with text and images. See [[Patient QA Pipeline]].
 3. **Database Intelligence** — natural-language SQL generation, safety approval, table/chart/CSV export, history, and audit. See [[DB Intelligence Pipeline]].
 
-The public demo is fully deterministic and requires no model key. The live agent engine in `capstone_agent/` implements the same workflows using Google ADK and Gemini when valid credentials are configured — see [[Clinical App]] for demo vs live mode.
+The public Cloud Run build is fully deterministic and requires no model key; paid ADK/Gemini execution is disabled there. A self-controlled deployment can enable the live agent engine in `capstone_agent/` with valid Google credentials — see [[Clinical App]] for deterministic versus live execution.
 
 > [!warning] Demo scope
 > All patient data is synthetic — no real PHI. This capstone demo is not a medical device and is not authorized for real patient data.

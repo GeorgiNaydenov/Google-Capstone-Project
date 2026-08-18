@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Model Registry · Nexus Documentation</title>
+<title>Model Registry · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Model Registry</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -66,8 +66,8 @@ Raw: <a href="../../raw/architecture/2026-07-04-model-registry.html">Model Regis
 <li>Gemini 3.1 on Vertex AI requires <code>GOOGLE_CLOUD_LOCATION=global</code>.</li>
 </ul>
 </blockquote>
-<h2>Auth paths (live mode)</h2>
-<p>Demo mode needs no credentials. For live agent mode, one of:</p>
+<h2>Auth paths (self-controlled live mode)</h2>
+<p>The public Cloud Run build is deterministic and does not receive model credentials. For a self-controlled live agent deployment, configure one of:</p>
 <ol>
 <li><code>GOOGLE_API_KEY=&lt;key&gt;</code> in <code>.env</code></li>
 <li>Vertex AI via ADC: <code>gcloud auth application-default login</code> + <code>GOOGLE_GENAI_USE_VERTEXAI=TRUE</code> + <code>GOOGLE_CLOUD_PROJECT</code> + <code>GOOGLE_CLOUD_LOCATION=global</code></li>

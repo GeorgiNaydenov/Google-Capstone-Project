@@ -1,8 +1,8 @@
-# Clinical AI Command Center — Architecture
+# Clinical AI Kit — Architecture
 
 ## System Overview
 
-A **23-agent clinical AI platform** (1 orchestrator + 22 pipeline sub-agents) built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and HIPAA-aligned security.
+A **22-LLM-agent clinical AI platform** (1 root orchestrator + 21 specialist LLM agents) built on Google ADK that processes medical imaging, answers patient questions with cited evidence, and runs natural-language database intelligence — all gated by clinician-in-the-loop review and privacy-aware security controls.
 
 The system has four layers: a **React frontend** (Vite + TypeScript), a **FastAPI product server** (`clinical_app/`), the **ADK agent backend** (`capstone_agent/`), and an **MCP tool server** (`mcp_server/`). The frontend talks to the FastAPI server, which can operate in deterministic demo mode or bridge live to the ADK runner. On first workspace entry the frontend runs a full-takeover onboarding tour (`frontend/src/Onboarding.tsx`) that walks the clinician through every section and the three AI workflows over the live screens; it is skippable, replayable from the topbar, and fully deterministic (no API calls).
 
@@ -11,7 +11,7 @@ The visible architecture layer now has a first-class diagram atlas. Draw.io sour
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  React Frontend (frontend/)                              │
-│  16 routes · clinician + admin views · Vite + TS         │
+│  16 core screens + 3 docs/utility routes · Vite + TS    │
 └────────────────────────┬─────────────────────────────────┘
                          │ HTTP /api/*
 ┌────────────────────────▼─────────────────────────────────┐
@@ -22,7 +22,7 @@ The visible architecture layer now has a first-class diagram atlas. Draw.io sour
                          │ ADK Runner
 ┌────────────────────────▼─────────────────────────────────┐
 │  ADK Agent Backend (capstone_agent/)                     │
-│  22 sub-agents · 3 pipelines · 24+ tools                 │
+│  21 specialists · 3 SequentialAgents · nested LoopAgent │
 │  3-layer security · 4-layer memory · HITL · observability│
 ├──────────────────────────────────────────────────────────┤
 │  MCP Server (mcp_server/server.py)                       │
@@ -40,7 +40,7 @@ The visible architecture layer now has a first-class diagram atlas. Draw.io sour
 | `pro` | gemini-3.1-pro-preview | Reasoning-heavy agents (answer synthesis, SQL generation) |
 | `pro-customtools` | gemini-3.1-pro-preview-customtools | Tool-heavy agents (evidence retrieval, execution) |
 
-## 23-Agent Clinical Architecture
+## 22-LLM-Agent Clinical Architecture
 
 ```
 User Request
@@ -66,7 +66,7 @@ User Request
 │ (Sequential) │  │                  │  │                  │
 └──────┬───────┘  └────────┬─────────┘  └────────┬─────────┘
        │                   │                     │
-  (9 agents)          (7 agents)            (6 agents)
+ (7 LLM agents)      (8 LLM agents)        (6 LLM agents)
 ```
 
 ### Image Extraction Pipeline (SequentialAgent)
@@ -78,7 +78,11 @@ quality_assessor_agent (flash-lite)
   └─ assess_image_quality
        │
        ▼
-vision_analyzer_agent (pro)
+ocr_processor_agent (flash-lite)
+  └─ extract_clinical_text
+       │
+       ▼
+vision_analyzer_agent (pro-customtools)
   └─ analyze_clinical_image
        │
        ▼
@@ -87,11 +91,14 @@ clinical_structuring_agent (pro)
        │
        ▼
 validation_gate (LoopAgent)          ◄── Day 1b loop pattern
-  ├─ critic_agent → exit_loop        (confidence >= threshold)
-  └─ refiner_agent → flag_for_review (fields below 0.80)
+  ├─ extraction_critic_agent         (confidence check)
+  └─ extraction_refiner_agent        (fields below threshold)
        │
        ▼
-  [HITL: clinician review gate]      ◄── Day 2b
+clinical_review_request_agent
+       │
+       ▼
+  [External HITL clinician review]   ◄── Day 2b
   └─ transition_extraction_review
   └─ persist_extraction_relational, persist_extraction_vector
 ```
@@ -103,15 +110,18 @@ validation_gate (LoopAgent)          ◄── Day 1b loop pattern
 Answers clinical questions with cited evidence from notes, images, and vector search — grounded in patient context.
 
 ```
+qa_request_validation_agent (flash-lite)
+       │
+       ▼
 context_assembly_agent (flash-lite)
-  └─ lookup_patient_record, validate_qa_request
+  └─ lookup_patient_record, load_memory, search_past_conversations
        │
        ▼
 evidence_retrieval_agent (pro-customtools)
   └─ search_clinical_notes, search_vector_store, retrieve_imaging_evidence
        │
        ▼
-image_evidence_agent (pro)
+image_evidence_agent (pro-customtools)
   └─ analyze_evidence_images, fetch_image_from_gcs
        │
        ▼
@@ -125,6 +135,10 @@ answer_synthesis_agent (pro)
        ▼
 qa_audit_agent (flash-lite)
   └─ log_audit_event, save_qa_to_memory
+       │
+       ▼
+qa_response_agent (flash-lite)
+  └─ return the cited response after audit and memory writes
 ```
 
 ### DB Intelligence Pipeline (SequentialAgent)
@@ -144,12 +158,16 @@ sql_validator_agent (flash-lite)
   └─ validate_sql_safety
        │
        ▼
-query_executor_agent (pro-customtools)
-  └─ execute_clinical_query (or approve_sql_preview → execute_approved_clinical_query)
+sql_preview_approval_agent (pro)
+  └─ approve_sql_preview
        │
        ▼
-insight_chart_agent (flash-lite)
-  └─ generate_chart_spec, save_query_to_memory
+query_executor_agent (pro)
+  └─ execute_approved_clinical_query
+       │
+       ▼
+insight_chart_agent (pro)
+  └─ generate_chart_spec, generate_clinical_visual, log_audit_event, save_query_to_memory
 ```
 
 ## Security Architecture (3 Layers + Clinical)
@@ -182,7 +200,7 @@ Defense in depth — no single point of failure. All blocks are logged via `obse
 └───────────────────────────────────────────────────────────┘
 ```
 
-**Clinical audit plugin** (`ClinicalAuditPlugin` in `plugins.py`): Tracks patient-data tool access, counts PHI detections, and flushes per-turn HIPAA audit summaries via `log_clinical_event()`.
+**Clinical audit plugin** (`ClinicalAuditPlugin` in `plugins.py`): Tracks patient-data tool access, counts PHI detections, and flushes per-turn privacy-aware audit summaries via `log_clinical_event()`.
 
 ## Memory Architecture (4 Layers)
 
@@ -281,7 +299,7 @@ Three pillars, all output redacted via `config.redact_secrets()`:
 |--------|---------------|---------|
 | **Logs** | `setup_logging()` — structured JSON | Machine-parseable, searchable audit trail |
 | **Traces** | `setup_tracing()` — OpenTelemetry OTLP/GCP | Distributed request tracing |
-| **Clinical Events** | `log_clinical_event()` | HIPAA-style audit (patient access, PHI redaction, review decisions) |
+| **Clinical Events** | `log_clinical_event()` | Privacy-aware audit events (patient access, PHI redaction, review decisions) |
 
 **Plugins** (attached via `app.py`):
 - `LoggingPlugin` — ADK built-in verbose request/response tracing
@@ -310,7 +328,7 @@ config.py ──────── standalone (env vars, redaction, clinical gov
     tools.py ─────────── 22 clinical tools + clinical event logging
     clinical_schemas.py ─ SQL DDL + validation + mock query engine
     mock_data.py ─────── deterministic clinical fixture data
-    agent.py ─────────── imports ALL, wires root_agent + 22 sub-agents
+    agent.py ─────────── imports ALL, wires root orchestrator + 21 specialist LLM agents
     app.py ───────────── App(root_agent, plugins, compaction, resumability)
     a2a_server.py ────── to_a2a(root_agent) ASGI app (Day 5a)
 ```

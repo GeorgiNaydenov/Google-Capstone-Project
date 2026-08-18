@@ -21,7 +21,7 @@ const REPOSITORY_URL = "https://github.com/GeorgiNaydenov/Google-Capstone-Projec
 
 function PaidServicesDisabledBanner() {
   return <aside className="paid-services-disabled-banner" role="alert" aria-live="assertive">
-    <strong>Public demo notice:</strong> Paid API and agent services have been removed from this deployment. The source code is available on <a href={REPOSITORY_URL} target="_blank" rel="noreferrer">GitHub</a>. To run the application, deploy your own copy in an environment you control.
+    <strong>Public demo notice:</strong> Deterministic workflows and documentation remain available in this hosted deployment. Live Google ADK and Gemini execution requires deploying the <a href={REPOSITORY_URL} target="_blank" rel="noreferrer">source code</a> in an environment you control.
   </aside>;
 }
 

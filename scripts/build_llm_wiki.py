@@ -4,6 +4,7 @@
 import os
 import re
 from datetime import datetime
+from pathlib import Path
 
 WIKI_ROOT = "Project Wiki"
 RAW_ROOT = "raw"
@@ -18,6 +19,16 @@ CATEGORY_MAPPING = {
     "06 Operations": "operations",
     "07 Harness": "harness",
 }
+
+
+def clear_generated_articles(root: str) -> None:
+    """Remove stale generated Markdown while preserving repository sentinels."""
+
+    generated_root = Path(root).resolve()
+    for path in generated_root.rglob("*.md"):
+        if root == LLM_WIKI_ROOT and path.name == "log.md":
+            continue
+        path.unlink()
 
 
 def slugify(name):
@@ -51,6 +62,8 @@ def main():
     print("Compiling Obsidian Project Wiki to Karpathy LLM Wiki...")
     os.makedirs(RAW_ROOT, exist_ok=True)
     os.makedirs(LLM_WIKI_ROOT, exist_ok=True)
+    clear_generated_articles(RAW_ROOT)
+    clear_generated_articles(LLM_WIKI_ROOT)
 
     articles_by_category = {}
 
@@ -156,7 +169,7 @@ def main():
     for category in sorted(articles_by_category.keys()):
         index_content += f"## {category}\n\n"
         index_content += (
-            f"Nexus compiled knowledge on {category.replace('-', ' ')}.\n\n"
+            f"Clinical AI Kit compiled knowledge on {category.replace('-', ' ')}.\n\n"
         )
         index_content += "| Article | Summary | Updated |\n"
         index_content += "|---------|---------|---------|\n"
@@ -174,8 +187,10 @@ def main():
     log_entry = f"\n- {now_str}: Compiled {sum(len(v) for v in articles_by_category.values())} Obsidian wiki files into Karpathy LLM Wiki (raw/ and wiki/ directories).\n"
 
     if os.path.exists(log_filepath):
-        with open(log_filepath, "a", encoding="utf-8") as log_f:
-            log_f.write(log_entry)
+        with open(log_filepath, "r+", encoding="utf-8") as log_f:
+            existing_log = log_f.read()
+            if log_entry.strip() not in existing_log:
+                log_f.write(log_entry)
     else:
         with open(log_filepath, "w", encoding="utf-8") as log_f:
             log_f.write("# Wiki Log\n" + log_entry)

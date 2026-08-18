@@ -5,13 +5,13 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="t1" value="Level 1: System Context, Nexus Clinical AI Command Center" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+        <mxCell id="t1" value="Level 1: System Context, Clinical AI Kit" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
           <mxGeometry x="220" y="10" width="800" height="30" as="geometry" />
         </mxCell>
         <mxCell id="cust" value="Clinician&#xa;[Person]&#xa;Reviews patients and approves AI output" style="shape=mxgraph.c4.person2;html=1;whiteSpace=wrap;fontSize=12;fontColor=#ffffff;align=center;fillColor=#083F75;strokeColor=#06315C;" vertex="1" parent="1">
           <mxGeometry x="520" y="60" width="200" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="sys" value="Nexus Clinical AI Command Center&#xa;[Software System]&#xa;Extracts, answers, and analyzes clinical data with governed AI agents" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fontSize=12;fontColor=#ffffff;align=center;fillColor=#1061B0;strokeColor=#0D5091;" vertex="1" parent="1">
+        <mxCell id="sys" value="Clinical AI Kit&#xa;[Software System]&#xa;Extracts, answers, and analyzes clinical data with governed AI agents" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fontSize=12;fontColor=#ffffff;align=center;fillColor=#1061B0;strokeColor=#0D5091;" vertex="1" parent="1">
           <mxGeometry x="480" y="350" width="280" height="130" as="geometry" />
         </mxCell>
         <mxCell id="gem" value="Gemini 3.1 on Vertex AI&#xa;[External System]&#xa;Provides the language model tiers" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fontSize=12;fontColor=#ffffff;align=center;fillColor=#8C8496;strokeColor=#736782;" vertex="1" parent="1">
@@ -43,13 +43,13 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="t2" value="Level 2: Containers, Nexus Clinical AI Command Center" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
+        <mxCell id="t2" value="Level 2: Containers, Clinical AI Kit" style="text;html=1;fontSize=18;fontStyle=1;align=center;" vertex="1" parent="1">
           <mxGeometry x="280" y="10" width="800" height="30" as="geometry" />
         </mxCell>
         <mxCell id="cust2" value="Clinician&#xa;[Person]" style="shape=mxgraph.c4.person2;html=1;whiteSpace=wrap;fontSize=12;fontColor=#ffffff;align=center;fillColor=#083F75;strokeColor=#06315C;" vertex="1" parent="1">
           <mxGeometry x="580" y="50" width="180" height="140" as="geometry" />
         </mxCell>
-        <mxCell id="spa" value="Clinical UI&#xa;[Container: React, Vite, TypeScript]&#xa;16 workflow routes with an onboarding tour" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fontSize=12;fontColor=#ffffff;align=center;fillColor=#23A2D9;strokeColor=#0E7DAD;" vertex="1" parent="1">
+        <mxCell id="spa" value="Clinical UI&#xa;[Container: React, Vite, TypeScript]&#xa;19 public routes: 16 core + 3 docs/utility" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fontSize=12;fontColor=#ffffff;align=center;fillColor=#23A2D9;strokeColor=#0E7DAD;" vertex="1" parent="1">
           <mxGeometry x="540" y="250" width="260" height="120" as="geometry" />
         </mxCell>
         <mxCell id="fapi" value="Product API&#xa;[Container: FastAPI, clinical_app]&#xa;Deterministic clinician workflows and uploads" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fontSize=12;fontColor=#ffffff;align=center;fillColor=#23A2D9;strokeColor=#0E7DAD;" vertex="1" parent="1">

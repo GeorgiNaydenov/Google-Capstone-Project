@@ -24,9 +24,9 @@ The README also references a `flash-image` tier used by the Q&A and DB pipelines
 > - Add new tiers in `llm.MODEL_TIERS`; never invent model identifiers.
 > - Gemini 3.1 on Vertex AI requires `GOOGLE_CLOUD_LOCATION=global`.
 
-## Auth paths (live mode)
+## Auth paths (self-controlled live mode)
 
-Demo mode needs no credentials. For live agent mode, one of:
+The public Cloud Run build is deterministic and does not receive model credentials. For a self-controlled live agent deployment, configure one of:
 
 1. `GOOGLE_API_KEY=<key>` in `.env`
 2. Vertex AI via ADC: `gcloud auth application-default login` + `GOOGLE_GENAI_USE_VERTEXAI=TRUE` + `GOOGLE_CLOUD_PROJECT` + `GOOGLE_CLOUD_LOCATION=global`

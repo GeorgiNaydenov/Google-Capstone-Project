@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Harness Index · Nexus Documentation</title>
+<title>Harness Index · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Harness Index</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -34,7 +34,9 @@ Hand-written companion: <a href="../../project-wiki/07%20Harness/Claude%20Harnes
 </ul>
 <h2>commands</h2>
 <ul>
+<li><code>.claude/commands/handoff.md</code></li>
 <li><code>.claude/commands/harness-audit.md</code></li>
+<li><code>.claude/commands/harness-status.md</code></li>
 <li><code>.claude/commands/pre-commit-gate.md</code></li>
 <li><code>.claude/commands/sync-agents-md.md</code></li>
 </ul>
@@ -43,13 +45,25 @@ Hand-written companion: <a href="../../project-wiki/07%20Harness/Claude%20Harnes
 <li><code>.claude/references/critical-defaults.md</code></li>
 <li><code>.claude/references/known-baselines.md</code></li>
 <li><code>.claude/references/source-policy.md</code></li>
+<li><code>.claude/references/state-contract.md</code></li>
+</ul>
+<h2>agents</h2>
+<ul>
+<li><code>.claude/agents/harness-governor.md</code></li>
+<li><code>.claude/agents/memory-state-reviewer.md</code></li>
+<li><code>.claude/agents/security-reviewer.md</code></li>
+<li><code>.claude/agents/verification-runner.md</code></li>
+</ul>
+<h2>memory</h2>
+<ul>
+<li><code>.claude/memory/README.md</code></li>
+<li><code>.claude/memory/handoff-protocol.md</code></li>
+<li><code>.claude/memory/project.md</code></li>
 </ul>
 <h2>skills</h2>
 <ul>
 <li><code>.claude/skills/defuddle/SKILL.md</code></li>
 <li><code>.claude/skills/deployment/SKILL.md</code></li>
-<li><code>.claude/skills/drawio/SKILL.md</code></li>
-<li><code>.claude/skills/drawio-skill/SKILL.md</code></li>
 <li><code>.claude/skills/grill-me/SKILL.md</code></li>
 <li><code>.claude/skills/grill-with-docs/SKILL.md</code></li>
 <li><code>.claude/skills/json-canvas/SKILL.md</code></li>
@@ -57,6 +71,15 @@ Hand-written companion: <a href="../../project-wiki/07%20Harness/Claude%20Harnes
 <li><code>.claude/skills/obsidian-cli/SKILL.md</code></li>
 <li><code>.claude/skills/obsidian-markdown/SKILL.md</code></li>
 <li><code>.claude/skills/testing-workflow/SKILL.md</code></li>
+</ul>
+<h2>lifecycle hooks</h2>
+<ul>
+<li><code>SessionStart</code> -&gt; project memory and state recovery</li>
+<li><code>PreToolUse</code> -&gt; deterministic harness audit</li>
+<li><code>PreCompact</code> -&gt; state snapshot</li>
+<li><code>SubagentStart</code> / <code>SubagentStop</code> -&gt; context and handoff lifecycle</li>
+<li><code>Stop</code> -&gt; state checkpoint plus wiki/harness sync</li>
+<li><code>SessionEnd</code> -&gt; terminal state checkpoint</li>
 </ul>
 
 <footer class="doc-footer">

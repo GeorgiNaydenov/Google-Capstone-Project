@@ -15,7 +15,7 @@ aliases:
 
 # REST API and Developer Console
 
-Nexus exposes a versioned, secure REST API backend built on FastAPI and a React-based interactive Developer/API Console to assist developers in testing, auditing, and executing agent pipelines and MCP tools.
+Clinical AI Kit exposes a versioned, secure REST API backend built on FastAPI and a React-based interactive Developer/API Console to assist developers in testing, auditing, and executing agent pipelines and MCP tools.
 
 ---
 
@@ -99,7 +99,7 @@ flowchart TD
 
 ## 3. Swagger & ReDoc Console Branding
 
-The default Swagger page (`/docs`) has been customized to deliver a premium developer experience aligned with the Clinical Command Center style guide:
+The default Swagger page (`/docs`) has been customized to deliver a premium developer experience aligned with the Clinical AI Kit style guide:
 - **Theme**: Premium custom CSS injecting a glassmorphic dark background (`#0b0f19`), rounded method blocks, consistent custom buttons, and monospace font arrays.
 - **Exhaustiveness**: Schema-included V1/V2 endpoints declare success descriptions and the shared structured error responses (`400`, `401`, `403`, `404`, `422`, `500`) where they are served through the clinical API.
 - **Routing Isolation**: The compatibility router `/api/...` endpoints are excluded from the Swagger schema (`include_in_schema=False`) to avoid duplication and clutter, highlighting only the `/api/v1` and `/api/v2` endpoints.

@@ -1,5 +1,5 @@
 ---
-title: Nexus Clinical AI Command Center — Wiki Home
+title: Clinical AI Kit — Wiki Home
 type: dashboard
 status: active
 updated: 2026-07-05
@@ -8,16 +8,16 @@ tags:
   - index
 ---
 
-# Nexus Clinical AI Command Center
+# Clinical AI Kit
 
-Clinician-facing AI platform built on Google ADK: specialist agent pipelines for image extraction, patient Q&A, and database intelligence, gated by clinician review and HIPAA-aligned security. Capstone project for Kaggle's 5-Day AI Agents Intensive Course.
+Clinician-facing AI platform built on Google ADK: specialist agent pipelines for image extraction, patient Q&A, and database intelligence, gated by clinician review and privacy-aware security controls. Capstone project for Kaggle's 5-Day AI Agents Intensive Course.
 
 > [!info] Living wiki
 > This vault documents only what is built in the repository. Pages in `_generated/` are machine-owned and rewritten by `scripts/sync_wiki.py` on every work session (Stop hook). Hand-edit everything else.
 
 ## Overview
 
-- [[Problem and Solution]] — what Nexus does and why
+- [[Problem and Solution]] — what Clinical AI Kit does and why
 - [[Course Concepts Map]] — Days 1a–5b coverage and rubric alignment
 
 ## Architecture & Agent Workflows
@@ -29,9 +29,9 @@ Clinician-facing AI platform built on Google ADK: specialist agent pipelines for
 - [[Module Dependency Graph]] — auto-regenerated import graph
 - [[Architecture Board.canvas|Architecture Board]] — visual system map
 - [[End-to-End Request Flow]] — request lifecycle sequence
-- [[Image Extraction Pipeline]] — 9-agent extraction loop
-- [[Patient QA Pipeline]] — 7-agent grounded Q&A workflow
-- [[DB Intelligence Pipeline]] — 6-agent NL-to-SQL executor
+- [[Image Extraction Pipeline]] — 7-specialist extraction workflow with a nested validation loop
+- [[Patient QA Pipeline]] — 8-specialist grounded Q&A workflow
+- [[DB Intelligence Pipeline]] — 6-specialist NL-to-SQL workflow
 - [[Human-in-the-Loop Approval]] — human verification gates
 - [[Development Workflow]] — local build and sync cycles
 - [[Deployment Pipeline]] — production topology and engines

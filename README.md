@@ -12,13 +12,13 @@ This is a capstone demo, not a medical device. All bundled clinical data is synt
 4. Run the three workflows: `/app/extraction`, `/app/qa`, and `/app/database`.
 5. Open `/documentation` for the architecture hub and diagram atlas.
 
-The demo tenants are deterministic. The **Capstone (Live)** tenant is the real ADK/Gemini path when credentials are configured.
+The demo tenants are deterministic. In a self-controlled deployment, the **Capstone (Live)** tenant is the real ADK/Gemini path when credentials are configured; the public Cloud Run build keeps paid agent execution disabled.
 
 ## Competition Concepts Demonstrated
 
 | Required concept | Evidence |
 | --- | --- |
-| Agent / multi-agent system with ADK | `capstone_agent/agent.py` root orchestrator and `capstone_agent/orchestration.py` with 22 pipeline sub-agents |
+| Agent / multi-agent system with ADK | `capstone_agent/agent.py` root orchestrator and `capstone_agent/orchestration.py` with 21 specialist LLM agents across three pipelines |
 | MCP Server | `mcp_server/server.py` exposes clinical tools through FastMCP over JSON-RPC/stdio |
 | Security | `capstone_agent/callbacks.py` and `capstone_agent/security.py` implement input, tool, and output safety layers |
 | Deployability | `deployment/Dockerfile`, `deployment/cloudbuild.yaml`, `/health`, `/ready`, and Vertex AI Agent Engine config |
@@ -50,7 +50,9 @@ FastAPI clinical product server
 Google ADK agent backend
         |
         +-- 1 root orchestrator
-        +-- 22 pipeline sub-agents
+        +-- 21 specialist LLM agents (22 LLM agents total)
+        +-- 3 SequentialAgent pipeline containers
+        +-- Nested LoopAgent in image extraction
         +-- Pydantic tool contracts
         +-- 3-layer security callbacks
         +-- 4-layer memory/context architecture
@@ -63,8 +65,8 @@ Google ADK agent backend
 
 | Pipeline | Agents | Purpose |
 | --- | ---: | --- |
-| Image Extraction | 9 | Quality, OCR, vision analysis, structuring, validation loop, review, persistence, audit |
-| Patient Q&A | 7 | Scope validation, context assembly, retrieval, image evidence, citations, answer synthesis, audit |
+| Image Extraction | 7 | Quality, OCR, vision analysis, structuring, critic/refiner validation loop, review request |
+| Patient Q&A | 8 | Scope validation, context assembly, retrieval, image evidence, citations, answer synthesis, audit, response assembly |
 | Database Intelligence | 6 | Schema discovery, NL-to-SQL, safety validation, approval, execution, insights/charts |
 | Root Orchestrator | 1 | Intent routing, tool access, memory recall, workflow selection |
 
@@ -178,7 +180,7 @@ Cloud Run is the primary product deployment target:
 gcloud builds submit --config deployment/cloudbuild.yaml .
 ```
 
-The container builds the frontend, installs the FastAPI and ADK runtime, and serves the product through one origin. See `deployment/README.md` for runtime service-account permissions, Cloud Run persistence constraints, `CLINICAL_DATA_DIR`, and Vertex AI Agent Engine deployment.
+The container builds the frontend, installs the FastAPI and ADK runtime, and serves the product through one origin. The public Cloud Run build is intentionally deterministic: paid ADK/Gemini execution and related managed-AI integrations are disabled, while the product workflows, documentation, and APIs remain reviewable. A self-controlled deployment can enable live mode by supplying Google credentials and the documented runtime configuration. See `deployment/README.md` for details.
 
 Important Cloud Run note: until state is externalized, keep max instances at 1 and mount persistent storage for real tenant data if it must survive revisions.
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Security Layers · Nexus Documentation</title>
+<title>Security Layers · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Security Layers</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -80,7 +80,7 @@ Raw: <a href="../../raw/security-memory/2026-07-04-security-layers.html">Securit
 <h2>Clinical extensions</h2>
 <ul>
 <li><strong>PHI detection</strong> adds clinical identifiers on top of PII: MRN, ICD-10 codes, NPI, DEA numbers, drug dosages.</li>
-<li><strong><code>ClinicalAuditPlugin</code></strong> (<code>plugins.py</code>) tracks patient-data tool access, counts PHI detections, and flushes per-turn HIPAA audit summaries via <code>log_clinical_event()</code>.</li>
+<li><strong><code>ClinicalAuditPlugin</code></strong> (<code>plugins.py</code>) tracks patient-data tool access, counts PHI detections, and flushes per-turn privacy-aware audit summaries via <code>log_clinical_event()</code>.</li>
 <li>PHI is filtered before anything reaches long-term memory — see [[Memory Layers]].</li>
 </ul>
 <h2>Rules</h2>

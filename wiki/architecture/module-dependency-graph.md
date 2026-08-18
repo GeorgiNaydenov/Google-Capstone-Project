@@ -31,15 +31,19 @@ flowchart LR
     prompts[prompts.py]
     security[security.py]
     tools[tools.py]
+    vector_store[vector_store.py]
 
     agent --> a2a_server
     agent --> app
     callbacks --> agent
+    callbacks --> orchestration
     callbacks --> plugins
+    clinical_schemas --> orchestration
     clinical_schemas --> tools
     config --> a2a_server
     config --> agent
     config --> app
+    config --> callbacks
     config --> context
     config --> document_processor
     config --> llm
@@ -48,8 +52,10 @@ flowchart LR
     config --> plugins
     config --> security
     config --> tools
+    config --> vector_store
     context --> agent
     context --> plugins
+    database --> document_processor
     database --> mock_data
     document_processor --> tools
     human_in_the_loop --> agent

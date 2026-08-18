@@ -116,7 +116,7 @@ export const api = {
   getOpenApiSchema: () => failover(() => fetch("/openapi.json").then(r => {
     if (!r.ok) throw new ApiError(r.status, `Failed to fetch OpenAPI schema (${r.status})`);
     return r.json();
-  }), () => ({ openapi: "3.1.0", info: { title: "Clinician AI Kit API unavailable", version: "failover" }, paths: {} })),
+  }), () => ({ openapi: "3.1.0", info: { title: "Clinical AI Kit API unavailable", version: "failover" }, paths: {} })),
   docsList: () => failover(() => request<{ obsidian: Array<{ path: string; title: string }>; karpathy: Array<{ path: string; title: string }> }>("/v2/docs/list"), () => ({ obsidian: [], karpathy: [] })),
   docsFile: (type: string, path: string) => failover(() => request<{ content: string }>(`/v2/docs/file?type=${type}&path=${path}`), () => ({ content: `# Document unavailable\n\nThe ${type} document ${path} could not be loaded because the API gateway is unavailable.` })),
 };

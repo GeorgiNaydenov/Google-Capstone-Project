@@ -1,6 +1,5 @@
 """Unit tests for live mode ingestion, ETL, and database seeding."""
 
-from pathlib import Path
 from fastapi.testclient import TestClient
 
 from clinical_app.app import create_app
@@ -17,32 +16,16 @@ def live_headers(session: str = "live-test-session") -> dict[str, str]:
         "X-Demo-Session": session,
         "X-Clinical-Role": "admin",
         "X-User": "Dr. IngestionTest",
-        "X-Tenant": "capstone",
+        "X-Tenant": "test-live",
     }
 
 
-def test_import_database_and_documents_etl() -> None:
+def test_import_database_and_documents_etl(tmp_path, monkeypatch) -> None:
     # Clear active database cache to force re-initialization
     from capstone_agent import database as capstone_db
 
     capstone_db._INITIALIZED_PATHS.clear()
-
-    # Clean up any existing test DB/uploads to ensure test isolation
-    db_path = Path("capstone.db")
-    if db_path.exists():
-        try:
-            db_path.unlink()
-        except OSError:
-            pass
-
-    uploads_dir = Path("uploads_capstone")
-    if uploads_dir.exists():
-        import shutil
-
-        try:
-            shutil.rmtree(uploads_dir)
-        except OSError:
-            pass
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
 
     api = client()
     headers = live_headers()
@@ -107,7 +90,9 @@ def test_import_database_and_documents_etl() -> None:
     assert any(a["filename"] == "test_report.pdf" for a in storage["assets"])
 
 
-def test_upload_registers_unseen_live_patient_across_sessions() -> None:
+def test_upload_registers_unseen_live_patient_across_sessions(
+    tmp_path, monkeypatch
+) -> None:
     """Evidence uploads register unknown live patients instead of 404ing.
 
     A clinician can reference a brand-new patient from Q&A or extraction;
@@ -118,13 +103,7 @@ def test_upload_registers_unseen_live_patient_across_sessions() -> None:
     from capstone_agent import database as capstone_db
 
     capstone_db._INITIALIZED_PATHS.clear()
-
-    db_path = Path("capstone.db")
-    if db_path.exists():
-        try:
-            db_path.unlink()
-        except OSError:
-            pass
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
 
     api = client()
     session_a = live_headers("live-register-session-a")
@@ -157,7 +136,9 @@ def test_upload_registers_unseen_live_patient_across_sessions() -> None:
     assert detail.status_code == 200
 
 
-def test_asset_upload_detects_patient_id_from_document_text() -> None:
+def test_asset_upload_detects_patient_id_from_document_text(
+    tmp_path, monkeypatch
+) -> None:
     """A blank patient id resolves from the number the document itself prints.
 
     Mirrors the clinician flow: a packet headed "Patient 990001" uploads
@@ -168,6 +149,7 @@ def test_asset_upload_detects_patient_id_from_document_text() -> None:
 
     import fitz
 
+    monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
     api = client()
     headers = live_headers("live-detect-session")
 

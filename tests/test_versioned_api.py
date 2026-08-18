@@ -119,7 +119,7 @@ def test_custom_swagger_ui() -> None:
     assert res.status_code == 200
     assert "text/html" in res.headers["content-type"]
     html = res.text
-    assert "Clinician AI Kit - API & Swagger Console" in html
+    assert "Clinical AI Kit - API & Swagger Console" in html
     assert "#0b0f19" in html
 
     # ReDoc specs

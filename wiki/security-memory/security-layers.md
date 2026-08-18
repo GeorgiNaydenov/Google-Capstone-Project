@@ -42,7 +42,7 @@ Security logic lives in `security.py` as pure, testable functions (`scan_for_sec
 ## Clinical extensions
 
 - **PHI detection** adds clinical identifiers on top of PII: MRN, ICD-10 codes, NPI, DEA numbers, drug dosages.
-- **`ClinicalAuditPlugin`** (`plugins.py`) tracks patient-data tool access, counts PHI detections, and flushes per-turn HIPAA audit summaries via `log_clinical_event()`.
+- **`ClinicalAuditPlugin`** (`plugins.py`) tracks patient-data tool access, counts PHI detections, and flushes per-turn privacy-aware audit summaries via `log_clinical_event()`.
 - PHI is filtered before anything reaches long-term memory — see [[Memory Layers]].
 
 ## Rules

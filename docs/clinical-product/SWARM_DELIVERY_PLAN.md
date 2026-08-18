@@ -25,7 +25,7 @@ Does not edit `capstone_agent/`, frontend, or deployment without approval.
 
 ### Swarm B: Clinical Frontend
 
-Owns `frontend/`, design tokens, components, router, shell, 16 screens, API
+Owns `frontend/`, design tokens, components, router, shell, 16 core screens plus 3 documentation/utility routes, API
 client, role-aware navigation, evidence, confidence, review, sync, and audit UI.
 
 Must not embed a second product dataset. Fixtures are allowed only in tests.
@@ -35,7 +35,7 @@ Must not embed a second product dataset. Fixtures are allowed only in tests.
 Owns `capstone_agent/`, `mcp_server/`, ADK runner adapter, run events, the three
 clinical workflows, HITL resume, tools, and agent evals.
 
-Exposes structured workflow rationale only, never hidden chain-of-thought.
+Exposes inspectable execution, tool, and evidence traces without disclosing hidden model reasoning.
 
 ### Swarm D: Quality, Security, and Observability
 
@@ -245,7 +245,7 @@ multi-turn patient context. Deterministic contracts remain pytest territory.
 
 Done requires evidence that:
 
-- all 16 screens are routed and connected
+- all 16 core screens and 3 documentation/utility routes are routed and connected
 - all three guided workflows use shared repository state
 - automatic and manual orchestration use the same persisted run model
 - agent steps, confidence, evidence, review, sync, audit, and timestamps show
@@ -255,7 +255,7 @@ Done requires evidence that:
 - database intelligence provides preview, safety, table, chart, CSV, history
 - admin permissions and versioned settings are enforced and audited
 - demo data is synthetic, isolated, mutable, and resettable
-- secrets, unauthorized PHI, and hidden reasoning do not leak
+- secrets, unauthorized PHI, and hidden model reasoning do not leak; only governed execution, tool, and evidence traces are exposed
 - harness, unit, integration, browser, accessibility, eval, and container pass
 - documentation and deployed behavior agree
 - public deployment works after explicit approval

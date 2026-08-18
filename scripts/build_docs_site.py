@@ -89,7 +89,7 @@ def page(title: str, body: str, depth: int) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{html.escape(title)} · Nexus Documentation</title>
+<title>{html.escape(title)} · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="{root}docs.css">
 <script type="module">
@@ -99,7 +99,7 @@ def page(title: str, body: str, depth: int) -> str:
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="{root}index.html">Documentation hub</a>&nbsp;/&nbsp;{html.escape(title)}</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -273,8 +273,8 @@ def build_hub(
         (href for title, href in llm_pages if href.endswith("index.html")), "index.html"
     )
     body = f"""
-<h1>Nexus documentation</h1>
-<p>Standalone, readable documentation for the Nexus Clinical AI Command Center.
+<h1>Clinical AI Kit documentation</h1>
+<p>Standalone, readable documentation for Clinical AI Kit.
 These pages are intentionally separate from the application so you can study the
 system without the product shell around you. Use the buttons above to jump back
 to the main page or straight into the clinician/admin workspace.</p>

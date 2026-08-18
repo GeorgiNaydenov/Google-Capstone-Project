@@ -13,7 +13,7 @@ const PIPELINE_DISPLAY_NAMES: Record<string, string> = {
 };
 
 export function pipelineDisplayName(name?: string | null): string {
-  if (!name) return "Nexus clinical AI";
+  if (!name) return "Clinical AI Kit";
   return PIPELINE_DISPLAY_NAMES[name] ?? name;
 }
 

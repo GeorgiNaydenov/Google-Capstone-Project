@@ -367,7 +367,10 @@ def build_structure_tree(modules: list[tuple[str, str, str]]) -> str:
                 note = purpose if purpose != "(no docstring)" else ""
                 lines.append(f"  {name}{pad}# {note}".rstrip(" #").rstrip())
     for extra, note in [
-        ("frontend/", "React/Vite/TypeScript clinical UI (16 routes)"),
+        (
+            "frontend/",
+            "React/Vite/TypeScript clinical UI (16 core screens plus 3 documentation/utility routes)",
+        ),
         ("eval/", "ADK evaluation suite (evalset + scoring config)"),
         ("deployment/", "Dockerfile, cloudbuild.yaml, Agent Engine config"),
         ("docs/", "Architecture and product documentation"),

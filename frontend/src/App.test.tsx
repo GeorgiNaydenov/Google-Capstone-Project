@@ -60,13 +60,13 @@ describe("clinical product shell", () => {
     sessionStorage.setItem("tenant", "capstone");
     render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
     expect(document.querySelector('input[type="file"]')).not.toBeInTheDocument();
-    expect(screen.getByText(/Paid API and agent services have been removed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Deterministic workflows and documentation remain available/i)).toBeInTheDocument();
   });
   it("opens orchestration with keyboard and reviews all plan fields", () => {
     render(<MemoryRouter initialEntries={["/app/extraction"]}><App/></MemoryRouter>);
     fireEvent.keyDown(document, { key: "k", ctrlKey: true });
     expect(screen.getByRole("dialog", { name: /plan a clinical task/i })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/what should nexus do/i), { target: { value: "Extract this image" } });
+    fireEvent.change(screen.getByLabelText(/what should clinical ai kit do/i), { target: { value: "Extract this image" } });
     fireEvent.click(screen.getByRole("button", { name: /image extraction.*manual workflow/i }));
     for (const label of ["Intent", "Workflow", "Agents", "Data sources", "Permissions", "Expected output"]) expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /run workflow/i })).toBeEnabled();

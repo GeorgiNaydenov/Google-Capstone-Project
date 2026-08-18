@@ -1,8 +1,8 @@
 # 5-minute demo video — shot list
 
 Target: ≤5 minutes, published to YouTube. Record at 1440-wide desktop unless a
-shot calls for tablet. Demo tenant (Research Clinic) for the guided run; show
-the Capstone live tenant briefly to prove it is real.
+shot calls for tablet. Use the deployed deterministic Research Clinic tenant
+for the guided run and clearly identify the public build's disabled paid-agent boundary.
 
 ## 0:00 — 0:25 · Hook + problem
 - Landing page (`/`). Read the headline: fragmented clinical evidence →
@@ -13,7 +13,9 @@ the Capstone live tenant briefly to prove it is real.
 ## 0:25 — 0:55 · Onboarding + orientation
 - Click **Start clinical workspace** → role selection → Clinician.
 - Let the first-run tour advance two or three steps; call out the **tenant
-  step** (two demo tenants + the live Capstone tenant) and the **atlas step**.
+  step** and the **atlas step**. State that the public Cloud Run build runs
+  deterministic workflows, while a self-controlled deployment can enable the
+  Capstone live tenant with Google credentials.
 
 ## 0:55 — 1:20 · Honest dashboard
 - `/app/dashboard`. Point out live KPIs, the prioritized queue, alerts derived
@@ -34,9 +36,10 @@ the Capstone live tenant briefly to prove it is real.
   and execute** → table + chart. Mention the server-side safety gate.
 
 ## 3:40 — 4:10 · Admin honesty + security
-- `/app/admin`. Real system health from component checks, run-derived
-  monitoring. Switch to **Capstone (Live)** tenant to show it starts empty —
-  proof the demo data is demo and the live tenant is real.
+- `/app/admin`. Show measured component health, run-derived monitoring, and
+  the execution-mode indicator. Call out that paid ADK/Gemini execution is
+  intentionally disabled in the public build rather than presenting demo
+  output as live model output.
 
 ## 4:10 — 4:40 · Architecture atlas + documentation
 - Scroll to the dashboard **System atlas**; pan/zoom one diagram.
@@ -44,8 +47,9 @@ the Capstone live tenant briefly to prove it is real.
   from the app.
 
 ## 4:40 — 5:00 · Deployability + close
-- Show `deployment/Dockerfile` and cloudbuild briefly; state single-origin
-  Cloud Run, `CLINICAL_DATA_DIR` volume for persistence.
+- Show `deployment/Dockerfile` and `deployment/cloudbuild.yaml` briefly; state
+  single-origin deterministic Cloud Run, canonical `/health` and `/ready`
+  probes, and the separately documented self-controlled live path.
 - Close on the repo URL and Apache-2.0 license.
 
 ## Screenshots to capture for the media gallery

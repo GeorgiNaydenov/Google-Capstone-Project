@@ -473,7 +473,7 @@ def test_database_execute_rejects_unsafe_agent_sql(
     monkeypatch.setattr("clinical_app.repository.PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(product_app, "execute_live", fake_execute_live)
     live_api = TestClient(product_app.create_app())
-    request_headers = {**headers(session="unsafe-sql"), "X-Tenant": "capstone"}
+    request_headers = {**headers(session="unsafe-sql"), "X-Tenant": "test-live"}
     preview = live_api.post(
         "/api/runs/database/preview",
         headers=request_headers,
@@ -599,7 +599,7 @@ def test_live_execution_mode_invokes_lazy_agent_bridge(
     live_api = TestClient(product_app.create_app())
     response = live_api.post(
         "/api/runs/qa",
-        headers={**headers(session="live-bridge"), "X-Tenant": "capstone"},
+        headers={**headers(session="live-bridge"), "X-Tenant": "test-live"},
         json={"patientId": PATIENT_ID, "question": "What changed?", "filters": {}},
     )
     assert response.status_code == 201
@@ -607,7 +607,7 @@ def test_live_execution_mode_invokes_lazy_agent_bridge(
     assert PATIENT_ID in calls[0][0]
     settled = poll_until_settled(
         live_api,
-        {**headers(session="live-bridge"), "X-Tenant": "capstone"},
+        {**headers(session="live-bridge"), "X-Tenant": "test-live"},
         response.json()["id"],
     )
     assert settled["result"]["liveResponse"] == "Synthetic live response"
@@ -624,7 +624,7 @@ def capstone_headers(session: str = "capstone-int") -> dict[str, str]:
         "X-Demo-Session": session,
         "X-Clinical-Role": "clinician",
         "X-User": "Integration Tester",
-        "X-Tenant": "capstone",
+        "X-Tenant": "test-live",
     }
 
 

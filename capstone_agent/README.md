@@ -1,6 +1,6 @@
 # capstone_agent — ADK Agent Backend
 
-The core Google ADK agent package implementing a **16-agent clinical AI orchestrator** with three specialist pipelines, 22+ tools, 3-layer security, 4-layer memory, and full observability.
+The core Google ADK agent package implementing **22 LLM agents** (one root orchestrator plus 21 specialists) across three clinical pipelines, 22+ tools, 3-layer security, 4-layer memory, and full observability.
 
 This package is discovered by ADK via `__init__.py` and can be run with `adk run capstone_agent` or served as an A2A endpoint.
 
@@ -12,7 +12,8 @@ This package is discovered by ADK via `__init__.py` and can be run with `adk run
 
 | Module | Purpose |
 |--------|---------|
-| `__init__.py` | Package init — imports `agent` so ADK discovers `root_agent` |
+| `__init__.py` | Lightweight package init that avoids loading paid agent runtime during deterministic product imports |
+| `catalog.py` | Dependency-light canonical public topology: pipeline names, routes, agent rosters, and counts |
 | `agent.py` | Root agent wiring — imports all modules, builds the `clinical_orchestrator` LlmAgent |
 | `app.py` | `App(root_agent, plugins, compaction, resumability)` — production wrapper with plugins and history compaction |
 | `a2a_server.py` | Agent2Agent ASGI server (`to_a2a(root_agent)`) — exposes agent card at `/.well-known/agent-card.json` |
@@ -51,7 +52,7 @@ This package is discovered by ADK via `__init__.py` and can be run with `adk run
 
 | Module | Purpose |
 |--------|---------|
-| `orchestration.py` | Pipeline builders: `build_image_extraction_pipeline()` (5 agents), `build_patient_qa_pipeline()` (6 agents), `build_db_intelligence_pipeline()` (5 agents). Also: `as_tool()` (agent-as-tool wrapper), `build_code_executor_agent()`, `build_remote_a2a_agent()` |
+| `orchestration.py` | Pipeline builders: `build_image_extraction_pipeline()` (7 LLM agents), `build_patient_qa_pipeline()` (8), `build_db_intelligence_pipeline()` (6). Also: `as_tool()` (agent-as-tool wrapper), `build_code_executor_agent()`, `build_remote_a2a_agent()` |
 | `human_in_the_loop.py` | `request_sensitive_action()` — `LongRunningFunctionTool` that pauses execution for clinician review/approval |
 
 ### Clinical Domain
@@ -68,35 +69,27 @@ This package is discovered by ADK via `__init__.py` and can be run with `adk run
 
 ## Pipeline Architecture
 
-### Image Extraction Pipeline (5 Agents)
+### Image Extraction Pipeline (7 LLM Agents)
 
 ```
-quality_assessor_agent (flash-lite)  →  Assess image quality
-vision_analyzer_agent (pro)          →  AI vision analysis
-structuring_agent (pro)              →  Map to clinical fields (SNOMED)
-validation_agent (flash-lite)        →  Flag low-confidence fields
-persistence_agent (flash-lite)       →  Store to JSON/relational/vector + audit
+quality_assessor_agent → ocr_processor_agent → vision_analyzer_agent
+→ clinical_structuring_agent → extraction_critic_agent ⇄ extraction_refiner_agent
+→ clinical_review_request_agent → external clinician review/persistence boundary
 ```
 
-### Patient Q&A Pipeline (6 Agents)
+### Patient Q&A Pipeline (8 LLM Agents)
 
 ```
-request_validator_agent (flash-lite)     →  Validate and classify question
-patient_context_agent (pro-customtools)  →  Retrieve patient context
-evidence_retriever_agent (pro-customtools) →  Find text + image evidence
-citation_assembler_agent (flash-lite)    →  Build evidence citations
-answer_synthesizer_agent (pro)           →  Compose cited answer
-audit_agent (flash-lite)                 →  Log Q&A interaction
+qa_request_validation_agent → context_assembly_agent → evidence_retrieval_agent
+→ image_evidence_agent → citation_builder_agent → answer_synthesis_agent
+→ qa_audit_agent → qa_response_agent
 ```
 
-### DB Intelligence Pipeline (5 Agents)
+### DB Intelligence Pipeline (6 LLM Agents)
 
 ```
-schema_discovery_agent (flash-lite)      →  Discover available tables/columns
-sql_generator_agent (pro)                →  NL-to-SQL translation
-safety_validator_agent (flash-lite)      →  Deterministic SQL safety check
-execution_agent (pro-customtools)        →  Execute with preview approval
-insight_agent (pro)                      →  Charts, insights, CSV export
+schema_discovery_agent → nl_to_sql_agent → sql_validator_agent
+→ sql_preview_approval_agent → query_executor_agent → insight_chart_agent
 ```
 
 ---

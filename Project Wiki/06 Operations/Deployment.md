@@ -11,11 +11,11 @@ tags:
 
 # Deployment
 
-Three supported targets — all read secrets from `.env` / Secret Manager at runtime, never baked into images. Full instructions in `deployment/README.md`; process diagram in [[Deployment Pipeline]].
+Three supported targets are documented. The public Cloud Run target is intentionally deterministic and does not receive paid ADK/Gemini credentials. Self-controlled live targets read secrets from `.env`, Application Default Credentials, or Secret Manager at runtime; secrets are never baked into images. Full instructions are in `deployment/README.md`; the process diagram is in [[Deployment Pipeline]].
 
 | Target | Command | Use case |
 |--------|---------|----------|
-| **Cloud Run** | `gcloud builds submit --config deployment/cloudbuild.yaml .` | Production clinical product |
+| **Cloud Run** | `gcloud builds submit --config deployment/cloudbuild.yaml .` | Public deterministic product build; paid ADK/Gemini execution disabled |
 | **Vertex AI Agent Engine** | `adk deploy agent_engine --agent_engine_config_file=deployment/.agent_engine_config.json .` | Fully managed with autoscaling + Memory Bank |
 | **GKE** | Custom K8s manifests | Self-managed Kubernetes |
 
@@ -24,7 +24,7 @@ Three supported targets — all read secrets from `.env` / Secret Manager at run
 | File | Purpose |
 |------|---------|
 | `Dockerfile` | Hardened container — non-root user, healthcheck, port 8000 |
-| `cloudbuild.yaml` | Cloud Build pipeline — pulls the API key from Secret Manager |
+| `cloudbuild.yaml` | Public Cloud Build pipeline — deploys deterministic mode and clears paid-service credentials |
 | `.agent_engine_config.json` | Vertex AI Agent Engine hardware config (Day 5b) |
 | `README.md` | Cloud Run / Agent Engine / GKE / A2A deploy guide |
 

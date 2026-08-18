@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Development Workflow · Nexus Documentation</title>
+<title>Development Workflow · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Development Workflow</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -25,43 +25,37 @@
 <h1>Development Workflow</h1>
 <blockquote>
 <p>Sources: Antigravity, 2026-07-05
-Raw: <a href="../../raw/processes/2026-07-04-development-workflow.html">Development Workflow Source</a></p>
+Raw: <a href="../../raw/processes/2026-07-23-development-workflow.html">Development Workflow Source</a></p>
 </blockquote>
 <h1>Development Workflow</h1>
-<p>How work happens on this repository, including the automated wiki/harness sync layer. Lanes: Developer/Claude, Hooks, Sync.</p>
 <pre class="mermaid">flowchart TD
-    subgraph LANE_DEV["Lane: Developer / Claude"]
-        EDIT["Edit code / docs / wiki"]
-        TEST["uv run pytest tests/ -v"]
-        GATE["Pre-commit gate:<br/>format + harness audit + pytest"]
-        COMMIT["git commit (files staged by name)"]
-    end
+    START["SessionStart: recover state + inject memory"]
+    AUDIT{"PreToolUse: harness valid?"}
+    WORK["Inspect / edit / test"]
+    SUB["SubagentStart / SubagentStop: ownership + handoff"]
+    GATE["Pre-commit gate"]
+    STOP["Stop: checkpoint turn"]
+    SYNC["sync_wiki + incremental sync_harness"]
+    END["SessionEnd: mark state ended"]
 
-    subgraph LANE_HOOK["Lane: Hooks (.claude/settings.json)"]
-        PRE{"PreToolUse:<br/>check_harness.py passes?"}
-        STOP["Stop hook: sync_wiki.py<br/>(end of each work turn)"]
-    end
-
-    subgraph LANE_SYNC["Lane: Deterministic sync (scripts/sync_wiki.py)"]
-        GEN["Regenerate _generated/ pages:<br/>Module Inventory, Test Inventory,<br/>Harness Index, Changelog, Drift Report"]
-        DEP["Rewrite AUTO:DEPGRAPH block<br/>in Module Dependency Graph"]
-        CMD["Rewrite AUTO:STRUCTURE block<br/>in CLAUDE.md + root MEMORY.md"]
-        MIRROR["sync_harness.py:<br/>.claude -> .agents, CLAUDE.md -> AGENTS.md"]
-    end
-
-    PRE -->|fail: fix harness first| EDIT
-    PRE -->|pass| EDIT
-    EDIT --> TEST --> GATE --> COMMIT
-    COMMIT --> STOP
-    EDIT -.->|every turn end| STOP
-    STOP --> GEN --> DEP --> CMD --> MIRROR --> DONE([Wiki + harness up to date])
+    START --> AUDIT
+    AUDIT -->|pass| WORK
+    AUDIT -->|fail| WORK
+    WORK -. delegate .-> SUB -. return .-> WORK
+    WORK --> GATE --> STOP --> SYNC
+    SYNC --> END
 </pre>
 <p>Key facts:</p>
 <ul>
-<li><code>check_harness.py</code> runs before <strong>every</strong> tool call (PreToolUse, matcher <code>.*</code>) and fails fast on harness drift — see [[Claude Harness]].</li>
-<li><code>sync_wiki.py</code> runs at the end of every Claude work turn (Stop hook). It is deterministic (stdlib only, no LLM), idempotent, and always exits 0 — sync problems land in [[Drift Report]] instead of blocking.</li>
-<li>Machine-owned pages live in <code>_generated/</code>; AUTO-marked blocks in [[Module Dependency Graph]], <code>CLAUDE.md</code>, and root <code>MEMORY.md</code> are rewritten in place. Hand-written prose is never touched.</li>
-<li>After any CLAUDE.md change, <code>sync_harness.py</code> must mirror it to AGENTS.md — the sync script does this automatically as its last step.</li>
+<li><code>harness_runtime.py</code> manages SessionStart, PreCompact, subagent handoff, Stop,
+and SessionEnd transitions under gitignored <code>.claude/state/</code>.</li>
+<li><code>check_harness.py</code> runs before every tool call and validates executable agent,
+memory, state, hook, index, and mirror contracts.</li>
+<li><code>sync_wiki.py</code> is deterministic and idempotent; sync warnings land in
+[[Drift Report]].</li>
+<li><code>sync_harness.py</code> only removes files named by its previous generated manifest,
+so destination-only <code>.agents/</code> assets survive.</li>
+<li>Machine-owned pages and <code>AUTO:*</code> blocks are never hand-edited.</li>
 </ul>
 <p>Related: [[Claude Harness]] · [[Testing and Eval]]</p>
 

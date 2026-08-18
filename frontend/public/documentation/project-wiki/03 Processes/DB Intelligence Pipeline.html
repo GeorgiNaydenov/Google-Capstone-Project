@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DB Intelligence Pipeline · Nexus Documentation</title>
+<title>DB Intelligence Pipeline · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;DB Intelligence Pipeline</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -23,18 +23,18 @@
 </header>
 <main>
 <h1>DB Intelligence Pipeline</h1>
-<p>SequentialAgent (6 agents) translating natural language into safe SQL with validation before execution and chart-spec generation after. Lanes: Agents, Safety Gate.</p>
+<p><code>SequentialAgent</code> containing 6 specialist LLM agents translates natural language into safe SQL with validation and explicit approval preparation before execution, followed by chart-spec generation. Lanes: Agents, Safety Gate.</p>
 <pre class="mermaid">flowchart TD
     subgraph LANE_AG["Lane: Pipeline agents"]
         SD["schema_discovery_agent (flash-lite)<br/>get_database_schema"]
         NL["nl_to_sql_agent (pro)<br/>generate_sql"]
-        EX["query_executor_agent (pro-customtools)"]
-        IC["insight_chart_agent (flash-lite)<br/>generate_chart_spec, save_query_to_memory"]
+        EX["query_executor_agent (pro)"]
+        IC["insight_chart_agent (pro)<br/>generate_chart_spec, save_query_to_memory"]
     end
 
     subgraph LANE_GATE["Lane: Safety gate"]
         SV{sql_validator_agent (flash-lite)<br/>validate_sql_safety}
-        APPR{Approval boundary<br/>approve_sql_preview}
+        APPR{sql_preview_approval_agent (pro)<br/>approve_sql_preview}
     end
 
     START([Natural-language question]) --> SD --> NL --> SV

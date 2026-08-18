@@ -9,3 +9,5 @@
 - 2026-07-05: Compiled 24 Obsidian wiki files into Karpathy LLM Wiki (raw/ and wiki/ directories).
 
 - 2026-07-06: Compiled 24 Obsidian wiki files into Karpathy LLM Wiki (raw/ and wiki/ directories).
+
+- 2026-08-18: Compiled 24 Obsidian wiki files into Karpathy LLM Wiki (raw/ and wiki/ directories).

@@ -32,9 +32,9 @@ export const fallbackCatalog: AgentCatalog = {
   orchestrator: "clinical_orchestrator",
   framework: "Google ADK",
   pipelines: [
-    { id: "extraction", name: "Clinical evidence extraction", route: "/app/extraction", agents: ["quality_assessor_agent", "ocr_processor_agent", "vision_analyzer_agent", "clinical_structuring_agent", "validation_agent", "clinical_review_gate_agent", "storage_agent", "vector_indexing_agent", "audit_agent"] },
-    { id: "qa", name: "Patient Q&A", route: "/app/qa", agents: ["context_assembly_agent", "evidence_retrieval_agent", "image_evidence_agent", "citation_builder_agent", "answer_synthesis_agent", "qa_audit_agent"] },
-    { id: "database", name: "Population insights", route: "/app/database", agents: ["schema_discovery_agent", "nl_to_sql_agent", "sql_validator_agent", "query_executor_agent", "insight_chart_agent", "audit_agent"] },
+    { id: "extraction", name: "Clinical evidence extraction", route: "/app/extraction", agents: ["quality_assessor_agent", "ocr_processor_agent", "vision_analyzer_agent", "clinical_structuring_agent", "extraction_critic_agent", "extraction_refiner_agent", "clinical_review_request_agent"] },
+    { id: "qa", name: "Patient Q&A", route: "/app/qa", agents: ["qa_request_validation_agent", "context_assembly_agent", "evidence_retrieval_agent", "image_evidence_agent", "citation_builder_agent", "answer_synthesis_agent", "qa_audit_agent", "qa_response_agent"] },
+    { id: "database", name: "Population insights", route: "/app/database", agents: ["schema_discovery_agent", "nl_to_sql_agent", "sql_validator_agent", "sql_preview_approval_agent", "query_executor_agent", "insight_chart_agent"] },
   ],
 };
 
@@ -2652,7 +2652,7 @@ export function fallbackExtractionRun(assetId: string, patientId: string): Agent
     createdAt: now(),
     auditId: demoId("AUD"),
     traceId: demoId("TRACE"),
-    steps: ["Source Quality Agent", "PDF Packet Parser", "Vision Agent", "Clinical Structuring Agent", "Validation Agent", "Clinical Review Gate"].map((name, index) => ({ id: `${runId}-S${index + 1}`, name, status: index === 5 ? "review" : "completed", detail: index === 5 ? "Awaiting clinician review" : "Deterministic demo fallback completed", timestamp: now() })),
+    steps: ["Quality Assessor Agent", "OCR Processor Agent", "Vision Analyzer Agent", "Clinical Structuring Agent", "Extraction Critic Agent", "Extraction Refiner Agent", "Clinical Review Request Agent"].map((name, index) => ({ id: `${runId}-S${index + 1}`, name, status: index === 6 ? "review" : "completed", detail: index === 6 ? "Prepared for clinician review" : "Deterministic demo fallback completed", timestamp: now() })),
     evidence: [{ id: assetId, label: option?.filename ?? "Synthetic demo evidence", kind: "document", sourceUrl: option?.sourceUrl ?? option?.previewUrl ?? "", excerpt: String(option?.extracted?.textPreview ?? "Synthetic extraction catalog evidence.") }],
     result: { patientId, fields: { documentType: "Enterprise five-patient clinical packet", patientMatch: patientId, sourceFile: option?.filename, packetId: option?.packetId, batchPatients: option?.batchPatientIds, finding: option?.extracted?.textPreview ?? "Evidence ready for clinician verification" }, toolCalls: [], storageReceipts: [{ target: "json", status: "pending" }, { target: "relational", status: "pending" }, { target: "vector", status: "pending" }], persisted: false, extractedContent },
   };
@@ -2696,7 +2696,7 @@ export function fallbackQaRun(patientId: string, question: string, sourceTypes: 
     createdAt: now(),
     auditId: demoId("AUD"),
     traceId: demoId("TRACE"),
-    steps: ["Request Validation Agent", "Patient Context Agent", "Evidence Retrieval Agent", "Image Evidence Agent", "Citation Builder", "Answer Synthesis", "QA Audit"].map((name, index) => ({ id: `${runId}-S${index + 1}`, name, status: "completed", detail: index === 2 ? `Retrieved ${evidence.length} stored files` : "Deterministic demo fallback completed", timestamp: now() })),
+    steps: ["QA Request Validation Agent", "Context Assembly Agent", "Evidence Retrieval Agent", "Image Evidence Agent", "Citation Builder Agent", "Answer Synthesis Agent", "QA Audit Agent", "QA Response Agent"].map((name, index) => ({ id: `${runId}-S${index + 1}`, name, status: "completed", detail: index === 2 ? `Retrieved ${evidence.length} stored files` : "Deterministic demo fallback completed", timestamp: now() })),
     evidence,
     result: {
       answer: `${patientId}: The stored knowledge base indicates stable follow-up evidence with one visual source available for review. The answer uses ${evidence.length} cited file${evidence.length === 1 ? "" : "s"} across ${sourceTypes.length ? sourceTypes.join(", ") : "combined evidence"}.`,
@@ -2716,10 +2716,10 @@ export const fallbackDatabaseExamples = ["Count patients by risk level", "Which 
 
 export function fallbackSqlPreview(question: string): AgentRun {
   const runId = demoId("RUN");
-  return { id: runId, workflow: "database", status: "review", agentName: "db_intelligence_pipeline", confidence: 0.9, createdAt: now(), auditId: demoId("AUD"), traceId: demoId("TRACE"), steps: [{ id: `${runId}-S1`, name: "Schema Discovery Agent", status: "completed", detail: "Loaded deterministic fallback schema", timestamp: now() }, { id: `${runId}-S2`, name: "SQL Validator", status: "review", detail: "SELECT-only query awaits approval", timestamp: now() }], evidence: [], result: { question, sql: "SELECT risk_level, COUNT(*) AS patient_count FROM patients GROUP BY risk_level;", safe: true, toolCalls: [] } };
+  return { id: runId, workflow: "database", status: "review", agentName: "db_intelligence_pipeline", confidence: 0.9, createdAt: now(), auditId: demoId("AUD"), traceId: demoId("TRACE"), steps: [{ id: `${runId}-S1`, name: "Schema Discovery Agent", status: "completed", detail: "Loaded deterministic fallback schema", timestamp: now() }, { id: `${runId}-S2`, name: "NL to SQL Agent", status: "completed", detail: "Generated a read-only query", timestamp: now() }, { id: `${runId}-S3`, name: "SQL Validator Agent", status: "completed", detail: "Validated SELECT-only policy", timestamp: now() }, { id: `${runId}-S4`, name: "SQL Preview Approval Agent", status: "review", detail: "SELECT-only query awaits approval", timestamp: now() }], evidence: [], result: { question, sql: "SELECT risk_level, COUNT(*) AS patient_count FROM patients GROUP BY risk_level;", safe: true, toolCalls: [] } };
 }
 
 export function fallbackSqlExecute(runId: string): AgentRun {
   const rows = [{ risk_level: "High", patient_count: 4 }, { risk_level: "Needs review", patient_count: 7 }, { risk_level: "Stable", patient_count: 13 }];
-  return { id: runId, workflow: "database", status: "completed", agentName: "db_intelligence_pipeline", confidence: 0.9, createdAt: now(), auditId: demoId("AUD"), traceId: demoId("TRACE"), steps: [{ id: `${runId}-S3`, name: "Query Executor", status: "completed", detail: "Executed deterministic fallback result set", timestamp: now() }, { id: `${runId}-S4`, name: "Insight Chart Agent", status: "completed", detail: "Rendered table and chart", timestamp: now() }], evidence: [], result: { rows, sql: "SELECT risk_level, COUNT(*) AS patient_count FROM patients GROUP BY risk_level;", chart: { type: "bar" }, toolCalls: [] } };
+  return { id: runId, workflow: "database", status: "completed", agentName: "db_intelligence_pipeline", confidence: 0.9, createdAt: now(), auditId: demoId("AUD"), traceId: demoId("TRACE"), steps: [{ id: `${runId}-S5`, name: "Query Executor Agent", status: "completed", detail: "Executed deterministic fallback result set", timestamp: now() }, { id: `${runId}-S6`, name: "Insight Chart Agent", status: "completed", detail: "Rendered table and chart", timestamp: now() }], evidence: [], result: { rows, sql: "SELECT risk_level, COUNT(*) AS patient_count FROM patients GROUP BY risk_level;", chart: { type: "bar" }, toolCalls: [] } };
 }

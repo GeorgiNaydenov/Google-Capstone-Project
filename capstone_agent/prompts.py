@@ -13,7 +13,7 @@ Each prompt stays under 60 lines (research shows degradation above this).
 
 Prompt hierarchy:
 - ROOT_AGENT_INSTRUCTION: the clinical orchestrator that routes to pipelines
-- CLINICAL_INSTRUCTIONS: dict keyed by agent name for all 16 specialist agents
+- CLINICAL_INSTRUCTIONS: dict keyed by agent name for all specialist agents
 - MEMORY_AGENT_INSTRUCTION: memory-aware cross-session context retrieval
 """
 

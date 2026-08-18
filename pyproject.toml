@@ -8,7 +8,7 @@
 # =============================================================================
 
 [project]
-name = "nexus-clinical-ai-capstone"
+name = "clinical-ai-kit"
 version = "1.0.0"
 description = "Clinical AI Command Center - Google ADK capstone for Kaggle's 5-Day AI Agents intensive course."
 readme = "README.md"

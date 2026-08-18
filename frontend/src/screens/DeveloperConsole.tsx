@@ -400,7 +400,7 @@ export function DeveloperConsole() {
             <span className="product-symbol" style={{ display: "flex", alignItems: "center" }}>
               <img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/>
             </span>
-            <span style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}><strong style={{ fontSize: "14px", color: "var(--blue-dark)" }}>Clinician AI KIT</strong><small style={{ fontSize: "10px", color: "var(--muted)" }}>Documentation Viewer</small></span>
+            <span style={{ display: "flex", flexDirection: "column", lineHeight: "1.2" }}><strong style={{ fontSize: "14px", color: "var(--blue-dark)" }}>Clinical AI Kit</strong><small style={{ fontSize: "10px", color: "var(--muted)" }}>Documentation Viewer</small></span>
           </div>
           <nav className="tabs" style={{ display: "flex", gap: "10px", borderBottom: "none", padding: 0, margin: 0, height: "100%", alignItems: "center" }}>
             <button className={activeTab === "api_docs" ? "active" : ""} onClick={() => setActiveTab("api_docs")} style={{ padding: "8px 16px", border: "none", background: "none", color: activeTab === "api_docs" ? "var(--blue)" : "#475569", fontWeight: activeTab === "api_docs" ? "700" : "500", cursor: "pointer", borderBottom: activeTab === "api_docs" ? "2px solid var(--blue)" : "none", height: "100%", fontSize: "13px" }}>

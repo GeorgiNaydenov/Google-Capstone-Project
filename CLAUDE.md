@@ -27,6 +27,7 @@ capstone_agent/
   agent.py                  # Root agent definition — entry point for `adk run capstone_agent`.
   app.py                    # ADK `App` wrapper — the richer runtime around the root agent.
   callbacks.py              # Security callbacks — defense in depth for agent safety.
+  catalog.py                # Dependency-light metadata for the public clinical agent topology.
   clinical_schemas.py       # Clinical database schema definitions and query engine.
   config.py                 # Centralized configuration and secret management.
   context.py                # Context engineering — token budgeting, compaction, structured assembly.
@@ -98,7 +99,7 @@ tests/
   test_vector_store.py      # Unit tests for the semantic vector store (capstone_agent/vector_store.py).
   test_versioned_api.py     # Unit tests for the versioned API backend endpoints (V1 and V2).
   test_wiki_sync.py         # Unit tests for the deterministic wiki sync script (scripts/sync_wiki.py).
-frontend/                   # React/Vite/TypeScript clinical UI (16 routes)
+frontend/                   # React/Vite/TypeScript clinical UI (16 core screens plus 3 documentation/utility routes)
 eval/                       # ADK evaluation suite (evalset + scoring config)
 deployment/                 # Dockerfile, cloudbuild.yaml, Agent Engine config
 docs/                       # Architecture and product documentation

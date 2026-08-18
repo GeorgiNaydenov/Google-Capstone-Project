@@ -1,7 +1,7 @@
 ---
 title: Module Inventory
 type: generated
-updated: 2026-08-17
+updated: 2026-08-18
 tags:
   - generated
 ---
@@ -18,6 +18,7 @@ Hand-written companion: [[Module Reference]].
 | `capstone_agent` | `agent.py` | Root agent definition — entry point for `adk run capstone_agent`. |
 | `capstone_agent` | `app.py` | ADK `App` wrapper — the richer runtime around the root agent. |
 | `capstone_agent` | `callbacks.py` | Security callbacks — defense in depth for agent safety. |
+| `capstone_agent` | `catalog.py` | Dependency-light metadata for the public clinical agent topology. |
 | `capstone_agent` | `clinical_schemas.py` | Clinical database schema definitions and query engine. |
 | `capstone_agent` | `config.py` | Centralized configuration and secret management. |
 | `capstone_agent` | `context.py` | Context engineering — token budgeting, compaction, structured assembly. |

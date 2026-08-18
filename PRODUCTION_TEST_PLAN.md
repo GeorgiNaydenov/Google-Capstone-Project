@@ -1,10 +1,10 @@
-# Production Readiness Plan — Nexus Clinical AI Command Center
+# Production Readiness Plan — Clinical AI Kit
 
 ## Context
 
-The capstone must ship as an end-to-end clinician-facing product powered by a visible multi-agent system (3 workflows: Session Image Extraction, Multimodal Patient Q&A, Database Intelligence). Review found the project is already ~90% built: all 16 spec screens exist in the React UI (kept as-is per user), the ADK backend is fully specialized (1 root + 22 pipeline sub-agents, 22+ tools, SQLite `clinical.db`, MCP server, 3-layer security, HITL gates), and `clinical_app/` bridges UI→agents with demo + live modes. What blocks "production working properly" is a set of confirmed bugs in the live-mode seam, one server-side SQL safety gap, an unbuilt frontend bundle, and stale docs.
+The capstone must ship as an end-to-end clinician-facing product powered by a visible multi-agent system (3 workflows: Session Image Extraction, Multimodal Patient Q&A, Database Intelligence). The product contains 16 brief-defined core screens plus 3 documentation/utility routes (19 public routes total). The ADK backend has 1 root orchestrator and 21 specialist LLM agents (22 total) across 3 `SequentialAgent` pipelines, with a nested `LoopAgent` in extraction, 22+ tools, SQLite `clinical.db`, an MCP server, 3-layer security, and HITL gates. `clinical_app/` bridges the UI to deterministic and live execution modes.
 
-**Scope decisions (user-confirmed):** (1) Live mode verified end-to-end with real Gemini calls — user puts `GOOGLE_API_KEY` in `.env`. (2) Deploy-ready only — verify Docker/cloudbuild/docs, no actual Cloud Run deploy.
+**Planning history:** The original implementation pass verified live mode locally with user-supplied credentials and stopped at deploy readiness. The current public release is deployed separately in deterministic mode with paid ADK/Gemini execution disabled; live mode remains available only for self-controlled deployments.
 
 ## Confirmed bugs (verified against source + installed ADK)
 
@@ -15,7 +15,7 @@ The capstone must ship as an end-to-end clinician-facing product powered by a vi
 5. **Double execution + masked errors in `database_execute`** (`clinical_app/app.py:536-585`) — live mode calls `execute_live("Execute this SQL…")` AND executes locally; result discarded. Empty result sets raise `ValueError("No rows returned")` → 500 on legitimate 0-row queries; `execute_sql` errors return `{"error": ...}` dict the route never checks.
 6. **`.env` never loaded by product API** — `load_dotenv()` only runs in `capstone_agent/config.py`, imported lazily; `execution_mode()` reads `os.environ` at request time, so `AGENT_EXECUTION_MODE` in `.env` does nothing today.
 7. **No cross-request session continuity in live mode** — fresh `InMemorySessionService` per request; Q&A follow-ups (a spec demo scenario) can't reference prior turns.
-8. Hygiene: `frontend/dist` never built (SPA-serving branch unexercised); `test_db.py` stray debug script at repo root (print + hardcoded path); `.env.example` missing `AGENT_EXECUTION_MODE`; stale agent counts in README/docs/agent.py docstring ("16 sub-agents", "5/6/5" — actual 9/7/6 = 22).
+8. Hygiene: `frontend/dist` never built (SPA-serving branch unexercised); `test_db.py` stray debug script at repo root (print + hardcoded path); `.env.example` missing `AGENT_EXECUTION_MODE`; public documentation had stale topology counts. The canonical topology is extraction 7, Q&A 8, database 6, plus the root orchestrator (22 LLM agents total).
 
 ## Implementation steps (dependency order, minimal diffs — no UI changes, no refactors)
 
@@ -50,9 +50,10 @@ Create `PRODUCTION_TEST_PLAN.md` in the repo root containing the confirmed-bug l
 
 ### Step 6 — Docs + deploy config
 - `.env.example`: add `AGENT_EXECUTION_MODE` block (unset/local = demo, live = real ADK agents).
-- `README.md` (lines 41, 49, 53-55, 67, 82) and `docs/architecture.md` (5, 23, 41, 67, 311) and `capstone_agent/agent.py` docstring (4, 11-13, 87): correct to 22 pipeline sub-agents, 9/7/6. Leave "16 routes" (frontend screens — correct).
+- Align `README.md`, `docs/architecture.md`, and the agent module documentation with 22 total LLM agents: 1 root orchestrator plus 21 specialists split 7/8/6 across extraction, Q&A, and database intelligence.
+- Describe the frontend as 16 core product screens plus 3 documentation/utility routes (19 public routes total).
 - `README.md`: add "Demo walkthrough" section — demo vs live start commands + the 3 guided workflows with routes (`/app/extraction`, `/app/qa`, `/app/database`, `/app/audit`). Name GCS/vector/Firestore as "local emulations of the GCP services shown".
-- `deployment/cloudbuild.yaml`: add `--set-env-vars=AGENT_EXECUTION_MODE=live,GOOGLE_GENAI_USE_VERTEXAI=FALSE,HIPAA_MODE=TRUE` and `--max-instances=1` (in-process RepositoryRegistry + SQLite require single instance); recommend `--memory=1Gi`.
+- `deployment/cloudbuild.yaml`: keep the public service deterministic (`AGENT_EXECUTION_MODE=disabled`) with paid model, vector, reranker, and tracing integrations disabled; keep `--max-instances=1` while state remains in-process/SQLite. Document live ADK/Gemini as a separate self-controlled deployment path.
 - `deployment/README.md`: document live-mode env vars, single-instance constraint, and that live bridge intentionally uses in-memory ADK sessions (SESSION_BACKEND=database applies to the `adk run`/Agent Engine path only).
 
 ## Verification matrix (Windows, `.venv`)
@@ -61,7 +62,7 @@ Create `PRODUCTION_TEST_PLAN.md` in the repo root containing the confirmed-bug l
 |---|---|---|---|
 | 1 | Python suite green | `.venv\Scripts\python -m pytest` | 0 failures; model tests skip w/o key |
 | 2 | FE types/tests/bundle | `cd frontend; npm run typecheck; npm test; npm run build` | `dist/index.html` exists |
-| 3 | Single-origin prod serving | `uvicorn clinical_app.app:app --port 8000` → open `http://localhost:8000` | SPA served by FastAPI; `/api/health` `mode:"local"` |
+| 3 | Single-origin prod serving | `uvicorn clinical_app.app:app --port 8000` → open `http://localhost:8000` | SPA served by FastAPI; `/health` and `/ready` report healthy |
 | 4 | Demo workflow 1 | `/app/extraction`: PT-8829 → upload → run → review → approve | review→completed; receipts `synced`; audit shows `extraction_approved` |
 | 5 | Demo workflow 2 | `/app/qa`: PT-8829 question | Answer + evidence cards; image source opens |
 | 6 | Demo workflow 3 | `/app/database`: cohort question → approve → execute | SQL gated at review; rows + chart; history + CSV; audit event |
@@ -77,7 +78,7 @@ User must supply `GOOGLE_API_KEY` in `.env` (copy from `.env.example`) before st
 
 - UI redesign/restyle (user: UI almost perfect).
 - Real GCS / Vertex Vector Search / Firestore integration — stays as SQLite-backed local emulation, visibly labeled in UI + README.
-- Actual Cloud Run deploy (deploy-ready only).
+- The public Cloud Run build uses deterministic execution with paid ADK/Gemini services disabled. Live mode is a separate self-controlled deployment path with credentials and explicit runtime configuration.
 - Wiring DatabaseSessionService into live_bridge.
 
 ## Critical files

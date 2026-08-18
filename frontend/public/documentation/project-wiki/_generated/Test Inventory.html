@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Test Inventory · Nexus Documentation</title>
+<title>Test Inventory · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Test Inventory</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -41,12 +41,12 @@ Hand-written companion: <a href="../../project-wiki/06%20Operations/Testing%20an
 </tr>
 <tr>
 <td><code>test_callbacks.py</code></td>
-<td>10</td>
+<td>11</td>
 <td>Unit tests for the 3-layer security callbacks.</td>
 </tr>
 <tr>
 <td><code>test_clinical_api.py</code></td>
-<td>25</td>
+<td>28</td>
 <td>Frontend contract tests for deterministic clinician product API.</td>
 </tr>
 <tr>
@@ -70,6 +70,11 @@ Hand-written companion: <a href="../../project-wiki/06%20Operations/Testing%20an
 <td>ADK evaluation harness test (Day 4b).</td>
 </tr>
 <tr>
+<td><code>test_harness_runtime.py</code></td>
+<td>3</td>
+<td>Tests for lifecycle state, handoff, and safe mirror harness tooling.</td>
+</tr>
+<tr>
 <td><code>test_live_bridge.py</code></td>
 <td>21</td>
 <td>Unit tests for the live-mode ADK bridge parsing helpers.</td>
@@ -81,7 +86,7 @@ Hand-written companion: <a href="../../project-wiki/06%20Operations/Testing%20an
 </tr>
 <tr>
 <td><code>test_memory.py</code></td>
-<td>3</td>
+<td>6</td>
 <td>Tests for memory governance (Day 3b).</td>
 </tr>
 <tr>
@@ -96,12 +101,12 @@ Hand-written companion: <a href="../../project-wiki/06%20Operations/Testing%20an
 </tr>
 <tr>
 <td><code>test_product_orchestration.py</code></td>
-<td>8</td>
+<td>9</td>
 <td>Contract tests for clinician-facing production workflow boundaries.</td>
 </tr>
 <tr>
 <td><code>test_security.py</code></td>
-<td>11</td>
+<td>13</td>
 <td>Security test suite — validates all detection and sanitization functions.</td>
 </tr>
 <tr>
@@ -120,8 +125,13 @@ Hand-written companion: <a href="../../project-wiki/06%20Operations/Testing%20an
 <td>Clinical tool validation tests — ensures consistent I/O contracts.</td>
 </tr>
 <tr>
+<td><code>test_vector_store.py</code></td>
+<td>9</td>
+<td>Unit tests for the semantic vector store (capstone_agent/vector_store.py).</td>
+</tr>
+<tr>
 <td><code>test_versioned_api.py</code></td>
-<td>5</td>
+<td>6</td>
 <td>Unit tests for the versioned API backend endpoints (V1 and V2).</td>
 </tr>
 <tr>
@@ -131,7 +141,7 @@ Hand-written companion: <a href="../../project-wiki/06%20Operations/Testing%20an
 </tr>
 </tbody>
 </table>
-<p><strong>Total test functions: 258</strong></p>
+<p><strong>Total test functions: 281</strong></p>
 
 <footer class="doc-footer">
   <a href="../../index.html">Documentation hub</a>

@@ -6,20 +6,20 @@
 
 # DB Intelligence Pipeline
 
-SequentialAgent (6 agents) translating natural language into safe SQL with validation before execution and chart-spec generation after. Lanes: Agents, Safety Gate.
+`SequentialAgent` containing 6 specialist LLM agents translates natural language into safe SQL with validation and explicit approval preparation before execution, followed by chart-spec generation. Lanes: Agents, Safety Gate.
 
 ```mermaid
 flowchart TD
     subgraph LANE_AG["Lane: Pipeline agents"]
         SD["schema_discovery_agent (flash-lite)<br/>get_database_schema"]
         NL["nl_to_sql_agent (pro)<br/>generate_sql"]
-        EX["query_executor_agent (pro-customtools)"]
-        IC["insight_chart_agent (flash-lite)<br/>generate_chart_spec, save_query_to_memory"]
+        EX["query_executor_agent (pro)"]
+        IC["insight_chart_agent (pro)<br/>generate_chart_spec, save_query_to_memory"]
     end
 
     subgraph LANE_GATE["Lane: Safety gate"]
         SV{sql_validator_agent (flash-lite)<br/>validate_sql_safety}
-        APPR{Approval boundary<br/>approve_sql_preview}
+        APPR{sql_preview_approval_agent (pro)<br/>approve_sql_preview}
     end
 
     START([Natural-language question]) --> SD --> NL --> SV

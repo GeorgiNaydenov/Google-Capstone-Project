@@ -47,7 +47,7 @@ Use `docs/submission/demo-script.md` as the shot list. Keep the final YouTube vi
 Add these under **Attachments -> Project Links**:
 
 - GitHub repository: `https://github.com/GeorgiNaydenov/Google-Capstone-Project`
-- Deployed app URL: add the Cloud Run URL after deployment, if available.
-- Documentation hub: use the deployed `/documentation` URL if deployed; otherwise mention `http://localhost:8000/documentation` in the README/setup path.
+- Deployed app: `https://clinical-ai-kit-330118805806.us-central1.run.app/`
+- Documentation hub: `https://clinical-ai-kit-330118805806.us-central1.run.app/documentation`
 
 Before final submission, make the GitHub repository public and confirm the Apache-2.0 `LICENSE` is visible from the repo root.

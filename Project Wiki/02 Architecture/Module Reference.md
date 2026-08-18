@@ -17,7 +17,7 @@ Every Python module currently in the repository, with its purpose (taken from mo
 
 | Module | Purpose |
 |--------|---------|
-| `agent.py` | Root agent definition — entry point for `adk run capstone_agent`; imports all modules and wires the root agent + sub-agents |
+| `agent.py` | Root agent definition — entry point for `adk run capstone_agent`; imports all modules and wires the root orchestrator plus 21 specialist LLM agents |
 | `app.py` | ADK `App` wrapper — plugins, compaction, resumability around the root agent |
 | `a2a_server.py` | Expose the agent over the Agent2Agent (A2A) protocol (Day 5a) |
 | `llm.py` | Model registry and factory — the one place model selection happens ([[Model Registry]]) |
@@ -35,7 +35,7 @@ Every Python module currently in the repository, with its purpose (taken from mo
 | `clinical_schemas.py` | Clinical database schema definitions and query engine (SQL DDL + validation) |
 | `database.py` | SQLite database layer — real persistence for all clinical data |
 | `document_processor.py` | Document processing — real PDF and image extraction using PyMuPDF and Gemini |
-| `mock_data.py` | Deterministic mock data for the Clinical AI Command Center |
+| `mock_data.py` | Deterministic mock data for Clinical AI Kit |
 | `human_in_the_loop.py` | Human-in-the-loop / long-running operations (Day 2b) |
 
 ## clinical_app/ — FastAPI product server
@@ -72,7 +72,7 @@ Every Python module currently in the repository, with its purpose (taken from mo
 
 | Area | Purpose |
 |------|---------|
-| `frontend/` | React/Vite/TypeScript clinical UI — 16 routes; `dist/` served by FastAPI |
+| `frontend/` | React/Vite/TypeScript clinical UI — 16 core screens plus 3 documentation/utility routes; `dist/` served by FastAPI |
 | `eval/` | ADK evaluation suite — `capstone.evalset.json` + `test_config.json` ([[Testing and Eval]]) |
 | `tests/` | pytest + async test suite ([[Testing and Eval]]) |
 | `deployment/` | Dockerfile, cloudbuild.yaml, Agent Engine config ([[Deployment]]) |

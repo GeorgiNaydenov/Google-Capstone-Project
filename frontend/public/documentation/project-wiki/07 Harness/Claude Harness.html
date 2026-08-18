@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Claude Harness · Nexus Documentation</title>
+<title>Claude Harness · Clinical AI Kit Documentation</title>
 <link rel="icon" href="/favicon.png">
 <link rel="stylesheet" href="../../docs.css">
 <script type="module">
@@ -13,7 +13,7 @@
 </head>
 <body>
 <header class="doc-topbar">
-  <a href="/" title="Back to the Nexus Clinical AI Command Center"><img src="/favicon.png" alt="Nexus home"></a>
+  <a href="/" title="Back to Clinical AI Kit"><img src="/favicon.png" alt="Clinical AI Kit home"></a>
   <span class="crumb"><a href="../../index.html">Documentation hub</a>&nbsp;/&nbsp;Claude Harness</span>
   <span class="spacer"></span>
   <nav class="actions">
@@ -23,62 +23,73 @@
 </header>
 <main>
 <h1>Claude Harness</h1>
-<p>The <code>.claude/</code> harness controls and validates agent-assisted development on this repository. The live, machine-generated index is <a href="../../project-wiki/_generated/Harness%20Index.html">Harness Index</a>.</p>
-<h2>Rules (<code>.claude/rules/</code>)</h2>
+<p>The <code>.claude/</code> harness controls and validates agent-assisted development. The
+live machine-generated inventory is <a href="../../project-wiki/_generated/Harness%20Index.html">Harness Index</a>.</p>
+<h2>Executable components</h2>
 <table>
 <thead>
 <tr>
-<th>File</th>
-<th>Enforces</th>
+<th>Area</th>
+<th>Contents</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>brevity.md</code></td>
-<td>Caveman-micro response style with auto-clarity exceptions</td>
+<td>Rules</td>
+<td>Engineering, security, testing, and response constraints</td>
 </tr>
 <tr>
-<td><code>engineering.md</code></td>
-<td>Python 3.11+, typing, scope discipline, <code>build_model(tier)</code> only, uv commands, named git staging</td>
+<td>Skills</td>
+<td>On-demand project workflows</td>
 </tr>
 <tr>
-<td><code>security.md</code></td>
-<td>Fixed 3-layer callback order, secret/PII scan rules, redaction before logging</td>
+<td>Agents</td>
+<td>Named specialists with bounded ownership and tools</td>
 </tr>
 <tr>
-<td><code>testing.md</code></td>
-<td>pytest layout, LLM non-determinism constraint, <code>@requires_model</code> marker</td>
+<td>Memory</td>
+<td>Shared project facts, handoff contract, and per-agent learned memory</td>
+</tr>
+<tr>
+<td>State</td>
+<td>Gitignored session, compaction, active-agent, and handoff records</td>
+</tr>
+<tr>
+<td>Commands</td>
+<td>Harness audit, status, handoff, sync, and pre-commit gates</td>
 </tr>
 </tbody>
 </table>
-<h2>Skills (<code>.claude/skills/</code>)</h2>
-<p>grill-me, grill-with-docs, testing-workflow, defuddle, deployment, obsidian-markdown, json-canvas, obsidian-bases, obsidian-cli.</p>
-<h2>Commands (<code>.claude/commands/</code>)</h2>
+<h2>Named agents</h2>
 <table>
 <thead>
 <tr>
-<th>Command</th>
-<th>Purpose</th>
+<th>Agent</th>
+<th>Responsibility</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>pre-commit-gate.md</code></td>
-<td>Formatting, harness audit, and pytest before commits</td>
+<td><code>harness-governor</code></td>
+<td>Hooks, sync, state contracts, and harness integrity</td>
 </tr>
 <tr>
-<td><code>harness-audit.md</code></td>
-<td>Audits file indexing and sync status</td>
+<td><code>memory-state-reviewer</code></td>
+<td>ADK session, memory, compaction, and A2A boundaries</td>
 </tr>
 <tr>
-<td><code>sync-agents-md.md</code></td>
-<td>Mirrors <code>.claude</code> → <code>.agents</code> and CLAUDE.md → AGENTS.md</td>
+<td><code>security-reviewer</code></td>
+<td>Read-only data-leak and callback boundary review</td>
+</tr>
+<tr>
+<td><code>verification-runner</code></td>
+<td>Deterministic gates and reproducible failure reports</td>
 </tr>
 </tbody>
 </table>
-<h2>References (<code>.claude/references/</code>)</h2>
-<p><code>critical-defaults.md</code> (always-on behaviors), <code>known-baselines.md</code> (baseline stats), <code>source-policy.md</code> (local check priorities).</p>
-<h2>Hooks (<code>.claude/settings.json</code>)</h2>
+<p>Each profile uses project-scoped persistent memory and writes a sanitized
+handoff before returning control.</p>
+<h2>Lifecycle hooks</h2>
 <table>
 <thead>
 <tr>
@@ -89,24 +100,54 @@
 </thead>
 <tbody>
 <tr>
-<td><code>PreToolUse</code> (matcher <code>.*</code>)</td>
+<td><code>SessionStart</code></td>
+<td><code>scripts/harness_runtime.py</code></td>
+<td>Initializes/resumes state and injects durable project memory</td>
+</tr>
+<tr>
+<td><code>PreToolUse</code> (matcher <code>*</code>)</td>
 <td><code>scripts/check_harness.py</code></td>
-<td>Verifies harness integrity before every tool call: required directories, CLAUDE.md/AGENTS.md sync, skill frontmatter, index completeness</td>
+<td>Verifies profiles, memory, hook wiring, indexes, and mirror integrity</td>
+</tr>
+<tr>
+<td><code>PreCompact</code></td>
+<td><code>scripts/harness_runtime.py</code></td>
+<td>Snapshots local state before context compaction</td>
+</tr>
+<tr>
+<td><code>SubagentStart</code></td>
+<td><code>scripts/harness_runtime.py</code></td>
+<td>Registers ownership and injects pending handoffs</td>
+</tr>
+<tr>
+<td><code>SubagentStop</code></td>
+<td><code>scripts/harness_runtime.py</code></td>
+<td>Records completion and a sanitized fallback handoff</td>
 </tr>
 <tr>
 <td><code>Stop</code></td>
-<td><code>scripts/sync_wiki.py</code></td>
-<td>Deterministic wiki + harness auto-update after each work session — see <a href="../../project-wiki/03%20Processes/Development%20Workflow.html">Development Workflow</a></td>
+<td><code>scripts/harness_runtime.py</code></td>
+<td>Checkpoints turn state, then runs wiki/harness sync</td>
+</tr>
+<tr>
+<td><code>SessionEnd</code></td>
+<td><code>scripts/harness_runtime.py</code></td>
+<td>Marks session ended without deleting recovery state</td>
 </tr>
 </tbody>
 </table>
-<h2>Sync scripts (<code>scripts/</code>)</h2>
+<h2>Scripts</h2>
 <ul>
-<li><code>check_harness.py</code> — fails fast when the harness drifts: missing dirs, unsynced CLAUDE.md/AGENTS.md (byte-compare after <code>## Default Style</code> with <code>.agents/</code>→<code>.claude/</code> translation), bad skill frontmatter, unindexed files.</li>
-<li><code>sync_harness.py</code> — wipes and regenerates <code>.agents/</code> from <code>.claude/</code> (path-translated) and AGENTS.md from CLAUDE.md. Run after any CLAUDE.md edit.</li>
-<li><code>sync_wiki.py</code> — regenerates the machine-owned wiki pages (<code>_generated/</code>), the <a href="../../project-wiki/02%20Architecture/Module%20Dependency%20Graph.html">Module Dependency Graph</a> AUTO block, the <code>## Project Structure</code> AUTO block in CLAUDE.md, and root <code>MEMORY.md</code>; then calls <code>sync_harness</code> so everything stays consistent.</li>
+<li><code>harness_runtime.py</code> — standard-library lifecycle state, context injection,
+compaction snapshots, and handoff queue.</li>
+<li><code>check_harness.py</code> — fails fast on missing executable contracts, invalid hook
+wiring/frontmatter, unindexed files, or mirror drift.</li>
+<li><code>sync_harness.py</code> — incrementally mirrors managed <code>.claude/</code> files and
+preserves destination-only <code>.agents/</code> skills/assets.</li>
+<li><code>sync_wiki.py</code> — regenerates machine-owned wiki content and calls safe mirror
+synchronization.</li>
 </ul>
-<h2>Memory files</h2>
+<h2>Memory ownership</h2>
 <table>
 <thead>
 <tr>
@@ -116,16 +157,24 @@
 </thead>
 <tbody>
 <tr>
-<td><code>MEMORY.md</code> (repo root)</td>
-<td>Workspace variables and active model registers — AUTO block maintained by <code>sync_wiki.py</code></td>
+<td><code>MEMORY.md</code></td>
+<td>Generated workspace inventory</td>
 </tr>
 <tr>
-<td><code>.claude/memory/</code></td>
-<td>Harness memory directory (currently placeholder)</td>
+<td><code>.claude/memory/project.md</code></td>
+<td>Shared durable facts injected at lifecycle boundaries</td>
 </tr>
 <tr>
-<td>User auto-memory (<code>~/.claude/projects/...</code>)</td>
-<td>Cross-session facts maintained by Claude Code</td>
+<td><code>.claude/memory/handoff-protocol.md</code></td>
+<td>Cross-agent completion contract</td>
+</tr>
+<tr>
+<td><code>.claude/agent-memory/&lt;agent&gt;/MEMORY.md</code></td>
+<td>Project-scoped learned memory</td>
+</tr>
+<tr>
+<td><code>.claude/state/</code></td>
+<td>Gitignored ephemeral lifecycle and handoff state</td>
 </tr>
 </tbody>
 </table>

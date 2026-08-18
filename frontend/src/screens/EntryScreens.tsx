@@ -32,13 +32,13 @@ export function Landing() {
       number: "01",
       title: "Session image extraction",
       copy: "A governed intake flow for PDFs and images. Agents check quality, read text and visuals, structure clinical fields, and stop for review before storage.",
-      count: "9 agents",
+      count: "7 agents",
     },
     {
       number: "02",
       title: "Multimodal patient Q&A",
       copy: "A cited answer flow for notes, labs, and images. The system validates patient scope, retrieves evidence, and returns an answer with sources you can reopen.",
-      count: "7 agents",
+      count: "8 agents",
     },
     {
       number: "03",
@@ -49,7 +49,7 @@ export function Landing() {
   ];
   return <main className="landing-page">
     <header className="landing-nav">
-      <div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div>
+      <div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinical AI Kit</strong><small>Clinical Command v2.4</small></span></div>
       <nav>
         <a href="#workflows">Agent workflows</a>
         <a href="#architecture">Architecture diagrams</a>
@@ -61,9 +61,9 @@ export function Landing() {
       <div className="hero-copy">
         <span className="eyebrow accent">CLINICAL AI COMMAND CENTER</span>
         <h1>Turn fragmented clinical evidence into decisions clinicians can verify.</h1>
-        <p>Clinician AI KIT gives care teams one workspace for document extraction, cited patient Q&A, cohort analytics, review, storage, and audit. The agents do the heavy reading while every consequential action stays visible and clinician-approved.</p>
+        <p>Clinical AI Kit gives care teams one workspace for document extraction, cited patient Q&A, cohort analytics, review, storage, and audit. The agents do the heavy reading while every consequential action stays visible and clinician-approved.</p>
         <div className="button-row"><button className="button primary large" disabled={busy} onClick={() => void enter()}>{busy ? "Preparing workspace" : "Start clinical workspace"}</button><button className="button subtle large" onClick={() => document.getElementById("architecture")?.scrollIntoView({ behavior: "smooth" })}>Inspect architecture</button></div>
-        <div className="trust-row"><span>No login needed</span><span>Transparent AI reasoning traces</span><span>Clinician-gated writes</span><span>Synthetic demo records</span></div>
+        <div className="trust-row"><span>No login needed</span><span>Inspectable agent execution traces</span><span>Clinician-gated writes</span><span>Synthetic demo records</span></div>
       </div>
       <div className="product-preview" aria-label="Application preview">
         <header><span>Clinician dashboard</span><StatusBadge tone="success">Agents operational</StatusBadge></header>
@@ -87,7 +87,7 @@ export function RoleSelection() {
   const enter = (role: Role) => { setRole(role); navigate(role === "admin" ? "/app/admin" : "/app/dashboard"); };
 
   return <main className="role-page">
-    <header><div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div><StatusBadge tone="info">Synthetic patient records - no real PHI</StatusBadge></header>
+    <header><div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinical AI Kit</strong><small>Clinical Command v2.4</small></span></div><StatusBadge tone="info">Synthetic patient records - no real PHI</StatusBadge></header>
     <section className="role-intro"><span className="eyebrow accent">SELECT WORKSPACE</span><h1>How are you working today?</h1><p>The same identity can switch roles at any time. Active patient and workflow context follows you.</p></section>
     <div className="role-dashboard"><section className="role-cards"><button onClick={() => enter("clinician")}><span className="role-icon"><Icon name="activity" size={28}/></span><div><small>CLINICAL OPERATIONS</small><strong>Clinician workspace</strong><p>Patient queue, sessions, extraction, cited Q&A, population insights, review, and audit.</p><b>Enter clinician workspace</b></div></button><button onClick={() => enter("admin")}><span className="role-icon"><Icon name="settings" size={28}/></span><div><small>PLATFORM CONTROL</small><strong>Administrator workspace</strong><p>Users, care teams, routing, storage, records, system health, and compliance.</p><b>Enter admin workspace</b></div></button></section><aside><section><h2>Recent agent runs</h2>{[["Image Extraction", "PT-D00008", "Completed"], ["Patient Q&A", "PT-D00002", "Review"], ["Population Insights", "Cohort", "Completed"]].map(([agent, entity, status]) => <div className="role-activity" key={agent}><span className="pulse"/><span><strong>{agent}</strong><small>{entity} moments ago</small></span><StatusBadge tone={status === "Completed" ? "success" : "review"}>{status}</StatusBadge></div>)}</section><section><h2>System status</h2><div className="role-status"><span>AI orchestration <StatusBadge tone="success">Ready</StatusBadge></span><span>Clinical data stores <StatusBadge tone="success">Synchronized</StatusBadge></span><span>Audit trail <StatusBadge tone="success">Recording</StatusBadge></span></div></section></aside></div>
   </main>;
@@ -172,7 +172,7 @@ export function DocsAccess() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   return <main className="docs-access-page">
     <header className="landing-nav">
-      <div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinician AI KIT</strong><small>Clinical Command v2.4</small></span></div>
+      <div className="product-lockup"><span className="product-symbol"><img src="/favicon.png" alt="" width={26} height={26} style={{objectFit:"contain"}}/></span><span><strong>Clinical AI Kit</strong><small>Clinical Command v2.4</small></span></div>
       <nav><Link to="/">Back to main page</Link></nav>
     </header>
     <section className="docs-access-intro">

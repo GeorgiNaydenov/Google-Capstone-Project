@@ -11,7 +11,7 @@ Three pillars — Logs (diary), Traces (narrative), Metrics (timing) — plus cl
 |--------|----------------|---------|
 | **Logs** | `setup_logging()` — structured JSON | Machine-parseable, searchable audit trail |
 | **Traces** | `setup_tracing()` — OpenTelemetry OTLP/GCP | Distributed request tracing |
-| **Clinical events** | `log_clinical_event()` | HIPAA-style audit: patient access, PHI redaction, review decisions |
+| **Clinical events** | `log_clinical_event()` | Privacy-aware audit: patient access, PHI redaction, review decisions |
 
 ## Key functions (`observability.py`)
 
