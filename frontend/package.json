@@ -10,20 +10,20 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
     "plotly.js-dist-min": "^3.6.0",
     "react": "latest",
     "react-dom": "latest",
-    "react-router-dom": "latest",
-    "typescript": "latest",
-    "vite": "latest"
+    "react-router-dom": "7.18.2"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "latest",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "jsdom": "latest",
+    "typescript": "latest",
+    "vite": "latest",
     "vitest": "latest"
   }
 }
