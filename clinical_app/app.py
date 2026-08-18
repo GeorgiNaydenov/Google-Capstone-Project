@@ -27,12 +27,29 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
 from time import monotonic
 
 from capstone_agent.catalog import (
     SPECIALIST_LLM_AGENT_COUNT,
     public_pipeline_catalog,
 )
+
+
+class CacheControlledStaticFiles(StaticFiles):
+    """Serve static files with an explicit browser cache policy."""
+
+    def __init__(self, *args: Any, cache_control: str, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.cache_control = cache_control
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        """Attach the configured cache policy to every static response."""
+
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = self.cache_control
+        return response
+
 
 # Load .env before any request handling so GOOGLE_API_KEY and Vertex settings
 # reach the environment without requiring the lazy agent import.
@@ -3944,7 +3961,11 @@ def create_app() -> FastAPI:
         if candidate.is_dir():
             api.mount(
                 "/documentation",
-                StaticFiles(directory=candidate, html=True),
+                CacheControlledStaticFiles(
+                    directory=candidate,
+                    html=True,
+                    cache_control="no-store, max-age=0",
+                ),
                 name="documentation",
             )
             break
@@ -3953,7 +3974,14 @@ def create_app() -> FastAPI:
     if dist.is_dir():
         assets = dist / "assets"
         if assets.is_dir():
-            api.mount("/assets", StaticFiles(directory=assets), name="frontend-assets")
+            api.mount(
+                "/assets",
+                CacheControlledStaticFiles(
+                    directory=assets,
+                    cache_control="public, max-age=31536000, immutable",
+                ),
+                name="frontend-assets",
+            )
 
         @api.get("/{path:path}", include_in_schema=False)
         def spa(path: str) -> FileResponse:
@@ -3965,8 +3993,11 @@ def create_app() -> FastAPI:
                 raise HTTPException(404, "API route not found")
             candidate = (dist / path).resolve()
             if candidate.is_file() and dist.resolve() in candidate.parents:
-                return FileResponse(candidate)
-            return FileResponse(dist / "index.html")
+                response = FileResponse(candidate)
+            else:
+                response = FileResponse(dist / "index.html")
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+            return response
 
     return api
 

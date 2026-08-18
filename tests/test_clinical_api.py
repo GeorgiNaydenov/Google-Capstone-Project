@@ -4,9 +4,10 @@ import time
 from pathlib import Path
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from clinical_app.app import create_app
+from clinical_app.app import CacheControlledStaticFiles, create_app
 
 
 def poll_until_settled(
@@ -57,6 +58,25 @@ def clinician(session: str = "clinical-test") -> dict[str, str]:
         "X-Clinical-Role": "clinician",
         "X-User": "Dr. Test",
     }
+
+
+def test_static_files_apply_explicit_cache_policy(tmp_path: Path) -> None:
+    """Versioned frontend assets must never inherit heuristic browser caching."""
+
+    (tmp_path / "app.js").write_text("console.log('ok')", encoding="utf-8")
+    static_app = FastAPI()
+    static_app.mount(
+        "/assets",
+        CacheControlledStaticFiles(
+            directory=tmp_path,
+            cache_control="public, max-age=31536000, immutable",
+        ),
+    )
+
+    response = TestClient(static_app).get("/assets/app.js")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == ("public, max-age=31536000, immutable")
 
 
 def admin(session: str = "clinical-test") -> dict[str, str]:

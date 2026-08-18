@@ -28,6 +28,8 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - build
+      - --build-arg
+      - FRONTEND_BUILD_ID=$BUILD_ID
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:$BUILD_ID
       - -t

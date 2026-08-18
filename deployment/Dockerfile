@@ -2,6 +2,8 @@
 FROM node:22-alpine AS frontend-build
 
 WORKDIR /frontend
+ARG FRONTEND_BUILD_ID=local
+ENV FRONTEND_BUILD_ID=${FRONTEND_BUILD_ID}
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
